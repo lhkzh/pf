@@ -1,0 +1,18 @@
+{
+  "name": "create-pf_api",
+  "version": "1.0.5",
+  "description": "genarate fibjs project",
+  "private": false,
+  "author": "",
+  "homepage": "",
+  "license": "MIT",
+  "bin": {
+    "create-pf_api": "./bin.js"
+  },
+  "files": [
+    "project_api",
+    "bin.js",
+    "package.json",
+    "README.md"
+  ]
+}

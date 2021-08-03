@@ -1,0 +1,32 @@
+{
+  "name": "pf_api",
+  "version": "0.0.2",
+  "description": "fast dev fibjs api",
+  "main": "./dist/index.js",
+  "types": "./@types/index.d.ts",
+  "private": false,
+  "author": "zhh",
+  "homepage": "https://github.com/lhkzh/pf",
+  "license": "MIT",
+  "keywords": [
+    "fibjs",
+    "api"
+  ],
+  "engines": {
+    "fibjs": ">0.32.0"
+  },
+  "dependencies": {
+    "@abraham/reflection": "^0.8.0",
+    "fibjs_server": "^1.1.0"
+  },
+  "devDependencies": {
+    "@fibjs/types": "^0.33.0"
+  },
+  "files": [
+    "@types",
+    "dist",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ]
+}

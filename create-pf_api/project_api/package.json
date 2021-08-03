@@ -1,0 +1,14 @@
+{
+  "name": "fib_app_server",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "pf_api": "^0.0.1"
+  },
+  "devDependencies": {
+    "@fibjs/types": "^0.33.0"
+  },
+  "scripts": {
+    "start": "fibjs app.js"
+  }
+}
