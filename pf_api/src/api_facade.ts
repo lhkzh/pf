@@ -635,6 +635,15 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
     delete constructor.prototype["$subs"];//释放内存
     if (baseRules) {
         baseRules.forEach(br => {
+            if(!br.name){
+                return;
+            }
+            if(!br.type){
+                br.type = String;
+            }
+            if(!br.src){
+                br.src = "any";
+            }
             subs.forEach(ar => {
                 if (ar.rules.some(ir => {
                     return ir.name == br.name && ir.src == br.src;
