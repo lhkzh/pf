@@ -643,6 +643,8 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
             }
             if(!br.src){
                 br.src = "any";
+            }else{
+                br.src = br.src.toLowerCase();
             }
             subs.forEach(ar => {
                 if (ar.rules.some(ir => {
@@ -781,6 +783,8 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                     source = ctx.getBody();
                 } else if (ctx.hasQuery(rule.name)) {
                     source = ctx.getQuery();
+                } else if (ctx.getHeaders()[rule.name]) {
+                    source = ctx.getHeaders();
                 }
             } else if (rule.src == "header") {
                 source = ctx.getHeaders();
