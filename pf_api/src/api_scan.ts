@@ -8,8 +8,8 @@
  */
 import * as mq from "mq";
 import * as util from "util";
-import {api_requireBy, api_requireByDir, api_requireByFileList, Facade} from "./api_facade";
 import * as http from "http";
+import {api_requireBy, api_requireByDir, api_requireByFileList, Facade} from "./api_facade";
 
 /**
  * 通过文件夹扫描api注册
@@ -71,8 +71,33 @@ function do_regist(requireFnWrap: Function, opts?: { prefix?: string | string[],
                 return new mq.Chain(api_hdlrs);
             })();
         }
-        if (opts.static && opts.static.length > 0 && pf_reg_scan_suc) {
-            routing.get("*", http.fileHandler(opts.static));
+        if (pf_reg_scan_suc) {
+            let endFn: any;
+            let res404 = new Facade.defaultRes().stat(404, "not found");
+            let res404Headers = {"Content-Type": res404.contentType()};
+            let res404Data = res404.encode();
+            let write404Fn = req => {
+                req.response.statusCode = 404;
+                req.response.statusMessage = "not found";
+                req.response.setHeader(res404Headers);
+                req.response.write(res404Data);
+            }
+            if (opts.static && opts.static.length > 0) {
+                endFn = req => {
+                    let fileFn = http.fileHandler(opts.static);
+                    if (req.method == "GET") {
+                        fileFn.invoke(req);
+                        if (req.response.statusCode == 404) {
+                            write404Fn(req);
+                        }
+                    } else {
+                        write404Fn(req);
+                    }
+                }
+            } else {
+                endFn = write404Fn
+            }
+            routing.all("*", endFn);
         }
     }
     return exportsObj;
