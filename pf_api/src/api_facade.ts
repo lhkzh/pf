@@ -197,6 +197,23 @@ export function current_api_path(def: string = "unknow"): string {
     return ctx ? ctx.getPath() : def;
 }
 
+function format_rule_src(info: ApiParamRule) {
+    if (!info.src) {
+        info.src = "any";//request
+    }
+    info.src = info.src.toLowerCase();
+    if (info.src == "*" || info.src.toLowerCase() == "request") {
+        info.src = "any";//request
+    } else if (info.src == "query") {
+        info.src = "get";
+    } else if (info.src == "body") {
+        info.src = "post";
+    } else if (info.src != "path" && info.src != "socket" && info.src != "header" && info.src != "get" && info.src != "any") {
+        info.src = "post";
+    }
+    return info;
+}
+
 /**
  * 参数规则函数
  * @param info 参数规则配置
@@ -204,17 +221,6 @@ export function current_api_path(def: string = "unknow"): string {
  */
 export function RULE(info: ApiParamRule): ParameterDecorator {
     if (info) {
-        if (!info.src || info.src == "*" || info.src.toLowerCase() == "request") {
-            info.src = "any";//request
-        } else if (info.src == "query") {
-            info.src = "get";
-        } else if (info.src == "body") {
-            info.src = "post";
-        }
-        info.src = info.src.toLowerCase();
-        if (info.src != "path" && info.src != "socket" && info.src != "header" && info.src != "get" && info.src != "any") {
-            info.src = "post";
-        }
         //target=类property，key=方法名，idx=第几个参数
         return function (target: any, key: string, idx: number) {
             var argName = getParamterNames(target[key])[idx];//获取方法的参数名信息
@@ -222,7 +228,7 @@ export function RULE(info: ApiParamRule): ParameterDecorator {
                 info.name = argName;
             }
             info["var"] = argName;
-            target[key]["param$" + idx] = info;
+            target[key]["param$" + idx] = format_rule_src(info);
         };
     }
     return function () {
@@ -635,17 +641,13 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
     delete constructor.prototype["$subs"];//释放内存
     if (baseRules) {
         baseRules.forEach(br => {
-            if(!br.name){
+            if (!br.name) {
                 return;
             }
-            if(!br.type){
+            if (!br.type) {
                 br.type = String;
             }
-            if(!br.src){
-                br.src = "any";
-            }else{
-                br.src = br.src.toLowerCase();
-            }
+            br = format_rule_src(br);
             subs.forEach(ar => {
                 if (ar.rules.some(ir => {
                     return ir.name == br.name && ir.src == br.src;

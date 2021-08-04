@@ -229,14 +229,14 @@ export interface ApiFilterHandler {
 }
 
 //路由-类型参数
-export interface ApiMethod{
+export interface ApiMethod {
     path?: string, //类级别路径
     filter?: ApiFilterHandler, //序列化方式
     res?: new () => AbsRes, //序列化方式
 }
 
 //类标记参数
-export interface ApiClass extends ApiMethod{
+export interface ApiClass extends ApiMethod {
     baseRules?: Array<ApiParamRule>, //通用字项参数规则
 }
 
@@ -251,6 +251,15 @@ export class ApiRunError extends Error {
     }
 }
 
+let debugHook: (ctxInfo: { path: string, query: any, body: any, headers: any, mark: any }, data: any) => void;
+
+/**
+ * 设置-调试用的钩子函数
+ * @param fn
+ */
+export function setApiDebugHook(fn: (ctxInfo: { path: string, query: any, body: any, headers: any, mark: any }, data: any) => void) {
+    debugHook = fn;
+}
 
 //基础上下文
 export abstract class AbsHttpCtx {
@@ -319,10 +328,22 @@ export abstract class AbsHttpCtx {
 
     //执行api后续完结函数
     public abstract runAfters();
+
+    protected debug(obj) {
+        if (debugHook) {
+            debugHook({
+                path: this.getPath(),
+                query: this.getQuery(),
+                body: this.getBody(),
+                headers: this.getHeaders(),
+                mark: this.debugMark
+            }, obj);
+        }
+    }
 }
 
 //http-请求上下文关联
-export class ApiHttpCtx implements AbsHttpCtx {
+export class ApiHttpCtx extends AbsHttpCtx {
     public req: Class_HttpRequest;
     public res: Class_HttpResponse;
     private b: any;
@@ -330,6 +351,7 @@ export class ApiHttpCtx implements AbsHttpCtx {
     public writer: AbsRes & { path?: string };
     public debugMark: { ticket?: string, uin?: any };//调试-输出标记的用户信息
     constructor(req: Class_HttpRequest, pathArg?: string, writer?: AbsRes) {
+        super();
         this.req = req;
         this.res = req.response;
         this.pathArg = pathArg;
@@ -520,18 +542,6 @@ export class ApiHttpCtx implements AbsHttpCtx {
         this.req.end();
     }
 
-    private debug(obj) {
-        if (global["@sys"] && global["@sys"].debug) {
-            let a = this.getHeaders(), h = {},
-                e = ["Host", "Pragma", "User-Agent", "Content-Type", "Referer", "Origin"];
-            for (let k in a) {
-                if (k.startsWith("Accept") || k.startsWith("Cache") || k.startsWith("Upgrade") || e.includes(k) || util.isFunction(a[k])) continue;
-                h[k] = a[k];
-            }
-            console.log("ApiHttpCtx|%s => %s %j", this.getPath(), JSON.stringify(this.debugMark), JSON.stringify(obj), JSON.stringify([this.getBody(), this.getQuery(), h]));
-        }
-    }
-
     //处理cors跨域请求
     public sendCors(orgin: any = "*", alowHeaders: string = "*", exposeHeaders: string = "*"): boolean {
         if (this.req.method != "OPTIONS") {
@@ -611,7 +621,7 @@ export class ApiHttpCtx implements AbsHttpCtx {
 }
 
 //websocket-请求上下文关联
-export class WsApiHttpCtx implements AbsHttpCtx {
+export class WsApiHttpCtx extends AbsHttpCtx {
     private static EMPTY = Object.freeze({});
     private src: any;//[request_id,api_path,params_obj,header_obj]
     private con;//net.Socket
@@ -623,6 +633,7 @@ export class WsApiHttpCtx implements AbsHttpCtx {
     public debugMark: { ticket?: string, uin?: any };//调试-输出标记的用户信息
     //链接socket, 事件消息
     constructor(con, msg: any) {
+        super();
         this.con = con;
         this.src = msg;
         this._path = msg[1];
@@ -732,14 +743,8 @@ export class WsApiHttpCtx implements AbsHttpCtx {
             t.writeInt64BE(this.src[0], 1);
             buf.copy(t, 9);
             this.con.send(t);
-        } else if (global["@sys"] && global["@sys"].debug) {
-            console.log("ApiWsCtx|%s !=>(sendToClosed) %s", this.getPath(), JSON.stringify(this.debugMark));
-        }
-    }
-
-    private debug(obj) {
-        if (global["@sys"] && global["@sys"].debug) {
-            console.log("ApiWsCtx|%s => %s %j", this.getPath(), JSON.stringify(this.debugMark), JSON.stringify(obj), JSON.stringify([this.getBody(), this.getQuery(), this.getHeaders()]));
+        } else {
+            this.debug("sendToClosedWebSocket");
         }
     }
 
