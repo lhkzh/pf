@@ -47,7 +47,7 @@ export function registByDiy(diyRequireApiFileFn: () => void, opts?: { prefix?: s
     }, opts);
 }
 
-function do_regist(requireFnWrap: Function, opts?: { prefix?: string | string[], static?: string }) {
+function do_regist(requireFnWrap: Function, opts?: { prefix?: string | string[] | RegExp, static?: string }) {
     let exportsObj: any = new mq.Routing(), routing: Class_Routing = exportsObj, last_api_routing = Facade._api_routing;
     Facade._api_routing = routing;
     let pf_reg_scan_suc = requireFnWrap();
@@ -56,7 +56,16 @@ function do_regist(requireFnWrap: Function, opts?: { prefix?: string | string[],
     }
     // routing.get("/favicon.ico", <any>(req=>{req.response.redirect(301,"https://fibjs.org/favicon.ico")}));
     if (opts) {
-        if (opts.prefix && opts.prefix.length > 0) {
+        if (opts.prefix ){
+            if (util.isRegExp(opts.prefix)){
+                exportsObj = (() => {
+                    return new mq.Chain([req => {
+                        req.address = req.address.replace(opts.prefix, "");
+                        req.value = req.address;
+                    }, routing]);
+                })();
+            }
+        } else if (opts.prefix["length"]>0) {
             let prefixArr: string[] = util.isArray(opts.prefix) ? <string[]>opts.prefix : [<string>opts.prefix];
             exportsObj = (() => {
                 let api_hdlrs: any[] = [routing];
