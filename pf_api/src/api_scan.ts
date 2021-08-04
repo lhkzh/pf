@@ -18,7 +18,7 @@ import {api_requireBy, api_requireByDir, api_requireByFileList, Facade} from "./
  * @param opts
  * @param requireFileFn
  */
-export function registApiByDir(dir?, fileFilter?: (f: string) => boolean, opts?: { prefix?: string | string[], static?: string }, requireFileFn?: (id: string) => any) {
+export function registApiByDir(dir?, fileFilter?: (f: string) => boolean, opts?: { prefix?: string | string[] | RegExp, static?: string }, requireFileFn?: (id: string) => any) {
     return do_regist(() => {
         return api_requireByDir(dir, fileFilter, requireFileFn);
     }, opts);
@@ -30,7 +30,7 @@ export function registApiByDir(dir?, fileFilter?: (f: string) => boolean, opts?:
  * @param opts
  * @param requireFileFn
  */
-export function registByFileList(allApiFileList: string[], opts?: { prefix?: string | string[], static?: string }, requireFileFn?: (id: string) => any) {
+export function registByFileList(allApiFileList: string[], opts?: { prefix?: string | string[] | RegExp, static?: string }, requireFileFn?: (id: string) => any) {
     return do_regist(() => {
         return api_requireByFileList(allApiFileList, requireFileFn);
     }, opts);
@@ -41,7 +41,7 @@ export function registByFileList(allApiFileList: string[], opts?: { prefix?: str
  * @param diyRequireApiFileFn
  * @param opts
  */
-export function registByDiy(diyRequireApiFileFn: () => void, opts?: { prefix?: string | string[], static?: string }) {
+export function registByDiy(diyRequireApiFileFn: () => void, opts?: { prefix?: string | string[] | RegExp, static?: string }) {
     return do_regist(() => {
         return api_requireBy(diyRequireApiFileFn);
     }, opts);
