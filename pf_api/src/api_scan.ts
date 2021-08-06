@@ -11,6 +11,15 @@ import * as util from "util";
 import * as http from "http";
 import {api_requireBy, api_requireByDir, api_requireByFileList, Facade} from "./api_facade";
 
+export interface regist_opts{
+    //API路径前缀
+    prefix?: string | string[] | RegExp,
+    //API全路径拼装模式还是替换前缀模式
+    prefixFull?:boolean,
+    //静态文件夹目录
+    static?: string
+}
+
 /**
  * 通过文件夹扫描api注册
  * @param dir
@@ -18,7 +27,7 @@ import {api_requireBy, api_requireByDir, api_requireByFileList, Facade} from "./
  * @param opts
  * @param requireFileFn
  */
-export function registApiByDir(dir?, fileFilter?: (f: string) => boolean, opts?: { prefix?: string | string[] | RegExp, static?: string }, requireFileFn?: (id: string) => any) {
+export function registApiByDir(dir?, fileFilter?: (f: string) => boolean, opts?: regist_opts, requireFileFn?: (id: string) => any) {
     return do_regist(() => {
         return api_requireByDir(dir, fileFilter, requireFileFn);
     }, opts);
@@ -30,7 +39,7 @@ export function registApiByDir(dir?, fileFilter?: (f: string) => boolean, opts?:
  * @param opts
  * @param requireFileFn
  */
-export function registByFileList(allApiFileList: string[], opts?: { prefix?: string | string[] | RegExp, static?: string }, requireFileFn?: (id: string) => any) {
+export function registByFileList(allApiFileList: string[], opts?: regist_opts, requireFileFn?: (id: string) => any) {
     return do_regist(() => {
         return api_requireByFileList(allApiFileList, requireFileFn);
     }, opts);
@@ -41,15 +50,20 @@ export function registByFileList(allApiFileList: string[], opts?: { prefix?: str
  * @param diyRequireApiFileFn
  * @param opts
  */
-export function registByDiy(diyRequireApiFileFn: () => void, opts?: { prefix?: string | string[] | RegExp, static?: string }) {
+export function registByDiy(diyRequireApiFileFn: () => void, opts?: regist_opts) {
     return do_regist(() => {
         return api_requireBy(diyRequireApiFileFn);
     }, opts);
 }
 
-function do_regist(requireFnWrap: Function, opts?: { prefix?: string | string[] | RegExp, static?: string }) {
+function do_regist(requireFnWrap: Function, opts?: regist_opts) {
     let exportsObj: any = new mq.Routing(), routing: Class_Routing = exportsObj, last_api_routing = Facade._api_routing;
     Facade._api_routing = routing;
+    if(opts.prefixFull && opts.prefix && opts.prefix["length"]>0){
+        Facade._api_prefixs = Array.isArray(opts.prefix) ? <string[]>opts.prefix : [<string>opts.prefix];
+    }else{
+        Facade._api_prefixs = [];
+    }
     let pf_reg_scan_suc = requireFnWrap();
     if (!pf_reg_scan_suc && last_api_routing != null) {
         routing = last_api_routing;
@@ -64,21 +78,23 @@ function do_regist(requireFnWrap: Function, opts?: { prefix?: string | string[] 
                         req.value = req.address;
                     }, routing]);
                 })();
+            }else if (opts.prefix["length"]>0) {
+                let prefixArr: string[] = Array.isArray(opts.prefix) ? <string[]>opts.prefix : [<string>opts.prefix];
+                if(!opts.prefixFull){
+                    exportsObj = (() => {
+                        let api_hdlrs: any[] = [routing];
+                        prefixArr.forEach(s => {
+                            api_hdlrs.unshift(req => {
+                                if (req.address.startsWith(s)) {
+                                    req.address = req.address.substr(s.length);
+                                    req.value = req.address;
+                                }
+                            });
+                        });
+                        return new mq.Chain(api_hdlrs);
+                    })();
+                }
             }
-        } else if (opts.prefix["length"]>0) {
-            let prefixArr: string[] = util.isArray(opts.prefix) ? <string[]>opts.prefix : [<string>opts.prefix];
-            exportsObj = (() => {
-                let api_hdlrs: any[] = [routing];
-                prefixArr.forEach(s => {
-                    api_hdlrs.unshift(req => {
-                        if (req.address.startsWith(s)) {
-                            req.address = req.address.substr(s.length);
-                            req.value = req.address;
-                        }
-                    });
-                });
-                return new mq.Chain(api_hdlrs);
-            })();
         }
         if (pf_reg_scan_suc) {
             let endFn: any;

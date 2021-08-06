@@ -42,6 +42,7 @@ let current_routing: Class_Routing;
 let old_routing: Class_Routing;
 let current_codeMap: Map<number, string>;
 let old_codeMap: Map<number, string>;
+let current_prefixs: Array<string> = [];
 
 /**
  * api类和方法注册中心
@@ -95,9 +96,14 @@ export class Facade {
         }
     }
 
+    //api路由
+    public static set _api_prefixs(p: Array<string>) {
+        current_prefixs = p || [];
+    }
+
     //是否可以通过websocket数据代理请求
     public static run_by_ws_check(args: any): boolean {
-        //[request_id,params_obj,header_obj,pathArg]
+        //[request_id,pathArg,params_obj,header_obj]
         if (!Array.isArray(args) || args.length < 4 || !Number.isFinite(args[0]) || !(util.isString(args[1]) || Number.isInteger(args[1])) ||
             (args[2] != undefined && !util.isObject(args[2])) || (args[3] != undefined && !util.isObject(args[3]))
         ) {
@@ -124,6 +130,11 @@ export class Facade {
     //是否可以匹配到path的api
     public static hasApiPath(path: string): boolean {
         return old_apis.hasOwnProperty(path);
+    }
+
+    //是否可以匹配到code的api
+    public static hasApiCode(code: number): boolean {
+        return old_codeMap.hasOwnProperty(code);
     }
 }
 
@@ -193,7 +204,7 @@ export function current_api_ctx(This?: any): ApiHttpCtx {
 
 //当前请求的api路径
 export function current_api_path(def: string = "unknow"): string {
-    var ctx = current_api_ctx(null)
+    let ctx = current_api_ctx(null)
     return ctx ? ctx.getPath() : def;
 }
 
@@ -223,7 +234,7 @@ export function RULE(info: ApiParamRule): ParameterDecorator {
     if (info) {
         //target=类property，key=方法名，idx=第几个参数
         return function (target: any, key: string, idx: number) {
-            var argName = getParamterNames(target[key])[idx];//获取方法的参数名信息
+            let argName = getParamterNames(target[key])[idx];//获取方法的参数名信息
             if (!info.name) {//如果规则中未定义 参数来源中的属性名，则用参数名设置上去
                 info.name = argName;
             }
@@ -243,18 +254,27 @@ export function Ip() {
     return RULE({src: "socket", name: "remoteAddress", option: false});
 }
 
+/**
+ * field from path
+ * @param info
+ * @constructor
+ */
 export function Path(info: ApiParamRule = {}) {
     return RULE({...info, src: "path"});
 }
 
+/**
+ * field of header
+ * @param info
+ * @constructor
+ */
 export function Header(info: ApiParamRule = {}) {
     return RULE({...info, src: "header"});
 }
 
 /**
  * field of query
- * @param field
- * @param defaultVal
+ * @param info
  * @constructor
  */
 export function Query(info: ApiParamRule = {}) {
@@ -263,8 +283,7 @@ export function Query(info: ApiParamRule = {}) {
 
 /**
  * field of body
- * @param field
- * @param defaultVal
+ * @param info
  * @constructor
  */
 export function Body(info: ApiParamRule = {}) {
@@ -273,8 +292,7 @@ export function Body(info: ApiParamRule = {}) {
 
 /**
  * field of query or body
- * @param field
- * @param defaultVal
+ * @param info
  * @constructor
  */
 export function Param(info: ApiParamRule = {}) {
@@ -427,7 +445,7 @@ export function REPEATER(apiRule: ApiMethod & { toUrl: string | string[], fixPat
  * @constructor
  */
 export function API(info?: string | ApiClass): ClassDecorator {
-    var map: ApiClass = <ApiClass>info;
+    let map: ApiClass = <ApiClass>info;
     if (util.isString(info)) {
         map = {path: info + ""};
     } else if (info == null) {
@@ -455,7 +473,7 @@ export function WEBSOCKET(path: string = "websocket", opts: { [index: string]: a
     maxPayload: 0x1FFFF
 }, filter?: ApiFilterHandler): ClassDecorator {
     return function (type) {
-        var p = type && type.prototype ? type.prototype : null;
+        let p = type && type.prototype ? type.prototype : null;
         if (p && (p.onMessage || p.onBuffer || p.onText)) {
             p["$subs"] = {length: -1};
             p["$opts"] = opts;
@@ -560,8 +578,8 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
  */
 function websocket_run_wrap(constructor, opts, filter: ApiFilterHandler): any {
     return function (req: Class_HttpRequest, regPartPath: string = "") {
-        var imp = new constructor();
-        var suc = true;
+        let imp = new constructor();
+        let suc = true;
         if (imp.onCheck) {
             suc = imp.onCheck(req, regPartPath);
         } else if (filter) {
@@ -666,13 +684,14 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
         codeMap = current_codeMap;
     let doc_list: { method: string, name: string, path: string, code: number, rules: ApiParamRule[], cms: any }[] = [];
     let tmpMaps = {};
+    let prefixs: Array<string> = Array.isArray(current_prefixs) ? current_prefixs.concat("") : [""];
     for (let i = 0; i < subs.length; i++) {
-        var node = subs[i];
-        var key = node.key;
-        var relativePath = path == '/' && node.path.charAt(0) == '/' ? node.path : path + node.path;
+        let node = subs[i];
+        let key = node.key;
+        let relativePath = path == '/' && node.path.charAt(0) == '/' ? node.path : path + node.path;
         node.path = relativePath;
-        var fn = api_run_wrap(constructor, node.res || res, key, node.filter || filter, relativePath);
-        var ignore_path_case = Facade.ignorePathCase && normal_path_reg.test(relativePath);
+        let fn = api_run_wrap(constructor, node.res || res, key, node.filter || filter, relativePath);
+        let ignore_path_case = Facade.ignorePathCase && normal_path_reg.test(relativePath);
         apis[relativePath] = fn;
         if (ignore_path_case) {
             apis[path_first_lower(relativePath)] = fn;
@@ -689,7 +708,7 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
         });
         current_docs[constructor.name] = {name: constructor.name, cms: fnComments[constructor.name], list: doc_list};
         if (routing) {
-            var fnArr = [];
+            let fnArr = [];
             if (node.method == "ANY") {
                 fnArr.push("post", "get");
                 // routing.post(relativePath, fn);
@@ -711,15 +730,18 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
                 if (!tmpMaps.hasOwnProperty(fnName)) {
                     tmpMaps[fnName] = {};
                 }
-                if (ignore_path_case) {
-                    tmpMaps[fnName][relativePath.toLowerCase()] = fn;
-                    tmpMaps[fnName][path_first_lower(relativePath)] = fn;
-                    tmpMaps[fnName][path_first_upper(relativePath)] = fn;
-                }
-                tmpMaps[fnName][relativePath] = fn;
-                if (node.code && codeMap.has(node.code) == false) {
-                    tmpMaps[fnName]['/' + node.code] = fn;
-                }
+                prefixs.forEach(pre_row => {
+                    tmpMaps[fnName][pre_row + relativePath] = fn;
+                    if (ignore_path_case) {
+                        tmpMaps[fnName][pre_row + relativePath.toLowerCase()] = fn;
+                        tmpMaps[fnName][pre_row + path_first_lower(relativePath)] = fn;
+                        tmpMaps[fnName][pre_row+path_first_upper(relativePath)] = fn;
+                    }
+                    if (node.code && codeMap.has(node.code) == false) {
+                        tmpMaps[fnName]['/' + node.code] = fn;
+                        tmpMaps[fnName][pre_row + '/' + node.code] = fn;
+                    }
+                });
             });
             if (node.code && codeMap.has(node.code) == false) {
                 codeMap.set(node.code, relativePath);
@@ -730,7 +752,7 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
         doc_list.push({method: "get", name: constructor.name, path: path, code: 0, rules: [], cms: fnComments[path]});
         current_docs[constructor.name] = {name: constructor.name, cms: fnComments[constructor.name], list: doc_list};
 
-        var fn = websocket_run_wrap(constructor, constructor.prototype["$opts"], filter);
+        let fn = websocket_run_wrap(constructor, constructor.prototype["$opts"], filter);
         apis[path] = fn;
 
         if (!tmpMaps["get"]) {
@@ -739,7 +761,7 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
         tmpMaps["get"][path] = tmpMaps["get"][path.toLowerCase()] = tmpMaps["get"][path_first_upper(path)] = fn;
     }
     if (routing) {
-        for (var fnName in tmpMaps) {
+        for (let fnName in tmpMaps) {
             routing[fnName](tmpMaps[fnName]);
         }
     }
@@ -756,19 +778,19 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
         /*if(!util.isObject(ctx) || (!(ctx instanceof ApiHttpCtx) && !(ctx instanceof WsApiHttpCtx))){
             return srcFn.apply(this,...arguments);
         }*/
-        // //var ctx:ApiHttpCtx=this[VAR_API_CTX];//coroutine.current()["$api_ctx"];
+        // //let ctx:ApiHttpCtx=this[VAR_API_CTX];//coroutine.current()["$api_ctx"];
         // if(!(ctx instanceof ApiHttpCtx) && !(ctx instanceof WsApiHttpCtx)){
         //     return srcFn.apply(this,Facade,arguments);
         // }
-        // var ctxMethod=ctx.getMethod();
+        // let ctxMethod=ctx.getMethod();
         // if(requestMethod!=ctxMethod && (requestMethod!="ANY" || (ctxMethod!="GET" || !ctx.isHadBody()))){
         //     //请求方法不对
         //     throw new ApiRunError("bad_method", 405);
         // }
-        var args = [], failAt = -1;
-        M:for (var i = 0; i < paramRules.length; i++) {
-            var rule = paramRules[i], type = rule.type;
-            var source: any = null;
+        let args = [], failAt = -1;
+        M:for (let i = 0; i < paramRules.length; i++) {
+            let rule = paramRules[i], type = rule.type;
+            let source: any = null;
             if (rule.src == "get") {
                 source = ctx.getQuery();
             } else if (rule.src.charAt(0) == "p") {//rule.src=="post"||rule.src=="put" ||rule.src=="patch" path?
@@ -825,10 +847,10 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                 args[i] = source.hasOwnProperty(rule.name) ? source[rule.name] : (source[rule.name + '[]'] || source[rule.name]);
             }
             if (args.hasOwnProperty(i)) {
-                var srcArg = args[i];
+                let srcArg = args[i];
                 // args[i]=type(srcArg);
                 if (rule.check_convert != null) {
-                    var cvArg = rule.check_convert(srcArg);
+                    let cvArg = rule.check_convert(srcArg);
                     if (cvArg === null || cvArg === undefined) {
                         failAt = i;
                         break;
@@ -856,7 +878,7 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                         failAt = i;
                         break;
                     }
-                    var size = args[i].body.size();
+                    let size = args[i].body.size();
                     if (
                         (rule.min != undefined && size < rule.min) || (rule.max != undefined && size > rule.max)
                     ) {
@@ -881,7 +903,7 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
         }
         if (failAt > -1) {
             // 缺少参数 or 参数类型错误
-            throw new ApiRunError("bad_arg:" + paramRules[i].name, 403);
+            throw new ApiRunError("bad_arg:" + paramRules[failAt].name, 403);
         } else {
             return srcFn.apply(this, args);
         }
@@ -905,13 +927,13 @@ function route(method: string, pathInfo: string | ApiClass, target: any, key: st
     if (p != "" && p.charAt(0) != '/') {
         p = '/' + p;
     }
-    var srcFn: Function = desc.value;
-    var paramTypes: Array<Function> = Reflect.getMetadata("design:paramtypes", target, key);//参数类型
-    var paramNames: Array<string> = getParamterNames(srcFn);//方法的各参数名
-    var paramRules: Array<ApiParamRule> = [];//方法的各参数规则
-    var args_names: { [index: string]: ApiParamRule } = {};
-    for (var i = 0; i < paramNames.length; i++) {
-        var tmpRule = srcFn["param$" + i];
+    let srcFn: Function = desc.value;
+    let paramTypes: Array<Function> = Reflect.getMetadata("design:paramtypes", target, key);//参数类型
+    let paramNames: Array<string> = getParamterNames(srcFn);//方法的各参数名
+    let paramRules: Array<ApiParamRule> = [];//方法的各参数规则
+    let args_names: { [index: string]: ApiParamRule } = {};
+    for (let i = 0; i < paramNames.length; i++) {
+        let tmpRule = srcFn["param$" + i];
         if (path && path.includes(':')) {
             if (tmpRule == null && path.includes(paramNames[i].toLowerCase())) {
                 tmpRule = {src: "path", name: paramNames[i]};
@@ -964,9 +986,9 @@ function route2(method: string, args: Array<any>): MethodDecorator {
     }
     //@GET(...)
     return function (target: any, key: string, desc: PropertyDescriptor) {
-        // var pathReg=/^[A-Za-z0-9_\-\$\:\@/\*]*$/;
-        // var path=args[0]&&pathReg.test(args[0])?args[0]:null;
-        // var doc=args[1]?args[1]:(path==null?args[0]:null);  // @GET("xx", "return some")
+        // let pathReg=/^[A-Za-z0-9_\-\$\:\@/\*]*$/;
+        // let path=args[0]&&pathReg.test(args[0])?args[0]:null;
+        // let doc=args[1]?args[1]:(path==null?args[0]:null);  // @GET("xx", "return some")
         return route(method, args[0], target, key, desc, Number.isFinite(args[1]) ? args[1] : 0);
     }
 }
