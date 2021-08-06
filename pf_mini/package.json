@@ -1,0 +1,31 @@
+{
+  "name": "pf_mini",
+  "version": "0.0.1",
+  "description": "dev minipro by fibjs",
+  "main": "./dist/index.js",
+  "types": "./@types/index.d.ts",
+  "private": false,
+  "author": "zhh",
+  "homepage": "https://github.com/lhkzh/pf",
+  "license": "MIT",
+  "keywords": [
+    "fibjs",
+    "api"
+  ],
+  "engines": {
+    "fibjs": ">0.32.0"
+  },
+  "dependencies": {
+    "fibjs-multipart": "latest"
+  },
+  "devDependencies": {
+    "@fibjs/types": "latest"
+  },
+  "files": [
+    "@types",
+    "dist",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ]
+}
