@@ -57,11 +57,13 @@ export class Facade {
     //函数执行超时时间限制（MS）
     public static runTimeOut: number = -1;
     //是否启用模糊路径大小写(支持类似api路径节点首字母大小写和全路径大小写 方式)
-    public static ignorePathCase: boolean = true;
+    public static ignorePathCase: boolean = false;
     //是否忽略api的文档（默认false）
     public static ignoreApiDoc: boolean;
-    //错误侦听
-    public static errorHandler: (ctx: AbsHttpCtx, err: Error) => void;
+    //错误侦听函数
+    public static _hookErr: (ctx: AbsHttpCtx, err: Error) => void;
+    //耗时统计函数
+    public static _hookTj: (apiPath: string, costMsTime: number) => void;
 
     //api路径
     public static get _docs(): { [index: string]: DocNode } {
@@ -71,16 +73,6 @@ export class Facade {
     //api注册中心
     public static get _apis(): any {
         return old_apis;
-    }
-
-    //api统计函数
-    public static get _api_tj(): (apiPath: string, costMsTime: number) => void {
-        return global["$api_tj"] || Facade["$api_tj"] || null;//api统计函数
-    }
-
-    //api统计函数
-    public static set _api_tj(f: (apiPath: string, costMsTime: number) => void) {
-        Facade["$api_tj"] = global["$api_tj"] = f;//api统计函数
     }
 
     //api路由
@@ -492,7 +484,7 @@ export function WEBSOCKET(path: string = "websocket", opts: { [index: string]: a
  */
 function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandler, apiPath: string): any {
     let fn = function (request: any/** Class_HttpRequest */, pathArg: string/** 路由匹配后提取的路径座位参数部分 */, markFlag?: number/**模拟请求类型标记-websocket模拟分类用*/, overrideResWriter?: any/**覆盖Res*/, processCtx?: (ctx: AbsHttpCtx) => AbsHttpCtx) {
-        let start_ms = Facade._api_tj != null ? Date.now() : null;//API耗时统计-起始值
+        let start_ms = Facade._hookTj != null ? Date.now() : 0;//API耗时统计-起始值
         let fiber = coroutine.current(), ctx: AbsHttpCtx;
         try {
             if (request.response) {
@@ -531,28 +523,27 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
                         ctx.writer.stat(e.code, e.message).out(ctx);
                     } else {//不明确的错误，只告知错误不告知详情，避免系统敏感信息泄露
                         ctx.writer.stat(500, "server busy").out(ctx);
-                        console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e);
+                        (!Facade._hookErr) && console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e);
                     }
                 }
-                Facade.errorHandler && Facade.errorHandler(ctx, e);
+                Facade._hookErr && call_error_hook(ctx, e);
             } finally {
                 try {
                     if (util.isFunction(imp["$_after"])) {//执行后收尾
                         imp["$_after"](ctx, apiPath, key);
                     }
                 } catch (e2) {
-                    console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e2);
+                    Facade._hookErr ? Facade._hookErr(ctx, e2) : console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e2);
                 }
             }
         } finally {
             try {
                 ctx.runAfters();
             } catch (e3) {
-                console.error("Facade|api_run_afters|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e3);
-                Facade.errorHandler && Facade.errorHandler(ctx, e3);
+                Facade._hookErr ? call_error_hook(ctx, e3) : console.error("Facade|api_run_afters|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e3);
             }
             if (start_ms) {//API耗时统计
-                Facade._api_tj(apiPath, Date.now() - start_ms);
+                Facade._hookTj(apiPath, Date.now() - start_ms);
             }
         }
     }
@@ -567,6 +558,14 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
         }
     } else {
         return fn;
+    }
+}
+
+function call_error_hook(ctx: AbsHttpCtx, err: Error) {
+    try {
+        Facade._hookErr(ctx, err);
+    } catch (ehook) {
+        console.error("Facade|api_run_wrap|%s", ctx.getPath(), ehook);
     }
 }
 
@@ -735,7 +734,7 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
                     if (ignore_path_case) {
                         tmpMaps[fnName][pre_row + relativePath.toLowerCase()] = fn;
                         tmpMaps[fnName][pre_row + path_first_lower(relativePath)] = fn;
-                        tmpMaps[fnName][pre_row+path_first_upper(relativePath)] = fn;
+                        tmpMaps[fnName][pre_row + path_first_upper(relativePath)] = fn;
                     }
                     if (node.code && codeMap.has(node.code) == false) {
                         tmpMaps[fnName]['/' + node.code] = fn;
