@@ -42,7 +42,6 @@ let current_routing: Class_Routing;
 let old_routing: Class_Routing;
 let current_codeMap: Map<number, string>;
 let old_codeMap: Map<number, string>;
-let current_prefixs: Array<string> = [];
 
 /**
  * api类和方法注册中心
@@ -86,11 +85,6 @@ export class Facade {
         if (old_routing == null) {
             old_routing = p;
         }
-    }
-
-    //api路由
-    public static set _api_prefixs(p: Array<string>) {
-        current_prefixs = p || [];
     }
 
     //是否可以通过websocket数据代理请求
@@ -683,7 +677,6 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
         codeMap = current_codeMap;
     let doc_list: { method: string, name: string, path: string, code: number, rules: ApiParamRule[], cms: any }[] = [];
     let tmpMaps = {};
-    let prefixs: Array<string> = Array.isArray(current_prefixs) ? current_prefixs.concat("") : [""];
     for (let i = 0; i < subs.length; i++) {
         let node = subs[i];
         let key = node.key;
@@ -710,41 +703,30 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
             let fnArr = [];
             if (node.method == "ANY") {
                 fnArr.push("post", "get");
-                // routing.post(relativePath, fn);
-                // routing.get(relativePath, fn);
             } else if (node.method == "GET") {
                 fnArr.push("get");
-                // routing.get(relativePath, fn);
             } else if (node.method == "POST") {
                 fnArr.push("post");
-                // routing.post(relativePath, fn);
             } else if (node.method == "put") {
                 fnArr.push("put");
-                // routing.put(relativePath, fn);
             } else if (node.method == "DELETE") {
                 fnArr.push("del");
-                // routing.del(relativePath, fn);
             }
             fnArr.forEach(fnName => {
                 if (!tmpMaps.hasOwnProperty(fnName)) {
                     tmpMaps[fnName] = {};
                 }
-                prefixs.forEach(pre_row => {
-                    tmpMaps[fnName][pre_row + relativePath] = fn;
-                    if (ignore_path_case) {
-                        tmpMaps[fnName][pre_row + relativePath.toLowerCase()] = fn;
-                        tmpMaps[fnName][pre_row + path_first_lower(relativePath)] = fn;
-                        tmpMaps[fnName][pre_row + path_first_upper(relativePath)] = fn;
-                    }
-                    if (node.code && codeMap.has(node.code) == false) {
-                        tmpMaps[fnName]['/' + node.code] = fn;
-                        tmpMaps[fnName][pre_row + '/' + node.code] = fn;
-                    }
-                });
+                if (node.code && codeMap.has(node.code) == false) {
+                    tmpMaps[fnName]['/' + node.code] = fn;
+                    codeMap.set(node.code, relativePath);
+                }
+                tmpMaps[fnName][relativePath] = fn;
+                if (ignore_path_case) {
+                    tmpMaps[fnName][relativePath.toLowerCase()] = fn;
+                    tmpMaps[fnName][path_first_lower(relativePath)] = fn;
+                    tmpMaps[fnName][path_first_upper(relativePath)] = fn;
+                }
             });
-            if (node.code && codeMap.has(node.code) == false) {
-                codeMap.set(node.code, relativePath);
-            }
         }
     }
     if (subs.length < 0 && path) {//websocket
