@@ -11,8 +11,8 @@ import path = require("path");
 
 //获取-调用方法的文件
 export function getCalledFile(curFile) {
-    var stack = getCallerFileNameAndLine().stack.split("\n");
-    var n = stack[stack.length - 1];
+    let stack = getCallerFileNameAndLine().stack.split("\n");
+    let n = stack[stack.length - 1];
     if (n.indexOf('(') > 0) {
         n = n.substring(n.indexOf('(') + 1, n.indexOf('.js:') + 3);
     } else {
@@ -35,12 +35,12 @@ export function parseComments(fileName) {
 
 //链接注释
 export function linkFnComment(fileName) {
-    var fileStr = fs.readTextFile(fileName);
-    var fileLines = fileStr.split("\n").filter(e => {
+    let fileStr = fs.readTextFile(fileName);
+    let fileLines = fileStr.split("\n").filter(e => {
         return e.trim().length > 0;
     });
     fileStr = fileLines.join("\n");
-    var arr = parse(fileStr, null);
+    let arr = parse(fileStr, null);
     if (arr.length > 1 && arr[arr.length - 1].source == arr[0].source) {
         arr.pop();
     }
@@ -48,11 +48,11 @@ export function linkFnComment(fileName) {
         return e.tags.length > 0 && (e.source.includes("@api ") || e.source.includes("@state "));
     });
     // console.log(arr);return;
-    var map = {}, defGroup = "all", defState = "unknow";
+    let map = {}, defGroup = "all", defState = "unknow";
     arr.forEach((e, idx) => {
-        var tagline = e.tags[e.tags.length - 1].line;
-        var line;
-        for (var i = 1; i < 5; i++) {
+        let tagline = e.tags[e.tags.length - 1].line;
+        let line;
+        for (let i = 1; i < 5; i++) {
             line = fileLines[tagline + i].trim();
             if (idx == 0) {
                 if (line.includes("class ")) {
@@ -70,7 +70,7 @@ export function linkFnComment(fileName) {
         }
         // console.log(idx,"["+line+"]")
         if (line.includes("class ") || (line.includes('{') && line.includes('('))) {
-            var is_class = false;
+            let is_class = false;
             if (line.includes("class ")) {
                 is_class = true;
                 line = line.substring(line.indexOf("class ") + 6).trim();
@@ -81,15 +81,15 @@ export function linkFnComment(fileName) {
                     line = line.substring(line.indexOf(" ")).trim();
                 }
             }
-            var groupRow = e.tags.find(t => t.tag == "api");
-            var group = groupRow ? groupRow.name : null;
-            var tags = e.tags.filter(t => {
+            let groupRow = e.tags.find(t => t.tag == "api");
+            let group = groupRow ? groupRow.name : null;
+            let tags = e.tags.filter(t => {
                 return t.tag != "api";
             });
-            var params = [];
-            var returns = [];
-            var tpls = [];
-            var state = defState;
+            let params = [];
+            let returns = [];
+            let tpls = [];
+            let state = defState;
             tags.forEach(t => {
                 if (t.tag.includes("return")) {
                     if (!t.description) t.description = "";

@@ -14,14 +14,14 @@ const CDN_CSS_PRE_CS = CDN_CSS_PRE + "components/";
 
 //删减所有换行符为一行
 export function html2line(source: string): string {
-    var rep = /\n+/g;
-    var repone = /<!--.*?-->/ig;
-    var reptwo = /\/\*.*?\*\//ig;
-    var reptree = /[ ]+</ig;
-    var sourceZero = source.replace(rep, "");
-    var sourceOne = sourceZero.replace(repone, "");
-    var sourceTwo = sourceOne.replace(reptwo, "");
-    var sourceTree = sourceTwo.replace(reptree, "<");
+    let rep = /\n+/g;
+    let repone = /<!--.*?-->/ig;
+    let reptwo = /\/\*.*?\*\//ig;
+    let reptree = /[ ]+</ig;
+    let sourceZero = source.replace(rep, "");
+    let sourceOne = sourceZero.replace(repone, "");
+    let sourceTwo = sourceOne.replace(reptwo, "");
+    let sourceTree = sourceTwo.replace(reptree, "<");
     return sourceTree;
     // return source;
 }
@@ -37,10 +37,10 @@ export function genarateDocsHtml(filterGroup: string, service: string, assetLoca
     if (service) {
         service = decodeURIComponent(service);
         // console.log(JSON.stringify(docs));
-        var foundFn = null;
-        M:for (var k in docs) {
-            var module = docs[k].list;
-            for (var f of module) {
+        let foundFn = null;
+        M:for (let k in docs) {
+            let module = docs[k].list;
+            for (let f of module) {
                 if (f.path == service) {
                     foundFn = f;
                     break M;
@@ -73,20 +73,20 @@ export function genarateDocsHtml(filterGroup: string, service: string, assetLoca
 export function docs_list(project: string, docs: { [index: string]: DocNode }, group?: string, groupNameMap?: { [index: string]: string }, comporess?: boolean, doc_res_dir?: string, curPagePath: string = "docs.php") {
     group = group || "all";
     groupNameMap = groupNameMap || {"user": "客户接口", "server": "内网接口", "dev": "开发工具", "all": "所有"};
-    var group_options = "";
-    for (var k in groupNameMap) {
-        var selected = group == k ? ' selected' : '';
+    let group_options = "";
+    for (let k in groupNameMap) {
+        let selected = group == k ? ' selected' : '';
         group_options += "<option value ='?group=" + k + "' " + selected + ">" + groupNameMap[k] + "</option>";
     }
-    var pre = tpl_pre_list.replace("{$options}", group_options).replace(/\{\{project\}\}/g, project);
-    var parts = [];
-    var No = 0;
-    for (var base in docs) {
-        var node: DocNode = docs[base];
+    let pre = tpl_pre_list.replace("{$options}", group_options).replace(/\{\{project\}\}/g, project);
+    let parts = [];
+    let No = 0;
+    for (let base in docs) {
+        let node: DocNode = docs[base];
         if (!node.list || !node.list.length) {
             continue;
         }
-        var module = `<tr style='border-top: 3px solid #333; border-bottom: 2px solid #ccc; background: #ddd;'>
+        let module = `<tr style='border-top: 3px solid #333; border-bottom: 2px solid #ccc; background: #ddd;'>
                     <td colspan='5'><b>模块：<font color='#2a6496'>{$moduleState}</font></b>
                     <span style='margin-left: 30px;'>{$moduleName}</span></td>
                     <td>{$desc}&nbsp;&nbsp;&nbsp;&nbsp;</td></tr>`;
@@ -94,24 +94,24 @@ export function docs_list(project: string, docs: { [index: string]: DocNode }, g
             .replace("{$moduleName}", node.name)
             .replace("{$moduleDesc}", node.cms ? node.cms.desc : "")
             .replace("{$desc}", node.cms ? node.cms.desc : ""));
-        for (var j = 0; j < node.list.length; j++) {
-            var item = node.list[j];
+        for (let j = 0; j < node.list.length; j++) {
+            let item = node.list[j];
             if (group != "all" && (!item.cms || item.cms.group != group)) {
                 continue;
             }
-            var link = curPagePath + "?s=" + encodeURIComponent(item.path);
+            let link = curPagePath + "?s=" + encodeURIComponent(item.path);
             parts.push(
                 "<tr><td style='text-align: center;'>" + No + "</td><td style='text-align: center;'>" + (item.cms ? item.cms.state : "unknow") + "</td>"
             );
             parts.push("<td><a href='" + link + "' target='_blank'>" + (item.code != 0 ? item.path + "|" + item.code : item.path) + "</a></td>");
             // parts.push("<td>["+(item.cms?item.cms.desc:item.name)+"]</td><td>|"+(item.cms?item.cms.desc:"")+"</td></tr>");
-            var desc_str = (item.cms ? item.cms.desc : "").trim();
-            var desc_title = item.name, desc_more = "";
+            let desc_str = (item.cms ? item.cms.desc : "").trim();
+            let desc_title = item.name, desc_more = "";
             if (desc_str.length > 0) {
                 if (desc_str.indexOf('\n') < 1) {
                     desc_title = desc_str;
                 } else {
-                    var desc_str_arr = desc_str.split('\n');
+                    let desc_str_arr = desc_str.split('\n');
                     desc_title = desc_str_arr.shift();
                     desc_more = desc_str_arr.join(" ");
                 }
@@ -119,7 +119,7 @@ export function docs_list(project: string, docs: { [index: string]: DocNode }, g
             parts.push("<td>[" + desc_title + "]</td><td>|" + desc_more + "</td></tr>");
         }
     }
-    var html = pre + parts.join("\n") + `                    </tbody>
+    let html = pre + parts.join("\n") + `                    </tbody>
                 </table>
             </div>
         </div>
@@ -154,7 +154,7 @@ export function docs_list(project: string, docs: { [index: string]: DocNode }, g
  * @param doc_res_dir
  */
 export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, globalVars = [], doc_res_dir?: string) {
-    var doc = tpl_api_desc.replace(/\{\$service\}/g, (node.code != 0 ? node.path + "|" + node.code : node.path))
+    let doc = tpl_api_desc.replace(/\{\$service\}/g, (node.code != 0 ? node.path + "|" + node.code : node.path))
         .replace(/\{\$descComment\}/g, node.cms ? node.cms.desc : "?")
         .replace(/\{\$url\}/g, url)
         .replace(/\{\$path\}/g, node.path);
@@ -164,14 +164,14 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
         doc = doc.replace("{$request_method}", '<option value="POST">POST</option>');
     }
     //{$param_desc}
-    var rules_arr = [];
-    for (var i = 0; i < node.rules.length; i++) {
-        var rule = node.rules[i];
-        var name = rule.name;
-        var type = rule.type.name.toString();
-        var required = rule.option ? "可选" : "必选";
-        var defval = String(rule.option && rule.hasOwnProperty('default') ? rule.default : "");
-        var others = [];
+    let rules_arr = [];
+    for (let i = 0; i < node.rules.length; i++) {
+        let rule = node.rules[i];
+        let name = rule.name;
+        let type = rule.type.name.toString();
+        let required = rule.option ? "可选" : "必选";
+        let defval = String(rule.option && rule.hasOwnProperty('default') ? rule.default : "");
+        let others = [];
         if (rule.min != undefined) {
             others.push("$>=" + rule.min)
         }
@@ -184,42 +184,42 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
         if (rule.src) {
             others.push("from:" + rule.src);
         }
-        var other_src = others.join(" & ");
-        var desc = rule.desc || (node.cms && node.cms.params ? node.cms.params[rule.name] : "");
+        let other_src = others.join(" & ");
+        let desc = rule.desc || (node.cms && node.cms.params ? node.cms.params[rule.name] : "");
         rules_arr.push(
             "<tr><td>" + name + "</td><td>" + type + "</td><td>" + required + "</td><td>" + defval + "</td><td>" + other_src + "</td><td>" + desc + "</td></tr>"
         )
     }
     doc = doc.replace("{$param_desc}", rules_arr.join("\n"));
     //{$returns}
-    var returns_arr = [];
+    let returns_arr = [];
     if (node.cms && node.cms.returns.length > 0) {
-        for (var i = 0; i < node.cms.returns.length; i++) {
-            var returnNode = node.cms.returns[i];
-            var name = returnNode.name;
-            var type = returnNode.desc.split(" ")[0];
-            var detail = returnNode.desc.substr(type.length).trim();
+        for (let i = 0; i < node.cms.returns.length; i++) {
+            let returnNode = node.cms.returns[i];
+            let name = returnNode.name;
+            let type = returnNode.desc.split(" ")[0];
+            let detail = returnNode.desc.substr(type.length).trim();
             returns_arr.push("<tr><td>" + name + "</td><td>" + type + "</td><td>" + detail + "</td></tr>");
         }
     }
     doc = doc.replace("{$returns}", returns_arr.join("\n"));
 
     //  {$param_input}
-    var ipts_arr = [];
-    var ids_arr = [];
-    for (var i = 0; i < node.rules.length; i++) {
-        var rule = node.rules[i];
-        var name = rule.name;
-        var option = rule.option ? "可选" : "必须";
-        var defval = String(rule.option && rule.hasOwnProperty('default') ? rule.default : "");
-        var desc = rule.desc || "";
-        var ipt = rule.type.name.toString().indexOf("File") > 0 ? "file" : "text";
-        var source = rule.src == "get" ? "GET" : (rule.src == "header" ? "HEADER" : "POST");
+    let ipts_arr = [];
+    let ids_arr = [];
+    for (let i = 0; i < node.rules.length; i++) {
+        let rule = node.rules[i];
+        let name = rule.name;
+        let option = rule.option ? "可选" : "必须";
+        let defval = String(rule.option && rule.hasOwnProperty('default') ? rule.default : "");
+        let desc = rule.desc || "";
+        let ipt = rule.type.name.toString().indexOf("File") > 0 ? "file" : "text";
+        let source = rule.src == "get" ? "GET" : (rule.src == "header" ? "HEADER" : "POST");
         if (rule.src == "path") {
             continue;
         }
-        var ipt_id = "i_" + name;
-        var tmp = "<tr><td>" + name + "</td><td>" + option + "</td>\n" +
+        let ipt_id = "i_" + name;
+        let tmp = "<tr><td>" + name + "</td><td>" + option + "</td>\n" +
             "        <td><input data-source=\"" + source + "\" id=\"" + ipt_id + "\"  name=\"" + name + "\" value=\"" + defval + "\" placeholder=\"" + desc + "\" style=\"width:100%;\" class=\"C_input\" type=\"" + ipt + "\" data-type=\"" + ipt + "\"/></td>\n" +
             "            </tr>";
         if (rule.multline) {
@@ -234,7 +234,7 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
     if (comporess) {
         doc = html2line(doc);
     }
-    var js_doc = js_tpl_desc.replace("{$form_fields}", JSON.stringify(ids_arr)).replace('{$gvars}', JSON.stringify(globalVars));
+    let js_doc = js_tpl_desc.replace("{$form_fields}", JSON.stringify(ids_arr)).replace('{$gvars}', JSON.stringify(globalVars));
     js_doc = doc.replace("{$js_tpl}", js_doc);
     if (doc_res_dir && doc_res_dir.length > 0) {
         while (js_doc.indexOf(CDN_JS_PRE) > 0) {
@@ -295,7 +295,7 @@ const tpl_pre_list = `<!DOCTYPE html>
     <title>{{project}} - 接口列表</title>
     <script>
         function jump_get(t) {
-            var docurl =t.options[t.selectedIndex].value;
+            let docurl =t.options[t.selectedIndex].value;
             document.location.href = docurl;
         }
     </script>
@@ -376,9 +376,9 @@ const tpl_api_desc = `
     </select>
 <input name="request_url" value="{$url}" style="width:500px; height:24px; line-height:18px; font-size:13px;position:relative; padding-left:5px;margin-left: 10px"/>
     <script>
-        var url_base = location.origin+location.pathname.substr(0,location.pathname.lastIndexOf('/')+1);
-        var url_api = "{$path}";
-        var url_full = url_base+url_api;
+        let url_base = location.origin+location.pathname.substr(0,location.pathname.lastIndexOf('/')+1);
+        let url_api = "{$path}";
+        let url_full = url_base+url_api;
         if(url_base.endsWith('/') && url_api.startsWith("/")){
             url_full = url_base+url_api.substr(1);
         }
@@ -403,17 +403,17 @@ const tpl_api_desc = `
 `
 const js_tpl_desc = `    <script type="text/javascript">
         function getData() {
-            var form = new FormData();
-            var hadForm = false;
-            var header = {};
-            var geter = [];
-            var inputIds = {$form_fields};
+            let form = new FormData();
+            let hadForm = false;
+            let header = {};
+            let geter = [];
+            let inputIds = {$form_fields};
             inputIds.forEach(id=>{
-                var e=$("#"+id);
-                var val=e.val();
-                var s=e.data("source");
-                var type=e.data("type")||e[0].type;
-                var name=e.attr("name");
+                let e=$("#"+id);
+                let val=e.val();
+                let s=e.data("source");
+                let type=e.data("type")||e[0].type;
+                let name=e.attr("name");
                 if (type != 'file'){
                     if(s=="POST" || s=="REQUEST"){
                         form.append(name, val);hadForm=true;
@@ -424,11 +424,11 @@ const js_tpl_desc = `    <script type="text/javascript">
                     }
                     setHistory(name, val);
                 } else{
-                    var files = (e.files?e.files:e[0].files)||[];
+                    let files = (e.files?e.files:e[0].files)||[];
                     if (files.length == 1){
                         form.append(name, files[0]);
                     } else{
-                        for (var i = 0; i < files.length; i++) {
+                        for (let i = 0; i < files.length; i++) {
                             form.append(name + '[]', files[i]);
                         }
                     }
@@ -443,12 +443,12 @@ const js_tpl_desc = `    <script type="text/javascript">
             $("#submit").on("click",function(){
                 $("#json_output").html("...");
                 $("#submit").hide();
-                var data = getData();
-                var headers = data.header; 
-                var form = data.form; 
-                var geter=data.get;
-                var url = $("input[name=request_url]").val();
-                var method = $("select").val();
+                let data = getData();
+                let headers = data.header; 
+                let form = data.form; 
+                let geter=data.get;
+                let url = $("input[name=request_url]").val();
+                let method = $("select").val();
                 if(geter.length>0){
                     url = url.indexOf('?')>0 ? url+"&"+geter : url+"?"+geter;
                 }
@@ -457,7 +457,7 @@ const js_tpl_desc = `    <script type="text/javascript">
                     type:method,
                     data:form,
                     beforeSend: function(xhr){
-                        for(var k in headers){
+                        for(let k in headers){
                             xhr.setRequestHeader(k, headers[k]);
                         }
                     },
@@ -467,9 +467,9 @@ const js_tpl_desc = `    <script type="text/javascript">
                     success:function(res,status,xhr){
                         $("#submit").show();
                         // console.log(xhr);
-                        var statu = xhr.status + ' ' + xhr.statusText;
-                        var header = xhr.getAllResponseHeaders();
-                        var _text = "[object XMLDocument]"==res+"" ? encodeHtml(xhr.responseText):JSON.stringify(res, null, 4);
+                        let statu = xhr.status + ' ' + xhr.statusText;
+                        let header = xhr.getAllResponseHeaders();
+                        let _text = "[object XMLDocument]"==res+"" ? encodeHtml(xhr.responseText):JSON.stringify(res, null, 4);
                         $("#json_output").html('<pre style="white-space:pre-wrap;word-wrap:break-word;">' + statu + '<br/>' + header + '<br/>' + _text + '</pre>');
                     },
                     error:function(error){
@@ -490,14 +490,14 @@ const js_tpl_desc = `    <script type="text/javascript">
         }
         function fillHistoryData() {
             $("td input").each(function(index,e) {
-                var val = getHistory(e.name);
+                let val = getHistory(e.name);
                 if (val != "service" && val != "" && val !== undefined) {
                     e.value = val;
                 }
             });
         }
-        var pageId=location.pathname+location.search;
-        var globalVars = {$gvars};
+        let pageId=location.pathname+location.search;
+        let globalVars = {$gvars};
         function getHistory(name){
             if(globalVars && globalVars.indexOf(name)>-1){
                 localStorage.getItem(name);
