@@ -25,7 +25,7 @@ export interface regist_opts {
     //API路径前缀
     prefix?: string | string[],
     //静态文件夹处理
-    static?: regist_static_file | Function | string
+    static?: regist_static_file | string  | Function | Class_Handler
 }
 
 /**
@@ -35,7 +35,7 @@ export interface regist_opts {
  * @param opts
  * @param requireFileFn
  */
-export function registApiByDir(dir?:string, fileFilter?: (f: string) => boolean, opts?: regist_opts, requireFileFn?: (id: string) => any) {
+export function registApiByDir(dir?: string | string[], fileFilter?: (f: string) => boolean, opts?: regist_opts, requireFileFn?: (id: string) => any) {
     return do_regist(() => {
         return api_requireByDir(dir, fileFilter, requireFileFn);
     }, opts);

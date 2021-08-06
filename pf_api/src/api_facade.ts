@@ -33,6 +33,7 @@ import {
 import * as http from "http";
 import {DtoInstanceMake, DtoTypeCheck} from "./api_dto";
 import {getParamterNames} from "./utils";
+import * as process from "process";
 
 let current_apis: { [index: string]: Function } = {};
 let current_docs: any = {};
@@ -130,11 +131,12 @@ export function api_requireBy(requireFn: () => void): boolean {
 }
 
 //扫描dir文件夹下面所有的api文件，注入路由
-export function api_requireByDir(dir?, fileFilter?: (f: string) => boolean, requireFn?: (id: string) => any): boolean {
+export function api_requireByDir(dir?: string | string[], fileFilter?: (f: string) => boolean, requireFn?: (id: string) => any): boolean {
     if (!dir || dir.length < 1) {
-        dir = ["out/", "lib/"];
-    } else if (util.isString(dir)) {
-        dir = [dir];
+        let cwd = process.cwd();
+        dir = [cwd + "/out/", cwd + "/lib/", cwd + "/dist/"];
+    } else {
+        dir = Array.isArray(dir) ? <string[]>dir : [<string>dir];
     }
     let filelist = util.unique(dir).reduce((fileArr, dirNode) => {
         deepScanFile(dirNode, f => {
