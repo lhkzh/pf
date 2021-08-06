@@ -42,13 +42,15 @@ if(process.argv.length<4 || process.argv[2]=="help"){
             console.log('error:'+stderr);
         } else {
             console.log(stdout);
-            console.log("call tsc");
-            require('child_process').exec("tsc", envOptions, function(err,stdout,stderr){
-                if(err) {
-                    console.log('error:'+stderr);
-                } else {
-                    console.log(stdout);
-                }
+            require('child_process').exec("npm update pf_api", envOptions, function(err,stdout,stderr){
+                console.log("call tsc");
+                require('child_process').exec("tsc", envOptions, function(err,stdout,stderr){
+                    if(err) {
+                        console.log('error:'+stderr);
+                    } else {
+                        console.log(stdout);
+                    }
+                });
             });
         }
     });

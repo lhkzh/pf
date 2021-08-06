@@ -38,7 +38,7 @@ class Public {
      * 请求中继转发给其他地址处理
      * @state ok
      */
-    @REPEATER({toUrl:"https://fibjs.org"})
+    @REPEATER({toUrl:"http://127.0.0.1:9080/"})
     public rp(path:string, suc:boolean){
         console.log("repeater",path,suc);
     }
