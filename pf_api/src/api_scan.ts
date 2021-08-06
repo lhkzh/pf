@@ -25,7 +25,7 @@ export interface regist_opts {
     //API路径前缀
     prefix?: string | string[],
     //静态文件夹处理
-    static?: regist_static_file | string  | Function | Class_Handler
+    static?: regist_static_file | string | Function | Class_Handler
 }
 
 /**
@@ -66,44 +66,67 @@ export function registByDiy(diyRequireApiFileFn: () => void, opts?: regist_opts)
 
 function do_regist(requireFnWrap: Function, opts?: regist_opts) {
     let routing: Class_Routing = new mq.Routing(), last_api_routing = Facade._api_routing;
+    let prefix_list = opts.prefix && opts.prefix["length"] > 0 ? (Array.isArray(opts.prefix) ? opts.prefix : [opts.prefix]) : [];
+    prefix_list.forEach(prefix => {
+        prefix && routing.all(prefix, routing);
+    });
     Facade._api_routing = routing;
     let pf_reg_scan_suc = requireFnWrap();
     if (!pf_reg_scan_suc && last_api_routing != null) {
         routing = last_api_routing;
     }
     if (pf_reg_scan_suc) {
+        let filePatter: string;
         if (opts.static) {
+            let fileFn: any;
             if (opts.static["dir"]) {
                 let staticOpt = <regist_static_file>opts.static;
-                let fileFn = http.fileHandler(staticOpt.dir, staticOpt.mimes || {});
-                let fileSufixArr = staticOpt.suffix && staticOpt.suffix.length ?
-                    (Array.isArray(staticOpt.suffix) ? <string[]>staticOpt.suffix : (<string>staticOpt.suffix).split(',')) :
-                    ["html", "htm", "css", "txt", "xml", "js", "json", "jpg", "png", "bmp", "webp", "zip", "font", "ttf", "woff"];
-                routing.get(`*.(${fileSufixArr.join('|')})$`, fileFn);
+                let staticFileFn = http.fileHandler(staticOpt.dir, staticOpt.mimes || {});
+                if (staticOpt.suffix && staticOpt.suffix.length) {
+                    if (Array.isArray(staticOpt.suffix)) {
+                        filePatter = `*.(${(<string[]>staticOpt.suffix).join('|')})$`;
+                    } else if ((<string>staticOpt.suffix).includes("|")) {
+                        filePatter = `*.(${staticOpt.suffix})$`;
+                    } else {
+                        filePatter = `*.(${staticOpt.suffix.replace(/\W/g, '|')})$`;
+                    }
+                } else {
+                    filePatter = `*.([a-z]{2,8})$`;
+                }
             } else if (util.isString(opts.static)) {
                 if (fs.exists(<string>opts.static) && fs.stat(<string>opts.static).isDirectory()) {
-                    routing.get("*", http.fileHandler(<string>opts.static, {}, require("os").os.platform() == "win32"));
+                    let staticFileFn = http.fileHandler(<string>opts.static);
+                    filePatter = `*.([a-z]{2,8})$`;
+                    fileFn = function (req) {
+                        req.value = req.params.join(".");
+                        staticFileFn.invoke(req);
+                    }
                 }
             } else {
-                routing.get("*", <any>opts.static);
+                filePatter = "*";
+                fileFn = opts.static;
+            }
+            if (filePatter && fileFn) {
+                routing.get(filePatter, fileFn);
             }
         }
+
         let res404 = new Facade.defaultRes().stat(404, "not found");
         let res404Headers = {"Content-Type": res404.contentType()};
         let res404Data = res404.encode();
-        routing.all("*", <any>((req) => {
+        let res404Fn = <any>((req) => {
             req.response.statusCode = 404;
             req.response.statusMessage = "not found";
             req.response.setHeader(res404Headers);
             req.response.write(res404Data);
-        }));
-        let prefix_list: string[] = opts.prefix && opts.prefix["length"] > 0 ? (Array.isArray(opts.prefix) ? <string[]>opts.prefix : [<string>opts.prefix]) : [];
-        let real_routing = new mq.Routing();
-        prefix_list.forEach(prefix => {
-            real_routing.all(prefix, routing);
         });
-        real_routing.append(routing);
-        routing = real_routing;
+        if (filePatter != '*') {
+            routing.all("*", res404Fn);
+        }else{
+            routing.post("*", res404Fn);
+            routing.put("*", res404Fn);
+            routing.del("*", res404Fn);
+        }
     }
     return routing;
 }
