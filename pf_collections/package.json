@@ -1,0 +1,30 @@
+{
+  "name": "pf_collections",
+  "version": "0.0.1",
+  "description": "some collections",
+  "main": "./dist/index.js",
+  "types": "./@types/index.d.ts",
+  "private": false,
+  "author": "zhh",
+  "homepage": "https://github.com/lhkzh/pf",
+  "license": "MIT",
+  "keywords": [
+    "fibjs",
+    "collections"
+  ],
+  "engines": {
+    "fibjs": ">0.32.0"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@fibjs/types": "latest"
+  },
+  "files": [
+    "@types",
+    "dist",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ]
+}
