@@ -1,0 +1,32 @@
+{
+  "name": "pf_alicloud_core",
+  "version": "1.0.0",
+  "description": "@alicloud/pop-core implements in fibjs",
+  "main": "./dist/index.js",
+  "types": "./@types/index.d.ts",
+  "private": false,
+  "author": "zhh",
+  "homepage": "https://github.com/lhkzh/pf",
+  "license": "MIT",
+  "keywords": [
+    "fibjs",
+    "alicloud",
+    "sdk"
+  ],
+  "engines": {
+    "fibjs": ">0.32.0"
+  },
+  "devDependencies": {
+    "@fibjs/types": "latest"
+  },
+  "files": [
+    "@types",
+    "dist",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "pf_api": "latest"
+  }
+}
