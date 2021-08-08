@@ -1,4 +1,3 @@
-
 class LinkNode<T> {
     public prev: LinkNode<T>;
     public next: LinkNode<T>;
@@ -32,7 +31,7 @@ export class LinkQueue<T> {
 
     public shift() {
         let r = this._h;
-        if (r != null) {
+        if (r) {
             this._n--;
             this._h = r.next;
             if (this._n == 1) {
@@ -44,7 +43,7 @@ export class LinkQueue<T> {
 
     public pop() {
         let e = this._e;
-        if (e != null) {
+        if (e) {
             this._n--;
             this._e = e.prev;
             if (this._n == 1) {
@@ -58,10 +57,10 @@ export class LinkQueue<T> {
      * 删除一个节点数据，这个比较慢，别随意使用
      * @param item
      */
-    public remove(item:T){
+    public remove(item: T) {
         let current = this._h;
-        while (current !== null) {
-            if (current.data===item) {
+        while (current) {
+            if (current.data === item) {
                 this._n--;
                 let p = current.prev;
                 let n = current.next;
@@ -96,7 +95,7 @@ export class LinkQueue<T> {
      */
     public forEach(f: (e: T) => void) {
         let current = this._h;
-        while (current !== null) {
+        while (current) {
             f(current.data);
             current = current.next;
         }
@@ -108,7 +107,7 @@ export class LinkQueue<T> {
      */
     public reverseForEach(f: (e: T) => void) {
         let current = this._e;
-        while (current !== null) {
+        while (current) {
             f(current.data);
             current = current.prev;
         }
@@ -133,7 +132,7 @@ export class LinkQueue<T> {
      */
     public trim(f: (e: T) => boolean) {
         let current = this._h;
-        while (current !== null) {
+        while (current) {
             if (!f(current.data)) {
                 this._n--;
                 let p = current.prev;
@@ -156,7 +155,7 @@ export class LinkQueue<T> {
 
     * values() {
         let current = this._h;
-        while (current !== null) {
+        while (current) {
             yield current.data;
             current = current.next;
         }

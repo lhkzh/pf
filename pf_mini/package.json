@@ -1,6 +1,6 @@
 {
   "name": "pf_mini",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "dev minipro by fibjs",
   "main": "./dist/index.js",
   "types": "./@types/index.d.ts",
@@ -15,9 +15,6 @@
   "engines": {
     "fibjs": ">0.32.0"
   },
-  "dependencies": {
-    "fibjs-multipart": "latest"
-  },
   "devDependencies": {
     "@fibjs/types": "latest"
   },
@@ -27,5 +24,8 @@
     "package.json",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "dependencies": {
+    "fibjs-multipart": "^1.0.0"
+  }
 }

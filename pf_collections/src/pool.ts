@@ -9,7 +9,7 @@ import {LinkQueue} from "./queue";
  */
 export function destory_pool_item(e: { close?: () => void, dispose?: () => void, destory?: () => void, clear?: () => void }, err?: boolean) {
     if (e[KEY_LINK_BACK]) {
-        e[KEY_LINK_BACK](err);
+        e[KEY_LINK_BACK](e,err);
         return;
     }
     try {
@@ -92,6 +92,7 @@ export class SimplePool<T> {
         };
         this._back = this._back.bind(this);
         this.check = this.check.bind(this);
+        this.dispose = this.dispose.bind(this);
     }
 
     public get ver(): string {
@@ -258,7 +259,7 @@ export class SimplePool<T> {
         T._alive = true;
         T._checkTimer && clearInterval(T._checkTimer);
         T._num = -0xffff;
-        let _drop_fn = (tryNum) => {
+        let _drop_fn = (T, tryNum) => {
             while (T._waits.size > 0) {
                 try {
                     T._notify();
@@ -277,6 +278,6 @@ export class SimplePool<T> {
             list.forEach(e => destory_pool_item(e));
             tryNum > 0 && coroutine.start(_drop_fn, --tryNum);
         }
-        coroutine.start(_drop_fn, 3);
+        coroutine.start(_drop_fn, T,3);
     }
 }
