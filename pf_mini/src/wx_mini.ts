@@ -31,7 +31,10 @@ export class auth {
         let url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appid}&secret=${secret}&js_code=${code}&grant_type=authorization_code`;
         let res = http.get(url);
         if (res.statusCode == 200) {
-            let body = res.json();
+            let body = res.data;
+            if(Buffer.isBuffer(body)){
+                body = JSON.parse(body.toString());
+            }
             if (body.openid) {
                 return body;
             }
