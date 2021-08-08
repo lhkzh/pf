@@ -276,7 +276,7 @@ export class SimplePool<T> {
             let list = T._pool;
             T._pool = new LinkQueue<T>();
             list.forEach(e => destory_pool_item(e));
-            tryNum > 0 && coroutine.start(_drop_fn, --tryNum);
+            tryNum > 0 && coroutine.start(_drop_fn, T, --tryNum);
         }
         coroutine.start(_drop_fn, T,3);
     }
