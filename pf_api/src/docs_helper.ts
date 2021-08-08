@@ -211,6 +211,7 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
         let rule = node.rules[i];
         let name = rule.name;
         let option = rule.option ? "可选" : "必须";
+        let required = rule.option ? 1:0;
         let defval = String(rule.option && rule.hasOwnProperty('default') ? rule.default : "");
         let desc = rule.desc || "";
         let ipt = rule.type.name.toString().indexOf("File") > 0 ? "file" : "text";
@@ -220,11 +221,11 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
         }
         let ipt_id = "i_" + name;
         let tmp = "<tr><td>" + name + "</td><td>" + option + "</td>\n" +
-            "        <td><input data-source=\"" + source + "\" id=\"" + ipt_id + "\"  name=\"" + name + "\" value=\"" + defval + "\" placeholder=\"" + desc + "\" style=\"width:100%;\" class=\"C_input\" type=\"" + ipt + "\" data-type=\"" + ipt + "\"/></td>\n" +
+            "        <td><input data-required='"+required+"' data-source=\"" + source + "\" id=\"" + ipt_id + "\"  name=\"" + name + "\" value=\"" + defval + "\" placeholder=\"" + desc + "\" style=\"width:100%;\" class=\"C_input\" type=\"" + ipt + "\" data-type=\"" + ipt + "\"/></td>\n" +
             "            </tr>";
         if (rule.multline) {
             tmp = "<tr><td>" + name + "</td><td>" + option + "</td>\n" +
-                "        <td><textarea data-source=\"" + source + "\" id=\"" + ipt_id + "\"  name=\"" + name + "\" value=\"" + defval + "\" placeholder=\"" + desc + "\" style=\"width:100%;\" class=\"C_input\" type=\"" + ipt + "\" data-type=\"" + ipt + "\"></textarea></td>\n" +
+                "        <td><textarea data-required='"+required+"' data-source=\"" + source + "\" id=\"" + ipt_id + "\"  name=\"" + name + "\" value=\"" + defval + "\" placeholder=\"" + desc + "\" style=\"width:100%;\" class=\"C_input\" type=\"" + ipt + "\" data-type=\"" + ipt + "\"></textarea></td>\n" +
                 "            </tr>";
         }
         ipts_arr.push(tmp);
@@ -412,13 +413,19 @@ const js_tpl_desc = `    <script type="text/javascript">
                 let e=$("#"+id);
                 let val=e.val();
                 let s=e.data("source");
+                let required=e.data("required")=="1";
                 let type=e.data("type")||e[0].type;
                 let name=e.attr("name");
                 if (type != 'file'){
                     if(s=="POST" || s=="REQUEST"){
-                        form.append(name, val);hadForm=true;
+                        if(!required || val!=""){
+                            form.append(name, val);
+                        }
+                        hadForm=true;
                     }else if(s=="GET"){
-                        geter.push(name+"="+encodeURIComponent(val));
+                        if(!required || val!=""){
+                            geter.push(name+"="+encodeURIComponent(val));
+                        }
                     }else if(s=="HEADER"){
                         header[name] = val;
                     }
