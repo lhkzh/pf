@@ -12,11 +12,17 @@ export class LinkQueue<T> {
     private _e: LinkNode<T>;
     private _n: number;
 
-    constructor() {
+    constructor(cs: Array<T> | LinkQueue<T> = null) {
         this._n = 0;
+        cs && this.append(cs);
     }
 
-    public add(row: T) {
+    public append(cs: Array<T> | LinkQueue<T> = null) {
+        cs.forEach(e => this.push(e));
+        return this;
+    }
+
+    public push(row: T) {
         let node = new LinkNode(row);
         if (!this._h) {
             this._h = node;
@@ -26,7 +32,24 @@ export class LinkQueue<T> {
             this._e.next = node;
             this._e = node;
         }
-        this._n++;
+        return this._incr();
+    }
+
+    public unshift(row: T) {
+        let node = new LinkNode(row);
+        if (!this._h) {
+            this._h = node;
+            this._e = node;
+        } else {
+            node.next = this._h;
+            this._h.prev = node;
+            this._h = node;
+        }
+        return this._incr();
+    }
+
+    protected _incr() {
+        return ++this._n;
     }
 
     public shift() {
@@ -121,7 +144,7 @@ export class LinkQueue<T> {
         let q: LinkQueue<T> = Object.create(this);
         q.clear();
         this.forEach(e => {
-            f(e) && q.add(e);
+            f(e) && q.push(e);
         });
         return q;
     }
@@ -169,27 +192,39 @@ export class LinkQueue<T> {
 export class BlockLinkQueue<T> extends LinkQueue<T> {
     private evt: Class_Event;
 
-    constructor() {
-        super();
+    constructor(cs: Array<T> | LinkQueue<T> = null) {
+        super(cs);
         this.evt = new (require("coroutine").Event)();
     }
 
-    public add(row) {
-        super.add(row);
-        this.evt.set();
+    protected _incr() {
+        try {
+            return super._incr();
+        } finally {
+            this.evt.set();
+        }
     }
 
-    public take() {
+    public take(): T {
         if (this.size > 0) {
             return this.pop();
         }
-        this.evt.clear();
-        this.evt.wait();
-        return this.pop();
+        if (this.evt) {
+            this.evt.clear();
+            this.evt.wait();
+        } else {
+            throw new Error("interrupt:queue had destory")
+        }
+        return this.take();
     }
 
-    public clear() {
-        super.clear();
-        this.evt.set();
+    public destory() {
+        let evt = this.evt;
+        if (evt == null) {
+            return;
+        }
+        this.evt = null;
+        this.clear();
+        evt.set();
     }
 }

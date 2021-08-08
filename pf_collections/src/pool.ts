@@ -9,7 +9,7 @@ import {LinkQueue} from "./queue";
  */
 export function destory_pool_item(e: { close?: () => void, dispose?: () => void, destory?: () => void, clear?: () => void }, err?: boolean) {
     if (e[KEY_LINK_BACK]) {
-        e[KEY_LINK_BACK](e,err);
+        e[KEY_LINK_BACK](e, err);
         return;
     }
     try {
@@ -107,9 +107,9 @@ export class SimplePool<T> {
         return this._alive;
     }
 
-    public toStatJson(){
+    public toStatJson() {
         return {
-            name:this._name, ver:this._ver, num:this._num, pool:this._pool.size, wait:this._waits.size
+            name: this._name, ver: this._ver, num: this._num, pool: this._pool.size, wait: this._waits.size
         }
     }
 
@@ -161,11 +161,13 @@ export class SimplePool<T> {
         let drops = [];
         list.forEach(d => {
             if (!this._checkOk(d, false, nowTs)) {
-                drops.push(d);
+                if (!d[KEY_LINK_BACK]) {
+                    drops.push(d);
+                }
             }
         });
         if (drops.length) {
-            if(this._alive){
+            if (this._alive) {
                 list.trim(e => drops.includes(e));
                 this._num -= drops.length;
                 try {
@@ -183,7 +185,7 @@ export class SimplePool<T> {
     private _wait() {
         if (this._waits.size || (this._num > this._limitMax && this._pool.size < 1)) {
             let evt = new coroutine.Event();
-            this._waits.add(evt);
+            this._waits.push(evt);
             // let t=Date.now();console.warn("pool_wait--begin...",this.name);
             evt.wait();
             // console.warn("pool_wait--over...",this.name,Date.now()-t,this._num);
@@ -210,7 +212,7 @@ export class SimplePool<T> {
         } else {
             delete item[KEY_LINK_BACK];
             item[KEY_LINK_TIME_LAST] = Date.now();
-            this._pool.add(item);
+            this._pool.push(item);
             // console.warn("pool--",this.name,this._num,this._pool.length)
             this._notify();
         }
@@ -224,7 +226,7 @@ export class SimplePool<T> {
         if (e) {
             e[KEY_LINK_BACK] = this._back;
             if (this._randomBorrow > 0 && Math.random() < this._randomBorrow && this._checkOk(e, true) == false) {
-                this._num --;
+                this._num--;
                 delete e[KEY_LINK_BACK];
                 destory_pool_item(e);
             } else {
@@ -242,7 +244,7 @@ export class SimplePool<T> {
             let e = this._fnCreate();
             e[KEY_LINK_TIME_LAST] = e[KEY_LINK_TIME_INIT] = Date.now();
             if (idel) {
-                this._pool.add(e);
+                this._pool.push(e);
             }
             return e;
         } catch (err) {
@@ -278,6 +280,6 @@ export class SimplePool<T> {
             list.forEach(e => destory_pool_item(e));
             tryNum > 0 && coroutine.start(_drop_fn, T, --tryNum);
         }
-        coroutine.start(_drop_fn, T,3);
+        coroutine.start(_drop_fn, T, 3);
     }
 }
