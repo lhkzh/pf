@@ -77,8 +77,8 @@ function do_regist(requireFnWrap: Function, opts?: regist_opts) {
     }
     if (pf_reg_scan_suc) {
         let filePatter: string;
+        let fileFn: Function;
         if (opts.static) {
-            let fileFn: any;
             if (opts.static["dir"]) {
                 let staticOpt = <regist_static_file>opts.static;
                 let staticFileFn = http.fileHandler(staticOpt.dir, staticOpt.mimes || {});
@@ -93,6 +93,10 @@ function do_regist(requireFnWrap: Function, opts?: regist_opts) {
                 } else {
                     filePatter = `*.([a-z]{2,8})$`;
                 }
+                fileFn = function (req) {
+                    req.value = req.params.join(".");
+                    staticFileFn.invoke(req);
+                }
             } else if (util.isString(opts.static)) {
                 if (fs.exists(<string>opts.static) && fs.stat(<string>opts.static).isDirectory()) {
                     let staticFileFn = http.fileHandler(<string>opts.static);
@@ -104,10 +108,7 @@ function do_regist(requireFnWrap: Function, opts?: regist_opts) {
                 }
             } else {
                 filePatter = "*";
-                fileFn = opts.static;
-            }
-            if (filePatter && fileFn) {
-                routing.get(filePatter, fileFn);
+                fileFn = <any>opts.static;
             }
         }
 
@@ -120,9 +121,30 @@ function do_regist(requireFnWrap: Function, opts?: regist_opts) {
             req.response.setHeader(res404Headers);
             req.response.write(res404Data);
         });
-        if (filePatter != '*') {
+
+        if (filePatter != '*' || !fileFn) {
+            if (fileFn) {
+                routing.get(filePatter, <any>fileFn);
+            }
             routing.all("*", res404Fn);
-        }else{
+        } else {
+            if (util.isFunction(fileFn)) {
+                routing.get("*", <any>(req => {
+                    fileFn(req);
+                    if (req.response.statusCode == 404) {
+                        res404Fn(req);
+                    }
+                }));
+            } else if (fileFn instanceof mq.Handler) {
+                routing.get("*", <any>(req => {
+                    (<Class_Handler>(<any>fileFn)).invoke(req);
+                    if (req.response.statusCode == 404) {
+                        res404Fn(req);
+                    }
+                }));
+            } else {
+                routing.get("*", <any>fileFn);
+            }
             routing.post("*", res404Fn);
             routing.put("*", res404Fn);
             routing.del("*", res404Fn);

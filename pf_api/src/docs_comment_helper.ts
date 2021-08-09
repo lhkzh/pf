@@ -96,7 +96,7 @@ export function linkFnComment(fileName) {
                     returns.push({name: t.name, desc: t.description});
                 } else if (t.tag.includes("param")) {
                     params[t.name] = t.description;
-                } else if (t.tag.includes("examples") || t.tag.includes("tpl")) {
+                } else if (t.tag.includes("examples") || t.tag.includes("tpl") || t.tag.includes("example")) {
                     tpls.push({name: t.name, desc: t.description});
                 } else if (t.tag.includes("stat")) {
                     state = t.name;

@@ -163,37 +163,55 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
     } else {
         doc = doc.replace("{$request_method}", '<option value="POST">POST</option>');
     }
+    let ignore_srcs = ["socket","server","path","$ctx","$headers","$body"];
+    let ignore_headers = ["host","Host","Content-Type","content-type","User-Agent","user-agent"];
+    let req_rules = node.rules ? node.rules.filter(e=>{
+        if(e.src){
+            if(ignore_srcs.includes(e.src)){
+                return false;
+            }
+            if(e.src=="header" && ignore_headers.includes(e.name)){
+                return false;
+            }
+        }
+        return true;
+    }):[];
     //{$param_desc}
-    let rules_arr = [];
-    for (let i = 0; i < node.rules.length; i++) {
-        let rule = node.rules[i];
-        let name = rule.name;
-        let type = rule.type.name.toString();
-        let required = rule.option ? "可选" : "必选";
-        let defval = String(rule.option && rule.hasOwnProperty('default') ? rule.default : "");
-        let others = [];
-        if (rule.min != undefined) {
-            others.push("$>=" + rule.min)
+    if (req_rules.length) {
+        let rules_arr = [];
+        for (let i = 0; i < req_rules.length; i++) {
+            let rule = req_rules[i];
+            let name = rule.name;
+            let type = rule.type.name.toString();
+            let required = rule.option ? "可选" : "必选";
+            let defval = String(rule.option && rule.hasOwnProperty('default') ? rule.default : "");
+            let others = [];
+            if (rule.min != undefined) {
+                others.push("$>=" + rule.min)
+            }
+            if (rule.max != undefined) {
+                others.push("$<=" + rule.max);
+            }
+            if (Array.isArray(rule.in)) {
+                others.push("in[" + rule.in.join(",") + "]");
+            }
+            if (rule.src) {
+                others.push("from:" + rule.src);
+            }
+            let other_src = others.join(" & ");
+            let desc = rule.desc || (node.cms && node.cms.params ? node.cms.params[rule.name] : "");
+            rules_arr.push(
+                "<tr><td>" + name + "</td><td>" + type + "</td><td>" + required + "</td><td>" + defval + "</td><td>" + other_src + "</td><td>" + desc + "</td></tr>"
+            )
         }
-        if (rule.max != undefined) {
-            others.push("$<=" + rule.max);
-        }
-        if (Array.isArray(rule.in)) {
-            others.push("in[" + rule.in.join(",") + "]");
-        }
-        if (rule.src) {
-            others.push("from:" + rule.src);
-        }
-        let other_src = others.join(" & ");
-        let desc = rule.desc || (node.cms && node.cms.params ? node.cms.params[rule.name] : "");
-        rules_arr.push(
-            "<tr><td>" + name + "</td><td>" + type + "</td><td>" + required + "</td><td>" + defval + "</td><td>" + other_src + "</td><td>" + desc + "</td></tr>"
-        )
+        doc = doc.replace("{$param_desc}", rules_arr.join("\n"));
+        doc = doc.replace("{$param_descStyle}", "display:block");
+    } else {
+        doc = doc.replace("{$param_descStyle}", "display:none");
     }
-    doc = doc.replace("{$param_desc}", rules_arr.join("\n"));
     //{$returns}
-    let returns_arr = [];
     if (node.cms && node.cms.returns.length > 0) {
+        let returns_arr = [];
         for (let i = 0; i < node.cms.returns.length; i++) {
             let returnNode = node.cms.returns[i];
             let name = returnNode.name;
@@ -201,17 +219,30 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
             let detail = returnNode.desc.substr(type.length).trim();
             returns_arr.push("<tr><td>" + name + "</td><td>" + type + "</td><td>" + detail + "</td></tr>");
         }
+        doc = doc.replace("{$returns}", returns_arr.join("\n"));
+        doc = doc.replace("{$returnsStyle}", "display:block");
+    } else {
+        doc = doc.replace("{$returnsStyle}", "display:none");
     }
-    doc = doc.replace("{$returns}", returns_arr.join("\n"));
+    //{$returnTpls}
+    if (node.cms && node.cms.tpls && node.cms.tpls.length) {
+        let rt_tpls = node.cms.tpls.map(e => {
+            return `<li>${e.name} - ${e.desc}</li>`;
+        }).join("");
+        doc = doc.replace('{$returnTpls}', rt_tpls);
+        doc = doc.replace('{$returnTplsStyle}', "display:block");
+    } else {
+        doc = doc.replace('{$returnTplsStyle}', "display:none");
+    }
 
     //  {$param_input}
     let ipts_arr = [];
     let ids_arr = [];
-    for (let i = 0; i < node.rules.length; i++) {
-        let rule = node.rules[i];
+    for (let i = 0; i < req_rules.length; i++) {
+        let rule = req_rules[i];
         let name = rule.name;
         let option = rule.option ? "可选" : "必须";
-        let required = rule.option ? 1:0;
+        let required = rule.option ? 1 : 0;
         let defval = String(rule.option && rule.hasOwnProperty('default') ? rule.default : "");
         let desc = rule.desc || "";
         let ipt = rule.type.name.toString().indexOf("File") > 0 ? "file" : "text";
@@ -221,17 +252,18 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
         }
         let ipt_id = "i_" + name;
         let tmp = "<tr><td>" + name + "</td><td>" + option + "</td>\n" +
-            "        <td><input data-required='"+required+"' data-source=\"" + source + "\" id=\"" + ipt_id + "\"  name=\"" + name + "\" value=\"" + defval + "\" placeholder=\"" + desc + "\" style=\"width:100%;\" class=\"C_input\" type=\"" + ipt + "\" data-type=\"" + ipt + "\"/></td>\n" +
+            "        <td><input data-required='" + required + "' data-source=\"" + source + "\" id=\"" + ipt_id + "\"  name=\"" + name + "\" value=\"" + defval + "\" placeholder=\"" + desc + "\" style=\"width:100%;\" class=\"C_input\" type=\"" + ipt + "\" data-type=\"" + ipt + "\"/></td>\n" +
             "            </tr>";
         if (rule.multline) {
             tmp = "<tr><td>" + name + "</td><td>" + option + "</td>\n" +
-                "        <td><textarea data-required='"+required+"' data-source=\"" + source + "\" id=\"" + ipt_id + "\"  name=\"" + name + "\" value=\"" + defval + "\" placeholder=\"" + desc + "\" style=\"width:100%;\" class=\"C_input\" type=\"" + ipt + "\" data-type=\"" + ipt + "\"></textarea></td>\n" +
+                "        <td><textarea data-required='" + required + "' data-source=\"" + source + "\" id=\"" + ipt_id + "\"  name=\"" + name + "\" value=\"" + defval + "\" placeholder=\"" + desc + "\" style=\"width:100%;\" class=\"C_input\" type=\"" + ipt + "\" data-type=\"" + ipt + "\"></textarea></td>\n" +
                 "            </tr>";
         }
         ipts_arr.push(tmp);
         ids_arr.push(ipt_id);
     }
     doc = doc.replace("{$param_input}", ipts_arr.join("\n"));
+    doc = doc.replace("{$param_inputStyle}", ipts_arr.length > 0 ? "display:block" : "display:none");
     if (comporess) {
         doc = html2line(doc);
     }
@@ -342,28 +374,38 @@ const tpl_api_desc = `
                     {$descComment}
                 </div>
             </div>
-            <h5>接口参数</h5>
-            <table class="ui red celled striped table" >
-                <thead>
-                    <tr><th>参数名字</th><th>类型</th><th>是否必须</th><th>默认值</th><th>其他</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    {$param_desc}
-                </tbody>
-            </table>
-            <h5>返回结果</h5>
-            <table class="ui green celled striped table" >
-                <thead>
-                    <tr><th>返回字段</th><th>类型</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    {$returns}
-                </tbody>
-            </table>
+<div style="{$param_descStyle}">
+    <h5>接口参数</h5>
+    <table class="ui red celled striped table" >
+        <thead>
+            <tr><th>参数名字</th><th>类型</th><th>是否必须</th><th>默认值</th><th>其他</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            {$param_desc}
+        </tbody>
+    </table>
+</div>
+<div style="{$returnsStyle}">
+    <h5>返回结果</h5>
+    <table class="ui green celled striped table" >
+        <thead>
+            <tr><th>返回字段</th><th>类型</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            {$returns}
+        </tbody>
+    </table>
+</div>
+<div style="{$returnTplsStyle}">
+    <h5>返回示例</h5>
+    <ul class="ui green celled striped table" >
+        {$returnTpls}
+    </ul>
+</div>
 <h5>
     请求模拟 &nbsp;&nbsp;
 </h5>
-<table class="ui green celled striped table" >
+<table class="ui green celled striped table" style="{$param_inputStyle}" >
     <thead>
         <tr><th>参数</th><th>是否必填</th><th>值</th></tr>
     </thead>
