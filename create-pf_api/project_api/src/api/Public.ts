@@ -11,6 +11,8 @@ class Public {
      * ping
      * 简单的ping/pong
      * @state dev
+     * @returns string data
+     * @tpl ok {"code":0,"data":"pong"}
      */
     @ANY()
     public ping(){
@@ -19,18 +21,37 @@ class Public {
     /**
      * 参数打招呼
      * @state ok
+     * @returns string data
+     * @tpl ok {"code":0,"data":"hi,Jenny"}
      */
-    @ANY("/hello")
-    public hi(nick:string){
+    @ANY("/testAny")
+    public testAny(nick:string){
         return "hi, "+nick;
     }
     /**
      * 获取路径参数
      * @state ok
+     * @returns string data
+     * @tpl ok {"code":0,"data":"hi,PathNode321"}
      */
-    @ANY("/pathArg/([a-zA-Z0-9]+)")
-    public pathArg(@RULE({src:"PATH"})key:string){
+    @ANY("/testPathArg/([a-zA-Z0-9]+)")
+    public testPathArg(@RULE({src:"PATH"})key:string){
         return key;
+    }
+
+    /**
+     * 请求自己IP
+     * 返回请求者IP和当前系统时间
+     * @state ok
+     * @returns object _.code 返回的接口状态码(body.code)
+     * @returns object _.data 返回字段的(body.data)
+     * @returns string _.data.ip 自己的IP(body.data.ip)
+     * @returns number _.data.now 当前系统毫秒时间(body.data.now)
+     * @tpl ok {"code":0,"data":"hi,Jenny"}
+     */
+    @GET()
+    public getIP(@Ip() cip:string, @Header({name:"User-Agent"}) ua:string){
+        return {ip:cip, now:Date.now()};
     }
 
     /**
@@ -39,13 +60,8 @@ class Public {
      * @state ok
      */
     @REPEATER({toUrl:"http://127.0.0.1:9080/"})
-    public rp(path:string, suc:boolean){
+    public testRp(path:string, suc:boolean){
         console.log("repeater",path,suc);
-    }
-
-    @GET()
-    public getCip(@Ip() cip:string, @Header({name:"User-Agent"}) ua:string){
-        return cip+" "+ua;
     }
 
     /**
