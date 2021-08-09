@@ -1,6 +1,6 @@
 {
   "name": "pf_collections",
-  "version": "0.0.1",
+  "version": "0.0.6",
   "description": "some collections",
   "main": "./dist/index.js",
   "types": "./@types/index.d.ts",

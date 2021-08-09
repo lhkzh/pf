@@ -8,7 +8,13 @@
  - 支持热更新    
  - 不建议使用cookie和session这种授权体系    
 
-
+**模版创建用例**
+-
+<pre>
+npm init pf_api normal MyApiProject
+cd MyApiProject    
+npm start  
+</pre>
  
 **更多可配套组件**  
  - 
@@ -17,13 +23,7 @@
  - [fibjs-nats 如果你需要调用nats](https://www.npmjs.com/package/fibjs-nats)    
  - [fibjs-memcache 如果你需要调用memcache](https://www.npmjs.com/package/fibjs-memcache)    
  - [fibjs-mail 方便你组装有邮件发送](https://www.npmjs.com/package/fibjs-mail)    
- - [fibjs-multipart 方便你组装form表单](https://www.npmjs.com/package/fibjs-multipart)      
+ - [fibjs-multipart 方便你组装form表单](https://www.npmjs.com/package/fibjs-multipart)  
+ - [pf_mini 方便-小程序小游戏-接口开发](https://www.npmjs.com/package/pf_mini)
  - [更多宝库-fibjs官网](https://fibjs.org/docs/awesome/readme.md.html)    
-
-**模版创建用例**
--
-<pre>
-npm init pf_api normal MyApiProject
-cd MyApiProject    
-npm start  
-</pre>
+ 
