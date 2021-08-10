@@ -59,6 +59,7 @@ export class SimplePool<T> {
     private _randomBorrow: number;
     //计时器：主动检测资源活性
     private _checkTimer: Class_Timer;
+    private _checkIng: boolean;
 
     //当前资源个数
     private _num: number;
@@ -156,28 +157,36 @@ export class SimplePool<T> {
      * 对池内资源进行检测
      */
     public check() {
-        let nowTs = Date.now();
-        let list = this._pool;
-        let drops = [];
-        list.forEach(d => {
-            if (!this._checkOk(d, false, nowTs)) {
-                if (!d[KEY_LINK_BACK]) {
-                    drops.push(d);
-                }
-            }
-        });
-        if (drops.length) {
-            if (this._alive) {
-                list.trim(e => drops.includes(e));
-                this._num -= drops.length;
-                try {
-                    if (this._num == 0 && list.size == 0) {
-                        this._create(true);
+        if(this._checkIng){
+            return;
+        }
+        this._checkIng = true;
+        try{
+            let nowTs = Date.now();
+            let list = this._pool;
+            let drops = [];
+            list.forEach(d => {
+                if (!this._checkOk(d, false, nowTs)) {
+                    if (!d[KEY_LINK_BACK]) {
+                        drops.push(d);
                     }
-                } catch (ex) {
                 }
+            });
+            if (drops.length) {
+                if (this._alive) {
+                    list.trim(e => drops.includes(e));
+                    this._num -= drops.length;
+                    try {
+                        if (this._num == 0 && list.size == 0) {
+                            this._create(true);
+                        }
+                    } catch (ex) {
+                    }
+                }
+                drops.forEach(e => destory_pool_item(e));
             }
-            drops.forEach(e => destory_pool_item(e));
+        }finally {
+            this._checkIng = false;
         }
     }
 
@@ -223,7 +232,7 @@ export class SimplePool<T> {
         this._wait();
         // console.warn("pool++",this.name,this._num,this._pool.length)
         let e = this._pool.shift();
-        if (e) {
+        if (!e) {
             e[KEY_LINK_BACK] = this._back;
             if (this._randomBorrow > 0 && Math.random() < this._randomBorrow && this._checkOk(e, true) == false) {
                 this._num--;
