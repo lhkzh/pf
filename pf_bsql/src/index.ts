@@ -18,18 +18,18 @@ export function _delete(tb: string) {
 }
 
 export class BsqlInsert {
-    private _columns: string[];
-    private _values: any[][];
-    private _updateOpt: { keeps?: string[], adds?: string[] };
+    protected _columns: string[];
+    protected _values: any[][];
+    protected _updateOpt: { keeps?: string[], adds?: string[] };
 
-    constructor(private _table: string, private _ignore?: boolean) {
+    constructor(protected _table: string, protected _ignore?: boolean) {
     }
 
     /**
      * 通过一条数据构建（列名、数据）
      * @param data
      */
-    public row(data: { [index: string]: any }) {
+    public xrow(data: { [index: string]: any }) {
         return this.columns(Object.keys(data)).values(Object.values(data));
     }
 
@@ -96,7 +96,7 @@ class BsqlWhereBase {
     protected _wheres: string[];
     protected _whereValues: any[];
 
-    constructor() {
+    constructor(protected _table: string) {
         this._wheres = [];
         this._whereValues = [];
     }
@@ -112,6 +112,52 @@ class BsqlWhereBase {
 
     public where(colum: string, op: BsqlOp, val: any) {
         this._pw(`${QE(colum)}${op}?`)._whereValues.push(val);
+        return this;
+    }
+
+    public xwhere(row:{[index:string]:any}){
+        for(let k in row){
+            if(Array.isArray(row[k])){
+                if(k.endsWith("[IN]")){
+                    this.in(k.substr(0,k.length-4),row[k]);
+                }else if(k.endsWith("[BETWEEN]")){
+                    this.between(k.substr(0,k.length-9),row[k][0],row[k][1]);
+                }else if(k.endsWith("[OR]")){
+                    let _k=k.substr(0,k.length-4);
+                    let _v=row[k];
+                    if(_v.length==2){//{$field}[OR]:['v1','v2']
+                        this.or(_k,"=",_v[1],_k,"=",_v[2]);
+                    }else if(_v.length==4){//{$field}[OR]:['<=','v1','>=','v2']
+                        this.or(_k,_v[0],_v[1],_k,_v[2],_v[3]);
+                    }
+                    continue;
+                }
+            }else if(k.endsWith(">=")){
+                this.where(k.substr(0,k.length-2),">=",row[k]);
+            }else if(k.endsWith("<=")){
+                this.where(k.substr(0,k.length-2),"<=",row[k]);
+            }else if(k.endsWith(">")){
+                this.where(k.substr(0,k.length-1),">",row[k]);
+            }else if(k.endsWith("<")){
+                this.where(k.substr(0,k.length-1),"<",row[k]);
+            }else if(k.endsWith("=")){
+                this.where(k.substr(0,k.length-1),"=",row[k]);
+            }else{
+                this.where(k,"=",row[k]);
+            }
+        }
+        return this;
+    }
+
+    /**
+     * 添加where条件 like %s%
+     * @param key
+     * @param val
+     * @param fx like边界-0是【%?%】，-1是【%?】，1是【?%】
+     */
+    public like(key:string,val:string, fx:number|string=0){
+        let op = Number.isInteger(fx) ? (fx==0 ? "%?%":( fx<0 ? "%?":"?%" )):<string>fx;
+        this._pw(_format_like_part(key,op))._wheres.push(val);
         return this;
     }
 
@@ -174,8 +220,8 @@ class BsqlWhereBase {
 
 export class BsqlDelete extends BsqlWhereBase {
 
-    constructor(private _table: string) {
-        super();
+    constructor(protected _table: string) {
+        super(_table);
     }
 
     public build() {
@@ -195,8 +241,8 @@ export class BsqlUpdate extends BsqlWhereBase {
     private _sorts: string;
     private _limits: string;
 
-    constructor(private _table: string) {
-        super();
+    constructor(protected _table: string) {
+        super(_table);
         this._changes = [];
         this._values = [];
     }
@@ -209,6 +255,13 @@ export class BsqlUpdate extends BsqlWhereBase {
             this._changes.push(`${colum}=${colum}${math}?`);
         }
         this._values.push(val);
+        return this;
+    }
+
+    public xchange(row:{[index:string]:any}){
+        _updateRow(row).forEach(row=>{
+            this.change(row[0],row[1],row[2]);
+        });
         return this;
     }
 
@@ -254,13 +307,13 @@ export class BsqlUpdate extends BsqlWhereBase {
 }
 
 export class BsqlQuery extends BsqlWhereBase {
-    private _colums: string[];
-    private _math: boolean;
-    private _sorts: string;
-    private _limits: string;
+    protected _colums: string[];
+    protected _math: boolean;
+    protected _sorts: string;
+    protected _limits: string;
 
-    constructor(private _table?: string) {
-        super();
+    constructor(protected _table: string) {
+        super(_table);
         this._colums = [];
     }
 
@@ -341,6 +394,30 @@ function _ask(n:number){
         return new Array(n).fill('?').join(',');
     }
     return s;
+}
+
+const _updateOps = ["+","-","*","/","="]
+function _updateRow(row:any):Array<[string,BsqlMATH,any]>{
+    let _arr = [];
+    for(let k in row){
+        let _end = k.charAt(k.length-1);
+        if(_updateOps.includes(_end)){
+            _arr.push(k.substr(0,k.length-1),_end,row[k]);
+        }else{
+            _arr.push(k.substr(0,k.length-1),"=",row[k]);
+        }
+    }
+    return _arr;
+}
+
+function _format_like_part(key:string, op:string){
+    var option = "'%',?,'%'";
+    if(op=="%?"){
+        option = "'%',?";
+    }else if(op=="?%"){
+        option = "?,'%'";
+    }
+    return `${QE(key)} LIKE CONCAT(${option})`;
 }
 
 function QE(k: string): string {
