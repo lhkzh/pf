@@ -2,8 +2,7 @@ import * as crypto from "crypto";
 import * as http from "http";
 import * as hash from "hash";
 import * as uuid from "uuid";
-import * as xml from "xml";
-import {Qq_pay} from "./qq_pay";
+import {objToXmlNoAttr, xmlToObjNoAttr} from "./_util";
 
 /**
  * 微信支付
@@ -25,7 +24,7 @@ export class Wx_pay {
  * 微信支付-现金红包
  * @see https://pay.weixin.qq.com/wiki/doc/api/tools/cash_coupon.php?chapter=13_1
  */
-export class Wx_pay_hongbao extends Qq_pay {
+export class Wx_pay_hongbao extends Wx_pay {
     constructor(protected _cfg: { mch_id: string, appid: string, api_key: string, keyFile: string, certFile: string, hongbao_notify_url: string }) {
         super(_cfg);
     }
@@ -141,7 +140,7 @@ export class Wx_pay2wallet extends Wx_pay {
 }
 
 function xml_post_send_retry_sysbusy(url: string, jsonData: any, retryNum = 9, retryTtl = 500) {
-    let xml = xml_to_obj(jsonData);
+    let xml = objToXmlNoAttr(jsonData);
     let rsp = this._client.post("https://api.mch.weixin.qq.com/mmpaymkttransfers/gettransferinfo", {
         body: xml,
         headers: {"Content-Type": "text/xml"}
@@ -149,7 +148,7 @@ function xml_post_send_retry_sysbusy(url: string, jsonData: any, retryNum = 9, r
     if (rsp.statusCode != 200) {
         return {code: 500, msg: "sys_err:" + rsp.statusCode + "," + rsp.statusMessage, data: {}};
     }
-    let body = obj_to_xml(rsp.data.toString());
+    let body = xmlToObjNoAttr(rsp.data.toString());
     if (body.return_code != "SUCCESS") {
         return {code: 500, msg: body.return_msg, data: body};
     }
@@ -181,34 +180,4 @@ function sortmd5_sign(params: { [index: string]: any }, api_secret: string) {
     }, []).join("&") + `&key=${api_secret}`;
     // console.log(str)
     return hash.md5(<any>str).digest("hex");//.toUpperCase();
-}
-
-function xml_to_obj(data: any) {
-    let arr = ["<xml>"];
-    for (let k in data) {
-        if (Number.isInteger(data[k])) {
-            arr.push(`<${k}>${data[k]}</${k}>`);
-        } else {
-            arr.push(`<${k}><![CDATA[${data[k]}]]></${k}> `);
-        }
-    }
-    arr.push("</xml>");
-    return arr.join("");
-}
-
-function obj_to_xml(xmlStr: string) {
-    let rsp: { [index: string]: number | string } = {};
-    let doc = xml.parse(xmlStr).documentElement;
-    for (let i = 0; i < doc.childNodes.length; i++) {
-        let child = doc.childNodes.item(i);
-        if (child.nodeType == 3) {
-            continue;
-        }
-        if (child.childNodes[0].nodeType == 3) {
-            rsp[child.nodeName] = Number(child.childNodes[0].nodeValue);
-        } else {
-            rsp[child.nodeName] = child.childNodes[0].nodeValue;
-        }
-    }
-    return rsp;
 }
