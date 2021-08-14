@@ -7,7 +7,7 @@ class LinkNode<T> {
     }
 }
 
-export abstract class AbsQueue<T> implements Iterable<T>{
+export abstract class AbsQueue<T> implements Iterable<T> {
 
     public append(cs: Array<T> | AbsQueue<T> = null) {
         cs.forEach(e => this.push(e));
@@ -25,20 +25,24 @@ export abstract class AbsQueue<T> implements Iterable<T>{
     public abstract remove(item: T, eq?: (a: T, b: T) => boolean): boolean;
 
     public abstract clear();
-    public abstract get size():number;
 
-    public abstract forEach(f:(e:T)=>void);
-    public abstract reverseForEach(f:(e:T)=>void);
-    public abstract trim(f:(e:T)=>boolean);
+    public abstract get size(): number;
 
-    public abstract values():IterableIterator<T>;
+    public abstract forEach(f: (e: T) => void);
+
+    public abstract reverseForEach(f: (e: T) => void);
+
+    public abstract trim(f: (e: T) => boolean);
+
+    public abstract values(): IterableIterator<T>;
+
     [Symbol.iterator](): Iterator<T> {
         return undefined;
     }
 }
 
 
-export class LinkQueue<T> extends AbsQueue<T>{
+export class LinkQueue<T> extends AbsQueue<T> {
     private _h: LinkNode<T>;
     private _e: LinkNode<T>;
     private _n: number;
@@ -112,15 +116,19 @@ export class LinkQueue<T> extends AbsQueue<T>{
         while (current) {
             if (current.data === item) {
                 this._n--;
-                let p = current.prev;
-                let n = current.next;
-                if (p) {
-                    p.next = n;
+                if (current.next) {
+                    current.next.prev = current.prev;
                 }
-                if (n) {
-                    n.prev = p;
-                    current = n;
+                if (current.prev) {
+                    current.prev.next = current.next;
                 }
+                if (current == this._h) {
+                    this._h = current.next;
+                }
+                if (current == this._e) {
+                    this._e = current.prev;
+                }
+                current = current.next;
                 return true;
             } else {
                 current = current.next;
@@ -178,24 +186,26 @@ export class LinkQueue<T> extends AbsQueue<T>{
 
     /**
      * 过滤自身
-     * @param f
+     * @param checkRemoveFn
      */
-    public trim(f: (e: T) => boolean) {
-        let current = this._h;
+    public trim(checkRemoveFn: (e: T) => boolean) {
+        let current = this._h, border: boolean;
         while (current) {
-            if (!f(current.data)) {
+            if (checkRemoveFn(current.data)) {
                 this._n--;
-                let p = current.prev;
-                let n = current.next;
-                if (p) {
-                    p.next = n;
+                if (current.next) {
+                    current.next.prev = current.prev;
                 }
-                if (n) {
-                    n.prev = p;
-                    current = n;
-                } else {
-                    break;
+                if (current.prev) {
+                    current.prev.next = current.next;
                 }
+                if (current == this._h) {
+                    this._h = current.next;
+                }
+                if (current == this._e) {
+                    this._e = current.prev;
+                }
+                current = current.next;
             } else {
                 current = current.next;
             }
@@ -203,7 +213,7 @@ export class LinkQueue<T> extends AbsQueue<T>{
         return this;
     }
 
-    private * _values(){
+    private* _values() {
         let current = this._h;
         while (current) {
             yield current.data;
@@ -211,7 +221,7 @@ export class LinkQueue<T> extends AbsQueue<T>{
         }
     }
 
-    values():IterableIterator<T> {
+    values(): IterableIterator<T> {
         return this._values();
     }
 
@@ -261,9 +271,10 @@ export class BlockLinkQueue<T> extends LinkQueue<T> {
 }
 
 
-export class ArrayQueue<T> extends AbsQueue<T>{
-    private arr:Array<T>;
-    constructor(cs:Array<T>|AbsQueue<T>) {
+export class ArrayQueue<T> extends AbsQueue<T> {
+    private arr: Array<T>;
+
+    constructor(cs: Array<T> | AbsQueue<T>) {
         super();
         cs && this.append(cs);
     }
@@ -288,26 +299,28 @@ export class ArrayQueue<T> extends AbsQueue<T>{
         return this._in(this.arr.unshift(row));
     }
 
-    protected _in(n:number){
+    protected _in(n: number) {
         return n;
     }
 
     public remove(item: T, eq: ((a: T, b: T) => boolean) | undefined): boolean {
-        let len:number = this.arr.length;
-        if(eq){
-            this.arr = this.arr.filter(e=>eq(e,item));
-        }else{
-            this.arr = this.arr.filter(e=>e===item);
+        let len: number = this.arr.length;
+        if (eq) {
+            this.arr = this.arr.filter(e => eq(e, item));
+        } else {
+            this.arr = this.arr.filter(e => e === item);
         }
-        return len!=this.arr.length;
+        return len != this.arr.length;
     }
 
     public get size(): number {
         return this.arr.length;
     }
+
     public forEach(f: (e: T) => void) {
         this.arr.forEach(f);
     }
+
     public reverseForEach(f: (e: T) => void) {
         this.arr.reverse().forEach(f);
     }
@@ -316,9 +329,10 @@ export class ArrayQueue<T> extends AbsQueue<T>{
         this.arr = this.arr.filter(f);
     }
 
-    values():IterableIterator<T>{
+    values(): IterableIterator<T> {
         return this.arr.values();
     }
+
     [Symbol.iterator]() {
         return this.arr.values();
     }
@@ -332,7 +346,7 @@ export class BlockArrayQueue<T> extends ArrayQueue<T> {
         this.evt = new (require("coroutine").Event)();
     }
 
-    protected _in(n:number) {
+    protected _in(n: number) {
         try {
             return super._in(n);
         } finally {
