@@ -1,7 +1,7 @@
 {
-  "name": "pf_alicloud_core",
-  "version": "1.0.0",
-  "description": "@alicloud/pop-core implements in fibjs",
+  "name": "fibjs_alicloud",
+  "version": "1.0.1",
+  "description": "阿里云部分接口fibjs版本封装",
   "main": "./dist/index.js",
   "types": "./@types/index.d.ts",
   "private": false,
@@ -14,7 +14,7 @@
     "sdk"
   ],
   "engines": {
-    "fibjs": ">0.32.0"
+    "fibjs": ">0.33.0"
   },
   "devDependencies": {
     "@fibjs/types": "latest"
@@ -27,6 +27,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "pf_api": "latest"
+    "mime-types": "latest",
+    "pf_xml": "latest"
   }
 }

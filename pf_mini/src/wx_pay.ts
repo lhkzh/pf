@@ -2,7 +2,7 @@ import * as crypto from "crypto";
 import * as http from "http";
 import * as hash from "hash";
 import * as uuid from "uuid";
-import {objToXmlNoAttr, xmlToObjNoAttr} from "./_util";
+import {objToXmlNoAttr, xmlToObjNoAttr} from "pf_xml";
 
 /**
  * 微信支付
