@@ -232,9 +232,9 @@ export class SimplePool<T> {
         this._wait();
         // console.warn("pool++",this.name,this._num,this._pool.length)
         let e = this._pool.shift();
-        if (!e) {
+        if (e) {
             e[KEY_LINK_BACK] = this._back;
-            if (this._randomBorrow > 0 && Math.random() < this._randomBorrow && this._checkOk(e, true) == false) {
+            if (Math.random() < this._randomBorrow && this._checkOk(e, true) == false) {
                 this._num--;
                 delete e[KEY_LINK_BACK];
                 destory_pool_item(e);

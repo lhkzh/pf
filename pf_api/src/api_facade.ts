@@ -180,9 +180,9 @@ const VAR_API_CTX = "$_api_ctx";
 
 //获取当前api请求的关联类
 export function current_api_ctx(This?: any): ApiHttpCtx {
-    if (This && This[VAR_API_CTX]) {
-        return This[VAR_API_CTX];
-    }
+    // if (This && This[VAR_API_CTX]) {
+    //     return This[VAR_API_CTX];
+    // }
     let fiber = coroutine.current();
     if (fiber[VAR_API_CTX]) {
         return fiber[VAR_API_CTX];
@@ -498,10 +498,11 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
                 }
             }
             fiber[VAR_API_CTX] = ctx;
-            let imp: any = new constructor(ctx);
-            // imp[VAR_API_CTX] = ctx;
+            let imp: any;
             try {
                 if (filter(ctx)) {
+                    imp = new constructor(ctx);
+                    // imp[VAR_API_CTX] = ctx;
                     if (util.isFunction(imp["$_before"])) {//执行前准备
                         imp["$_before"](ctx, apiPath, key);
                     }
@@ -525,7 +526,7 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
                 Facade._hookErr && call_error_hook(ctx, e);
             } finally {
                 try {
-                    if (util.isFunction(imp["$_after"])) {//执行后收尾
+                    if (imp && util.isFunction(imp["$_after"])) {//执行后收尾
                         imp["$_after"](ctx, apiPath, key);
                     }
                 } catch (e2) {
