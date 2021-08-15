@@ -11,7 +11,8 @@
   "keywords": [
     "fibjs",
     "alicloud",
-    "sdk"
+    "sdk",
+    "阿里云"
   ],
   "engines": {
     "fibjs": ">0.33.0"

@@ -1,7 +1,7 @@
 {
   "name": "pf_mini",
-  "version": "0.0.6",
-  "description": "dev minipro by fibjs",
+  "version": "0.0.7",
+  "description": "小程序/小游戏 fibjs开发sdk",
   "main": "./dist/index.js",
   "types": "./@types/index.d.ts",
   "private": false,
@@ -9,10 +9,10 @@
   "homepage": "https://github.com/lhkzh/pf",
   "license": "MIT",
   "keywords": [
-    "fibjs",
-    "miniapp",
-    "minigame",
-    "api"
+    "小程序",
+    "小游戏",
+    "sdk",
+    "fibjs"
   ],
   "engines": {
     "fibjs": ">0.32.0"
