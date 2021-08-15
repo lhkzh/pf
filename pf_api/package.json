@@ -16,8 +16,9 @@
     "fibjs": ">0.32.0"
   },
   "dependencies": {
-    "@abraham/reflection": "^0.8.0",
-    "fibjs_server": "latest"
+    "@abraham/reflection": "latest",
+    "fibjs_server": "latest",
+    "pf_xml": "latest"
   },
   "devDependencies": {
     "@fibjs/types": "latest"

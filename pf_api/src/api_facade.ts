@@ -57,7 +57,7 @@ export class Facade {
     //函数执行超时时间限制（MS）
     public static runTimeOut: number = -1;
     //是否启用模糊路径大小写(支持类似api路径节点首字母大小写和全路径大小写 方式)
-    public static ignorePathCase: boolean = false;
+    public static ignorePathCase: boolean = true;
     //是否忽略api的文档（默认false）
     public static ignoreApiDoc: boolean;
     //错误侦听函数
