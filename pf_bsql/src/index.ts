@@ -46,7 +46,7 @@ export class BsqlInsert {
      * 数据
      * @param arr
      */
-    public values(vals:any[]) {
+    public values(vals: any[]) {
         vals = Array.isArray(vals[0]) ? vals[0] : vals;
         if (vals.length != this._columns.length) {
             throw new Error("columns_not_match");
@@ -115,35 +115,35 @@ class BsqlWhereBase {
         return this;
     }
 
-    public xwhere(row:{[index:string]:any}){
-        for(let k in row){
-            if(Array.isArray(row[k])){
-                if(k.endsWith("[IN]")){
-                    this.in(k.substr(0,k.length-4),row[k]);
-                }else if(k.endsWith("[BETWEEN]")){
-                    this.between(k.substr(0,k.length-9),row[k][0],row[k][1]);
-                }else if(k.endsWith("[OR]")){
-                    let _k=k.substr(0,k.length-4);
-                    let _v=row[k];
-                    if(_v.length==2){//{$field}[OR]:['v1','v2']
-                        this.or(_k,"=",_v[1],_k,"=",_v[2]);
-                    }else if(_v.length==4){//{$field}[OR]:['<=','v1','>=','v2']
-                        this.or(_k,_v[0],_v[1],_k,_v[2],_v[3]);
+    public xwhere(row: { [index: string]: any }) {
+        for (let k in row) {
+            if (Array.isArray(row[k])) {
+                if (k.endsWith("[IN]")) {
+                    this.in(k.substr(0, k.length - 4), row[k]);
+                } else if (k.endsWith("[BETWEEN]")) {
+                    this.between(k.substr(0, k.length - 9), row[k][0], row[k][1]);
+                } else if (k.endsWith("[OR]")) {
+                    let _k = k.substr(0, k.length - 4);
+                    let _v = row[k];
+                    if (_v.length == 2) {//{$field}[OR]:['v1','v2']
+                        this.or(_k, "=", _v[1], _k, "=", _v[2]);
+                    } else if (_v.length == 4) {//{$field}[OR]:['<=','v1','>=','v2']
+                        this.or(_k, _v[0], _v[1], _k, _v[2], _v[3]);
                     }
                     continue;
                 }
-            }else if(k.endsWith(">=")){
-                this.where(k.substr(0,k.length-2),">=",row[k]);
-            }else if(k.endsWith("<=")){
-                this.where(k.substr(0,k.length-2),"<=",row[k]);
-            }else if(k.endsWith(">")){
-                this.where(k.substr(0,k.length-1),">",row[k]);
-            }else if(k.endsWith("<")){
-                this.where(k.substr(0,k.length-1),"<",row[k]);
-            }else if(k.endsWith("=")){
-                this.where(k.substr(0,k.length-1),"=",row[k]);
-            }else{
-                this.where(k,"=",row[k]);
+            } else if (k.endsWith(">=")) {
+                this.where(k.substr(0, k.length - 2), ">=", row[k]);
+            } else if (k.endsWith("<=")) {
+                this.where(k.substr(0, k.length - 2), "<=", row[k]);
+            } else if (k.endsWith(">")) {
+                this.where(k.substr(0, k.length - 1), ">", row[k]);
+            } else if (k.endsWith("<")) {
+                this.where(k.substr(0, k.length - 1), "<", row[k]);
+            } else if (k.endsWith("=")) {
+                this.where(k.substr(0, k.length - 1), "=", row[k]);
+            } else {
+                this.where(k, "=", row[k]);
             }
         }
         return this;
@@ -155,9 +155,9 @@ class BsqlWhereBase {
      * @param val
      * @param fx like边界-0是【%?%】，-1是【%?】，1是【?%】
      */
-    public like(key:string,val:string, fx:number|string=0){
-        let op = Number.isInteger(fx) ? (fx==0 ? "%?%":( fx<0 ? "%?":"?%" )):<string>fx;
-        this._pw(_format_like_part(key,op))._wheres.push(val);
+    public like(key: string, val: string, fx: number | string = 0) {
+        let op = Number.isInteger(fx) ? (fx == 0 ? "%?%" : (fx < 0 ? "%?" : "?%")) : <string>fx;
+        this._pw(_format_like_part(key, op))._wheres.push(val);
         return this;
     }
 
@@ -258,9 +258,9 @@ export class BsqlUpdate extends BsqlWhereBase {
         return this;
     }
 
-    public xchange(row:{[index:string]:any}){
-        _updateRow(row).forEach(row=>{
-            this.change(row[0],row[1],row[2]);
+    public xchange(row: { [index: string]: any }) {
+        _updateRow(row, (a, b, c) => {
+            this.change(a, b, c);
         });
         return this;
     }
@@ -274,11 +274,11 @@ export class BsqlUpdate extends BsqlWhereBase {
         return this;
     }
 
-    public desc(colum: string){
+    public desc(colum: string) {
         return this.orderBy(colum, 'DESC');
     }
 
-    public asc(colum: string){
+    public asc(colum: string) {
         return this.orderBy(colum, 'ASC');
     }
 
@@ -386,35 +386,34 @@ export class BsqlQuery extends BsqlWhereBase {
 
 const W_REG = /^\w+$/;
 const EMPTY_ARR = [];
-const ASK_ARR = [,'?','?,?','?,?,?','?,?,?,?','?,?,?,?,?','?,?,?,?,?,?','?,?,?,?,?,?,?','?,?,?,?,?,?,?,?','?,?,?,?,?,?,?,?,?']
+const ASK_ARR = [, '?', '?,?', '?,?,?', '?,?,?,?', '?,?,?,?,?', '?,?,?,?,?,?', '?,?,?,?,?,?,?', '?,?,?,?,?,?,?,?', '?,?,?,?,?,?,?,?,?']
 
-function _ask(n:number){
+function _ask(n: number) {
     let s = ASK_ARR[n];
-    if(!s){
+    if (!s) {
         return new Array(n).fill('?').join(',');
     }
     return s;
 }
 
-const _updateOps = ["+","-","*","/","="]
-function _updateRow(row:any):Array<[string,BsqlMATH,any]>{
-    let _arr = [];
-    for(let k in row){
-        let _end = k.charAt(k.length-1);
-        if(_updateOps.includes(_end)){
-            _arr.push(k.substr(0,k.length-1),_end,row[k]);
-        }else{
-            _arr.push(k.substr(0,k.length-1),"=",row[k]);
+const _updateOps = ["+", "-", "*", "/", "="]
+
+function _updateRow(row: any, fn: (a: string, b: BsqlMATH, c: any) => void) {
+    for (let k in row) {
+        let _end = k.charAt(k.length - 1);
+        if (_updateOps.includes(_end)) {
+            fn(k.substr(0, k.length - 1), <BsqlMATH>_end, row[k]);
+        } else {
+            fn(k, "=", row[k]);
         }
     }
-    return _arr;
 }
 
-function _format_like_part(key:string, op:string){
+function _format_like_part(key: string, op: string) {
     var option = "'%',?,'%'";
-    if(op=="%?"){
+    if (op == "%?") {
         option = "'%',?";
-    }else if(op=="?%"){
+    } else if (op == "?%") {
         option = "?,'%'";
     }
     return `${QE(key)} LIKE CONCAT(${option})`;
