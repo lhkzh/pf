@@ -4,6 +4,7 @@ import * as util from "util";
 import * as url from "url";
 import * as http from "http";
 import {xmlToObjNoAttr} from "pf_xml";
+import * as querystring from "querystring";
 
 
 export class OSSClient {
@@ -30,7 +31,7 @@ export class OSSObject extends OSSClient {
      */
     public headObject(key: string): { [index: string]: string } {
         let headers: any = this._get_base_headers();
-        headers = fixHeadersAuthorization(this.conf, key, "HEAD", headers);
+        headers = _signatureFixAuthorization(this.conf, key, "HEAD", headers);
         let url = this.bucketEndpoint + '/' + key;
         try {
             let rsp = http.request('HEAD', url, {headers: headers});
@@ -50,7 +51,7 @@ export class OSSObject extends OSSClient {
      */
     public deleteObject(key: string): boolean {
         let headers: any = this._get_base_headers();
-        headers = fixHeadersAuthorization(this.conf, key, 'DELETE', headers);
+        headers = _signatureFixAuthorization(this.conf, key, 'DELETE', headers);
         let url = this.bucketEndpoint + '/' + key;
         try {
             let rsp = http.del(url, {headers: headers});
@@ -78,7 +79,7 @@ export class OSSObject extends OSSClient {
         };
         let key = '?delete';
         let query = {};
-        headers = fixHeadersAuthorization(this.conf, key, "POST", headers, query);
+        headers = _signatureFixAuthorization(this.conf, key, "POST", headers, query);
         let url = this.bucketEndpoint + '/' + key;
         try {
             let rsp = http.post(url, {headers: headers, query: query, body: buffer});
@@ -97,7 +98,7 @@ export class OSSObject extends OSSClient {
     public getObjectMeta(key: string) {
         let headers: any = this._get_base_headers();
         key = key + '?objectMeta';
-        headers = fixHeadersAuthorization(this.conf, key, "HEAD", headers);
+        headers = _signatureFixAuthorization(this.conf, key, "HEAD", headers);
         let url = this.bucketEndpoint + '/' + key;
         try {
             let rsp = http.request('HEAD', url, {headers: headers});
@@ -119,7 +120,7 @@ export class OSSObject extends OSSClient {
      */
     public getObject(key: string): any {
         let headers: any = this._get_base_headers();
-        headers.Authorization = fixHeadersAuthorization(this.conf, key, "GET", headers);
+        headers.Authorization = _signatureFixAuthorization(this.conf, key, "GET", headers);
         let url = this.bucketEndpoint + '/' + key;
         try {
             let rsp = http.get(url, {headers: headers});
@@ -145,7 +146,7 @@ export class OSSObject extends OSSClient {
             ...this._get_base_headers(),
             "x-oss-copy-source": sourceBucketKey
         };
-        headers = fixHeadersAuthorization(this.conf, key, "PUT", headers);
+        headers = _signatureFixAuthorization(this.conf, key, "PUT", headers);
         let url = this.bucketEndpoint + '/' + key;
         try {
             let rsp = http.put(url, {headers: headers});
@@ -169,7 +170,7 @@ export class OSSObject extends OSSClient {
             "Content-Type": contentType
         };
         let query = {};
-        headers = fixHeadersAuthorization(this.conf, key, "PUT", headers, query);
+        headers = _signatureFixAuthorization(this.conf, key, "PUT", headers, query);
         let url = this.bucketEndpoint + '/' + key;
         try {
             let rsp = http.put(url, {headers: headers, query: query, body: buffer});
@@ -194,7 +195,7 @@ export class OSSObject extends OSSClient {
         };
 
         let query = {};
-        headers = fixHeadersAuthorization(this.conf, key, "PUT", headers, query);
+        headers = _signatureFixAuthorization(this.conf, key, "PUT", headers, query);
         let url = this.bucketEndpoint + '/' + key;
         try {
             let rsp = http.put(url, {headers: headers, query: query, body: buffer});
@@ -212,7 +213,7 @@ export class OSSObject extends OSSClient {
      */
     public putObjectACL(key: string, acl: string) {
         let headers = {...this._get_base_headers(), "x-oss-object-acl": acl};
-        headers = fixHeadersAuthorization(this.conf, key, "PUT", headers);
+        headers = _signatureFixAuthorization(this.conf, key, "PUT", headers);
         let url = this.bucketEndpoint + '/' + key;
         try {
             let rsp = http.put(url, {headers: headers});
@@ -230,7 +231,7 @@ export class OSSObject extends OSSClient {
     public getObjectACL(key: string) {
         key = key + '?acl';
         let headers: any = this._get_base_headers();
-        headers.Authorization = fixHeadersAuthorization(this.conf, key, "GET", headers);
+        headers.Authorization = _signatureFixAuthorization(this.conf, key, "GET", headers);
         let url = this.bucketEndpoint + '/' + key;
         try {
             let rsp = http.get(url, {headers: headers});
@@ -245,6 +246,35 @@ export class OSSObject extends OSSClient {
         }
     }
 
+    /**
+     * 生成带授权签名的url
+     * @param key
+     * @param options
+     */
+    public signatureUrl(key: string, options: { method: string, expires: number } & { [index: string]: any } = {
+        method: "GET",
+        expires: 300
+    }) {
+        // (bucket:string, name:string, httpMethod:string, headers:any)
+        const expires = Math.floor(Date.now() / 1000) + (options.expires || 1800);
+
+        if (this.conf.securityToken) {
+            options['security-token'] = this.conf.securityToken;
+        }
+
+        // const signRes = _signatureForURL(this.options.accessKeySecret, options, resource, expires);
+        const signRes = _signatureForURL(this.conf, options, options.method || "GET", key, expires)
+
+        let url_query = {
+            OSSAccessKeyId: this.conf.accessKeyId,
+            Expires: expires,
+            Signature: signRes.Signature,
+            ...signRes.subResource
+        };
+
+        return this.bucketEndpoint + '/' + key + '?' + querystring.stringify(url_query);
+    }
+
     private _get_base_headers() {
         let h: any = {"Date": new Date()["toGMTString"]()};
         if (this.conf.securityToken) {
@@ -254,14 +284,69 @@ export class OSSObject extends OSSClient {
     }
 }
 
-
-function fixHeadersAuthorization(conf: { accessKeyId: string, accessKeySecret: string, bucket: string }, key: string, httpMethod: string, headers: any, query = {}) {
+function _signatureFixAuthorization(conf: { accessKeyId: string, accessKeySecret: string, bucket: string }, key: string, httpMethod: string, headers: any, query = {}) {
     let canonicalString = SignUtils.buildCanonicalString(httpMethod, headers,
         query, conf.bucket, key);
-    // query.OSSAccessKeyId = this.conf.accessKeyId;
-    // query.Signature = signature;
-    headers.Authorization = 'OSS ' + conf.accessKeyId + ':' + hmacSha1Signature(conf.accessKeySecret, canonicalString);
+    headers.Authorization = 'OSS ' + conf.accessKeyId + ':' + computeSignature(conf.accessKeySecret, canonicalString);
     return headers;
+}
+
+function _signatureForURL(conf: { accessKeyId: string, accessKeySecret: string, bucket: string }, options: any, httpMethod: string, key: string, expires: number) {
+    const headers: any = {};
+    const subResource: any = {};
+
+    if (options.process) {
+        subResource['x-oss-process'] = options.process;
+    }
+    if (options.response) {
+        Object.keys(options.response).forEach((k) => {
+            subResource[`response-${k.toLowerCase()}`] = options.response[k];
+        });
+    }
+    Object.keys(options).forEach((key) => {
+        const lowerKey = key.toLowerCase();
+        if (lowerKey.indexOf('x-oss-') === 0) {
+            headers[lowerKey] = options[key];
+        } else if (lowerKey.indexOf('content-md5') === 0) {
+            headers[key] = options[key];
+        } else if (lowerKey.indexOf('content-type') === 0) {
+            headers[key] = options[key];
+        } else if (lowerKey !== 'expires' && lowerKey !== 'response' && lowerKey !== 'process' && lowerKey !== 'method') {
+            subResource[lowerKey] = options[key];
+        }
+    });
+
+    if (Object.prototype.hasOwnProperty.call(options, 'security-token')) {
+        subResource['security-token'] = options['security-token'];
+    }
+
+    if (Object.prototype.hasOwnProperty.call(options, 'callback')) {
+        const json: any = {
+            callbackUrl: encodeURI(options.callback.url),
+            callbackBody: options.callback.body
+        };
+        if (options.callback.host) {
+            json.callbackHost = options.callback.host;
+        }
+        if (options.callback.contentType) {
+            json.callbackBodyType = options.callback.contentType;
+        }
+        subResource.callback = new Buffer(JSON.stringify(json)).toString('base64');
+
+        if (options.callback.customValue) {
+            const callbackVar = {};
+            Object.keys(options.callback.customValue).forEach((key) => {
+                callbackVar[`x:${key}`] = options.callback.customValue[key];
+            });
+            subResource['callback-var'] = new Buffer(JSON.stringify(callbackVar)).toString('base64');
+        }
+    }
+    const canonicalString = SignUtils.buildCanonicalString(httpMethod, headers, subResource, conf.bucket, key, expires.toString());
+
+    return {
+        Signature: computeSignature(conf.accessKeySecret, canonicalString),
+        subResource
+    };
 }
 
 abstract class SignUtils {
@@ -282,21 +367,17 @@ abstract class SignUtils {
         "response-expires",
     ];
 
-    public static buildCanonicalString(httpMethod: string, headers: any, params: any, bucket, objectKey) {
-        let xHeaders = {};
-        Object.keys(headers).forEach(k => {
+    public static buildCanonicalString(httpMethod: string, headers: any, params: any, bucket: string, objectKey: string, expires?: string) {
+        let ossHeaders = Object.keys(headers).reduce((p, k) => {
             if (k.startsWith(this.OSS_PREFIX)) {
-                xHeaders[k] = headers[k];
+                p[k] = headers[k];
             }
-        });
-        Object.keys(params).forEach(k => {
-            if (k.startsWith(this.OSS_PREFIX)) {
-                xHeaders[k] = params[k];
-            }
-        })
-        let xHeaderString: string = Object.keys(xHeaders).sort().reduce((p, k) => {
-            return p + k + ':' + xHeaders[k] + this.NEW_LINE;
-        }, "");
+            return p;
+        }, {});
+        let ossHeaderContent = Object.entries(ossHeaders).reduce((p, c) => {
+            p.push(c[0] + ':' + c[1]);
+            return p;
+        }, []);
         let minHeaders = Object.keys(headers).reduce((p, k) => {
             let lk = k.toLowerCase();
             if (p.hasOwnProperty(lk)) {
@@ -304,33 +385,44 @@ abstract class SignUtils {
             }
             return p;
         }, {"content-md5": "", "content-type": "", "date": ""});
-        return httpMethod + "\n" + minHeaders["content-md5"] + "\n" + minHeaders["content-type"] + "\n" + minHeaders["date"] + "\n" + xHeaderString +
-            this.buildCanonicalizedResource(this.buildResourcePath(bucket, objectKey), params);
+        return [
+            httpMethod.toUpperCase(),
+            minHeaders['content-md5'],
+            minHeaders['content-type'],
+            expires || headers['x-oss-date'] || minHeaders['date'],
+            ...ossHeaderContent,
+            this.buildCanonicalizedResource(this.buildResourcePath(bucket, objectKey), params)
+        ].join(this.NEW_LINE);
     }
 
     private static buildCanonicalizedResource(resourcePath: string, parameters: any) {
-        let ps = Object.keys(parameters).sort().reduce((p, k) => {
-            if (!this.SIGNED_PARAMTERS.includes(k)) {
-                if (util.isNullOrUndefined(parameters[k])) {
-                    p.push(`${k}=`);
-                } else {
-                    p.push(`${k}=${parameters[k]}`);
-                }
-            }
-            return p;
-        }, []);
-        return ps.length > 0 ? `${resourcePath}?${ps.join('&')}` : resourcePath;
+        let ps = !parameters ? "" : (
+            util.isString(parameters) ? String(parameters) :
+                Object.keys(parameters).sort().reduce((p, k) => {
+                    if (!this.SIGNED_PARAMTERS.includes(k)) {
+                        if (util.isNullOrUndefined(parameters[k])) {
+                            p.push(`${k}=`);
+                        } else {
+                            p.push(`${k}=${parameters[k]}`);
+                        }
+                    }
+                    return p;
+                }, []).join("&"));
+        return ps.length > 0 ? `${resourcePath}?${ps}` : resourcePath;
     }
 
     private static buildResourcePath(bucket: string, key: string) {
         if (!bucket) {
             return '/';
         }
+        if (!key) {
+            return `/${bucket}/`;
+        }
         return `/${bucket}/${key}`;
     }
 }
 
-function hmacSha1Signature(k, d) {
+function computeSignature(k, d) {
     return hash.hmac_sha1(k, d).digest("base64");
 }
 
