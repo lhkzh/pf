@@ -22,8 +22,6 @@ export abstract class AbsQueue<T> implements Iterable<T> {
 
     public abstract pop(): T;
 
-    public abstract remove(item: T, eq?: (a: T, b: T) => boolean): boolean;
-
     public abstract clear();
 
     public abstract get size(): number;
@@ -107,36 +105,6 @@ export class LinkQueue<T> extends AbsQueue<T> {
         return e ? e.data : undefined;
     }
 
-    /**
-     * 删除一个节点数据，这个比较慢，别随意使用
-     * @param item
-     */
-    public remove(item: T) {
-        let current = this._h;
-        while (current) {
-            if (current.data === item) {
-                this._n--;
-                if (current.next) {
-                    current.next.prev = current.prev;
-                }
-                if (current.prev) {
-                    current.prev.next = current.next;
-                }
-                if (current == this._h) {
-                    this._h = current.next;
-                }
-                if (current == this._e) {
-                    this._e = current.prev;
-                }
-                current = current.next;
-                return true;
-            } else {
-                current = current.next;
-            }
-        }
-        return false;
-    }
-
     public clear() {
         this._h = null;
         this._e = null;
@@ -189,7 +157,7 @@ export class LinkQueue<T> extends AbsQueue<T> {
      * @param checkRemoveFn
      */
     public trim(checkRemoveFn: (e: T) => boolean) {
-        let current = this._h, border: boolean;
+        let current = this._h;
         while (current) {
             if (checkRemoveFn(current.data)) {
                 this._n--;
@@ -230,46 +198,6 @@ export class LinkQueue<T> extends AbsQueue<T> {
     }
 }
 
-export class BlockLinkQueue<T> extends LinkQueue<T> {
-    private evt: Class_Event;
-
-    constructor(cs: Array<T> | LinkQueue<T> = null) {
-        super(cs);
-        this.evt = new (require("coroutine").Event)();
-    }
-
-    protected _incr() {
-        try {
-            return super._incr();
-        } finally {
-            this.evt.set();
-        }
-    }
-
-    public take(): T {
-        if (this.size > 0) {
-            return this.pop();
-        }
-        if (this.evt) {
-            this.evt.clear();
-            this.evt.wait();
-        } else {
-            throw new Error("interrupt:queue had destory")
-        }
-        return this.take();
-    }
-
-    public destory() {
-        let evt = this.evt;
-        if (evt == null) {
-            return;
-        }
-        this.evt = null;
-        this.clear();
-        evt.set();
-    }
-}
-
 
 export class ArrayQueue<T> extends AbsQueue<T> {
     private arr: Array<T>;
@@ -303,16 +231,6 @@ export class ArrayQueue<T> extends AbsQueue<T> {
         return n;
     }
 
-    public remove(item: T, eq: ((a: T, b: T) => boolean) | undefined): boolean {
-        let len: number = this.arr.length;
-        if (eq) {
-            this.arr = this.arr.filter(e => eq(e, item));
-        } else {
-            this.arr = this.arr.filter(e => e === item);
-        }
-        return len != this.arr.length;
-    }
-
     public get size(): number {
         return this.arr.length;
     }
@@ -338,33 +256,74 @@ export class ArrayQueue<T> extends AbsQueue<T> {
     }
 }
 
-export class BlockArrayQueue<T> extends ArrayQueue<T> {
+export class BlockLinkQueue<T> extends LinkQueue<T> {
     private evt: Class_Event;
+    private lck: Class_Lock;
 
     constructor(cs: Array<T> | LinkQueue<T> = null) {
         super(cs);
         this.evt = new (require("coroutine").Event)();
+        this.lck = new (require("coroutine").Lock)();
+    }
+
+    protected _incr() {
+        try {
+            return super._incr();
+        } finally {
+            this.evt.pulse();
+        }
+    }
+
+    public take(): T {
+        this.lck.acquire();
+        try{
+            while (this.size<1){
+                this.evt.wait();
+            }
+            return this.shift();
+        }finally {
+            this.lck.release();
+        }
+    }
+
+    public destory() {
+        let evt = this.evt;
+        if (evt == null) {
+            return;
+        }
+        this.evt = null;
+        this.clear();
+        evt.set();
+    }
+}
+export class BlockArrayQueue<T> extends ArrayQueue<T> {
+    private evt: Class_Event;
+    private lck: Class_Lock;
+
+    constructor(cs: Array<T> | LinkQueue<T> = null) {
+        super(cs);
+        this.evt = new (require("coroutine").Event)();
+        this.lck = new (require("coroutine").Lock)();
     }
 
     protected _in(n: number) {
         try {
             return super._in(n);
         } finally {
-            this.evt.set();
+            this.evt.pulse();
         }
     }
 
     public take(): T {
-        if (this.size > 0) {
-            return this.pop();
+        this.lck.acquire();
+        try{
+            while (this.size<1){
+                this.evt.wait();
+            }
+            return this.shift();
+        }finally {
+            this.lck.release();
         }
-        if (this.evt) {
-            this.evt.clear();
-            this.evt.wait();
-        } else {
-            throw new Error("interrupt:queue had destory")
-        }
-        return this.take();
     }
 
     public destory() {

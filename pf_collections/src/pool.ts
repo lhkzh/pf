@@ -10,8 +10,12 @@ import {LinkQueue} from "./queue";
 export function destory_pool_item(e: { close?: () => void, dispose?: () => void, destory?: () => void, clear?: () => void }, err?: boolean) {
     if (e[KEY_LINK_BACK]) {
         e[KEY_LINK_BACK](e, err);
-        return;
+    } else {
+        destory_only(e);
     }
+}
+
+function destory_only(e) {
     try {
         util.isFunction(e.close) && e.close();
         util.isFunction(e.dispose) && e.dispose();
@@ -157,11 +161,11 @@ export class SimplePool<T> {
      * 对池内资源进行检测
      */
     public check() {
-        if(this._checkIng){
+        if (this._checkIng) {
             return;
         }
         this._checkIng = true;
-        try{
+        try {
             let nowTs = Date.now();
             let list = this._pool;
             let drops = [];
@@ -183,9 +187,9 @@ export class SimplePool<T> {
                     } catch (ex) {
                     }
                 }
-                drops.forEach(e => destory_pool_item(e));
+                drops.forEach(e => destory_only(e));
             }
-        }finally {
+        } finally {
             this._checkIng = false;
         }
     }
@@ -209,13 +213,13 @@ export class SimplePool<T> {
 
     private _back(item: T, err: boolean) {
         if (this._alive == false) {//版本不对，不归还到池里去了，直接销毁
-            destory_pool_item(item);
             // console.error("change_pool_i_ver",this.name,this._num,this._pool.length)
             this._num--;
+            destory_only(item);
             this._notify();
         } else if (this._pool.size > this._limitMax || (err && !this._checkOk(item, true))) {//超出池大小 或者有错误且链接ping不通，直接销毁
-            destory_pool_item(item);
             this._num--;
+            destory_only(item);
             // console.warn("pool--",this.name,this._num,this._pool.length)
             this._notify();
         } else {
@@ -236,8 +240,7 @@ export class SimplePool<T> {
             e[KEY_LINK_BACK] = this._back;
             if (Math.random() < this._randomBorrow && this._checkOk(e, true) == false) {
                 this._num--;
-                delete e[KEY_LINK_BACK];
-                destory_pool_item(e);
+                destory_only(e);
             } else {
                 return e;
             }
@@ -286,7 +289,7 @@ export class SimplePool<T> {
             }
             let list = T._pool;
             T._pool = new LinkQueue<T>();
-            list.forEach(e => destory_pool_item(e));
+            list.forEach(e => destory_only(e));
             tryNum > 0 && coroutine.start(_drop_fn, T, --tryNum);
         }
         coroutine.start(_drop_fn, T, 3);
