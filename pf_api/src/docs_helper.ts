@@ -163,19 +163,19 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
     } else {
         doc = doc.replace("{$request_method}", '<option value="POST">POST</option>');
     }
-    let ignore_srcs = ["socket","server","path","$ctx","$headers","$body"];
-    let ignore_headers = ["host","Host","Content-Type","content-type","User-Agent","user-agent"];
-    let req_rules = node.rules ? node.rules.filter(e=>{
-        if(e.src){
-            if(ignore_srcs.includes(e.src)){
+    let ignore_srcs = ["socket", "server", "path", "$ctx", "$headers", "$body"];
+    let ignore_headers = ["host", "Host", "Content-Type", "content-type", "User-Agent", "user-agent"];
+    let req_rules = node.rules ? node.rules.filter(e => {
+        if (e.src) {
+            if (ignore_srcs.includes(e.src)) {
                 return false;
             }
-            if(e.src=="header" && ignore_headers.includes(e.name)){
+            if (e.src == "header" && ignore_headers.includes(e.name)) {
                 return false;
             }
         }
         return true;
-    }):[];
+    }) : [];
     //{$param_desc}
     if (req_rules.length) {
         let rules_arr = [];
@@ -238,6 +238,7 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
     //  {$param_input}
     let ipts_arr = [];
     let ids_arr = [];
+    let ipts_cookies = [];
     for (let i = 0; i < req_rules.length; i++) {
         let rule = req_rules[i];
         let name = rule.name;
@@ -246,7 +247,7 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
         let defval = String(rule.option && rule.hasOwnProperty('default') ? rule.default : "");
         let desc = rule.desc || "";
         let ipt = rule.type.name.toString().indexOf("File") > 0 ? "file" : "text";
-        let source = rule.src == "get" ? "GET" : (rule.src == "header" ? "HEADER" : "POST");
+        let source = rule.src == "get" ? "GET" : (rule.src == "header" ? "HEADER" : (rule.src == "cookie" ? "COOKIE" : "POST"));
         if (rule.src == "path") {
             continue;
         }
@@ -259,6 +260,9 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
                 "        <td><textarea data-required='" + required + "' data-source=\"" + source + "\" id=\"" + ipt_id + "\"  name=\"" + name + "\" value=\"" + defval + "\" placeholder=\"" + desc + "\" style=\"width:100%;\" class=\"C_input\" type=\"" + ipt + "\" data-type=\"" + ipt + "\"></textarea></td>\n" +
                 "            </tr>";
         }
+        if(source=="COOKIE"){
+            ipts_cookies.push(`var c=$.cookie('${name}');if(c){ $('#${ipt_id}').val(c); };`);
+        }
         ipts_arr.push(tmp);
         ids_arr.push(ipt_id);
     }
@@ -267,7 +271,7 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
     if (comporess) {
         doc = html2line(doc);
     }
-    let js_doc = js_tpl_desc.replace("{$form_fields}", JSON.stringify(ids_arr)).replace('{$gvars}', JSON.stringify(globalVars));
+    let js_doc = js_tpl_desc.replace("{$form_fields}", JSON.stringify(ids_arr)).replace('{$gvars}', JSON.stringify(globalVars)).replace("/*{$js_cookie}*/", ipts_cookies.join(""));
     js_doc = doc.replace("{$js_tpl}", js_doc);
     if (doc_res_dir && doc_res_dir.length > 0) {
         while (js_doc.indexOf(CDN_JS_PRE) > 0) {
@@ -470,6 +474,8 @@ const js_tpl_desc = `    <script type="text/javascript">
                         }
                     }else if(s=="HEADER"){
                         header[name] = val;
+                    }else if(s=="COOKIE"){
+                        $.cookie(name, val, { expires: 1, path: '/' });
                     }
                     setHistory(name, val);
                 } else{
@@ -520,6 +526,7 @@ const js_tpl_desc = `    <script type="text/javascript">
                         let header = xhr.getAllResponseHeaders();
                         let _text = "[object XMLDocument]"==res+"" ? encodeHtml(xhr.responseText):JSON.stringify(res, null, 4);
                         $("#json_output").html('<pre style="white-space:pre-wrap;word-wrap:break-word;">' + statu + '<br/>' + header + '<br/>' + _text + '</pre>');
+                        fillCookies();
                     },
                     error:function(error){
                         $("#submit").show();
@@ -544,7 +551,9 @@ const js_tpl_desc = `    <script type="text/javascript">
                     e.value = val;
                 }
             });
+            fillCookies();
         }
+        function fillCookies(){/*{$js_cookie}*/}
         let pageId=location.pathname+location.search;
         let globalVars = {$gvars};
         function getHistory(name){
@@ -559,4 +568,6 @@ const js_tpl_desc = `    <script type="text/javascript">
             }
             localStorage.setItem(pageId+":"+name,val)
         }
+        
+(function(factory){if(typeof define==="function"&&define.amd){define(["jquery"],factory)}else{if(typeof exports==="object"){module.exports=factory(require("jquery"))}else{factory(jQuery)}}}(function($){var pluses=/\\+/g;function encode(s){return config.raw?s:encodeURIComponent(s)}function decode(s){return config.raw?s:decodeURIComponent(s)}function stringifyCookieValue(value){return encode(config.json?JSON.stringify(value):String(value))}function parseCookieValue(s){if(s.indexOf('"')===0){s=s.slice(1,-1).replace(/\\\\"/g,'"').replace(/\\\\\\\\/g,"\\\\")}try{s=decodeURIComponent(s.replace(pluses," "));return config.json?JSON.parse(s):s}catch(e){}}function read(s,converter){var value=config.raw?s:parseCookieValue(s);return $.isFunction(converter)?converter(value):value}var config=$.cookie=function(key,value,options){if(arguments.length>1&&!$.isFunction(value)){options=$.extend({},config.defaults,options);if(typeof options.expires==="number"){var days=options.expires,t=options.expires=new Date();t.setMilliseconds(t.getMilliseconds()+days*86400000)}return(document.cookie=[encode(key),"=",stringifyCookieValue(value),options.expires?"; expires="+options.expires.toUTCString():"",options.path?"; path="+options.path:"",options.domain?"; domain="+options.domain:"",options.secure?"; secure":""].join(""))}var result=key?undefined:{},cookies=document.cookie?document.cookie.split("; "):[],i=0,l=cookies.length;for(;i<l;i++){var parts=cookies[i].split("="),name=decode(parts.shift()),cookie=parts.join("=");if(key===name){result=read(cookie,value);break}if(!key&&(cookie=read(cookie))!==undefined){result[name]=cookie}}return result};config.defaults={};$.removeCookie=function(key,options){$.cookie(key,"",$.extend({},options,{expires:-1}));return !$.cookie(key)}}));        
     </script>`;

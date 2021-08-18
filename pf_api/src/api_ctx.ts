@@ -136,7 +136,7 @@ export interface BaseParamRule {
 
 //api参数规则
 export interface ApiParamRule extends BaseParamRule {
-    src?: string, //参数来源= get/post/header/path/socket/any/*
+    src?: string, //参数来源= get/post/header/cookie/path/socket/any/*
     name?: string, //参数名字=从数据源中获取的名字，代替变量默认名字
     // var?:string, //参数的变量名字==自动提取赋值
     check_convert?: (d: any) => any, //自定义判断转换函数，返回null则表示转换失败
@@ -286,6 +286,8 @@ export abstract class AbsHttpCtx {
     public abstract getQuery(): any
 
     public abstract getHeaders(): any
+
+    public abstract getCookie(k: string): string
 
     public abstract getSocket(): Class_Socket
 
@@ -470,6 +472,10 @@ export class ApiHttpCtx extends AbsHttpCtx {
     //获取请求的header
     public getHeaders() {
         return this.req.headers;
+    }
+
+    public getCookie(k: string): string {
+        return this.req.cookies.first(k);
     }
 
     //获取form表单中的文件对象
@@ -685,6 +691,10 @@ export class WsApiHttpCtx extends AbsHttpCtx {
 
     public getHeaders() {
         return this.headerArg || WsApiHttpCtx.EMPTY;
+    }
+
+    public getCookie(): string {
+        return undefined;
     }
 
     public getSocket() {

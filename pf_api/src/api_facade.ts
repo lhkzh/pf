@@ -207,7 +207,7 @@ function format_rule_src(info: ApiParamRule) {
         info.src = "get";
     } else if (info.src == "body") {
         info.src = "post";
-    } else if (info.src != "path" && info.src != "socket" && info.src != "header" && info.src != "get" && info.src != "any") {
+    } else if (info.src != "path" && info.src != "socket" && info.src != "header" && info.src != "cookie" && info.src != "get" && info.src != "any") {
         info.src = "post";
     }
     return info;
@@ -258,6 +258,15 @@ export function Path(info: ApiParamRule = {}) {
  */
 export function Header(info: ApiParamRule = {}) {
     return RULE({...info, src: "header"});
+}
+
+/**
+ * field of cookie
+ * @param info
+ * @constructor
+ */
+export function Cookie(info: ApiParamRule = {}) {
+    return RULE({...info, src: "cookie"});
 }
 
 /**
@@ -796,6 +805,11 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                 }
             } else if (rule.src == "header") {
                 source = ctx.getHeaders();
+            } else if (rule.src == "cookie") {
+                let _ = ctx.getCookie(rule.name);
+                if (_ !== undefined) {
+                    source = {[rule.name]: _};
+                }
             } else if (rule.src == "socket") {
                 source = ctx.getSocket();
             } else if (rule.src.charAt(0) == "$") {
