@@ -362,7 +362,7 @@ export class ApiHttpCtx extends AbsHttpCtx {
 
     //请求是否包含post/put数据
     public isHadBody() {
-        return this.req.data != null;
+        return this.req.body.size()>0;
     }
 
     //是否传统form请求
