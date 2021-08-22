@@ -19,7 +19,7 @@ export class OSSObject extends OSSClient {
     private bucketEndpoint: string;
     private bucketHost: string;
 
-    constructor(protected conf: { accessKeyId: string, accessKeySecret: string, securityToken?: string, endpoint: string, bucket: string }) {
+    constructor(protected conf: { accessKeyId: string, accessKeySecret: string, securityToken?: string, endpoint: string, bucket: string, outUri?:string }) {
         super(conf);
         this.bucketEndpoint = buildEndpoint(conf.endpoint, conf.bucket);
         this.bucketHost = url.parse(this.bucketEndpoint).host;
@@ -272,7 +272,18 @@ export class OSSObject extends OSSClient {
             ...signRes.subResource
         };
 
-        return this.bucketEndpoint + '/' + key + '?' + querystring.stringify(url_query);
+        return this.fullOutUrl(key) + '?' + querystring.stringify(url_query);
+    }
+
+    /**
+     * 外网不带参数的全路径地址
+     * @param key
+     */
+    public fullOutUrl(key: string){
+        return this.get_out_uri()+'/'+key;
+    }
+    private get_out_uri(){
+        return (this.conf.outUri||this.bucketEndpoint.replace("-internal.","."));
     }
 
     private _get_base_headers() {
@@ -429,7 +440,7 @@ function computeSignature(k, d) {
 function buildEndpoint(endpoint: string, bucket: string) {
     let info = url.parse(endpoint);
     let bucketEndpoint = info.host;
-    if (bucket) {
+    if (bucket && bucketEndpoint.startsWith(bucket+".")==false) {
         bucketEndpoint = `${bucket}.${bucketEndpoint}`;
     }
     if (info.protocol) {
