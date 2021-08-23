@@ -171,11 +171,10 @@ export class SimplePool<T> {
             let drops = [];
             list.forEach(d => {
                 if (!this._checkOk(d, false, nowTs)) {
-                    if (!d[KEY_LINK_BACK]) {
-                        drops.push(d);
-                    }
+                    drops.push(d);
                 }
             });
+            drops = drops.filter(e => !e.hasOwnProperty(KEY_LINK_BACK) && e.hasOwnProperty(KEY_LINK_TIME_LAST));
             if (drops.length) {
                 if (this._alive) {
                     list.trim(e => drops.includes(e));
@@ -212,12 +211,8 @@ export class SimplePool<T> {
     }
 
     private _back(item: T, err: boolean) {
-        if (this._alive == false) {//版本不对，不归还到池里去了，直接销毁
-            // console.error("change_pool_i_ver",this.name,this._num,this._pool.length)
-            this._num--;
-            destory_only(item);
-            this._notify();
-        } else if (this._pool.size > this._limitMax || (err && !this._checkOk(item, true))) {//超出池大小 或者有错误且链接ping不通，直接销毁
+        //droped out_pool_size dead_check
+        if (this._alive == false || this._pool.size > this._limitMax || (err && !this._checkOk(item, true))) {
             this._num--;
             destory_only(item);
             // console.warn("pool--",this.name,this._num,this._pool.length)
