@@ -41,16 +41,8 @@ const KEY_LINK_TIME_INIT = "$_SP_T_INIT";
  * @see https://github.com/fibjs/fib-pool/blob/master/src/index.ts
  */
 export class SimplePool<T> {
-    //给配置的版本号
-    private _ver: string;
-    //给配置的名字
-    private _name: string;
-    //资源池是否还保活中
-    private _alive: boolean;
-
     private _fnCreate: () => T;
     private _fnCheck: (d: T) => boolean;
-
     //限制最大资源个数
     private _limitMax: number;
     //限制空闲资源个数
@@ -64,7 +56,6 @@ export class SimplePool<T> {
     //计时器：主动检测资源活性
     private _checkTimer: Class_Timer;
     private _checkIng: boolean;
-
     //当前资源个数
     private _num: number;
     //当前等待使用的资源池
@@ -100,13 +91,22 @@ export class SimplePool<T> {
         this.dispose = this.dispose.bind(this);
     }
 
+    //给配置的版本号
+    private _ver: string;
+
     public get ver(): string {
         return this._ver;
     }
 
+    //给配置的名字
+    private _name: string;
+
     public get name(): string {
         return this._name;
     }
+
+    //资源池是否还保活中
+    private _alive: boolean;
 
     public get alive(): boolean {
         return this._alive;
@@ -114,7 +114,12 @@ export class SimplePool<T> {
 
     public toStatJson() {
         return {
-            name: this._name, ver: this._ver, num: this._num, pool: this._pool.size, wait: this._waits.size
+            name: this._name,
+            ver: this._ver,
+            wait: this._waits.size,
+            num: this._num,
+            pool: this._pool.size,
+            run: this._num - this._pool.size
         }
     }
 
@@ -128,33 +133,6 @@ export class SimplePool<T> {
         }
         this._checkTimer = setInterval(this.check, intervalTs);
         return this;
-    }
-
-    /**
-     * 检测资源可用性
-     * @param d
-     * @param ignoreBorrow
-     * @param nowTS
-     * @private
-     */
-    private _checkOk(d: T, ignoreBorrow: boolean, nowTS?: number) {
-        try {
-            if (!ignoreBorrow && d[KEY_LINK_BACK]) {
-                return true;
-            }
-            if (nowTS) {
-                if ((d[KEY_LINK_TIME_INIT] + this._maxAliveTs) < nowTS) {
-                    return false;
-                }
-                if ((d[KEY_LINK_TIME_LAST] + this._maxIdelTs) < nowTS) {
-                    return false;
-                }
-            }
-            return this._fnCheck(d);
-        } catch (e) {
-            // console.warn("check_bad",e.message);
-            return false
-        }
     }
 
     /**
@@ -193,6 +171,93 @@ export class SimplePool<T> {
         }
     }
 
+    //借出链接-资源
+    public borrow() {
+        this._wait();
+        // console.warn("pool++",this.name,this._num,this._pool.length)
+        let e = this._pool.shift();
+        if (e) {
+            e[KEY_LINK_BACK] = this._back;
+            if (Math.random() < this._randomBorrow && this._checkOk(e, true) == false) {
+                this._num--;
+                destory_only(e);
+            } else {
+                return e;
+            }
+        }
+        e = this._create(false);
+        e[KEY_LINK_BACK] = this._back;
+        return e;
+    }
+
+    //利用闭包函数执行使用，注意一次性使用别长期持有
+    public run(fn: (item: T) => void) {
+        let item = this.borrow();
+        try {
+            fn(item);
+        } catch (err) {
+            console.error(`SimplePool.${this._name}`, err);
+            this._back(item, true);
+        }
+    }
+
+    public dispose(cleanWaitTtl = 6180) {
+        let T = this;
+        if (!T._alive) {
+            return;
+        }
+        T._alive = true;
+        T._checkTimer && clearInterval(T._checkTimer);
+        T._num = -0xffff;
+        let _drop_fn = (T, tryNum) => {
+            while (T._waits.size > 0) {
+                try {
+                    T._notify();
+                } catch (e) {
+                }
+            }
+            coroutine.sleep(cleanWaitTtl);
+            while (T._waits.size > 0) {
+                try {
+                    T._notify();
+                } catch (e) {
+                }
+            }
+            let list = T._pool;
+            T._pool = new LinkQueue<T>();
+            list.forEach(e => destory_only(e));
+            tryNum > 0 && coroutine.start(_drop_fn, T, --tryNum);
+        }
+        coroutine.start(_drop_fn, T, 3);
+    }
+
+    /**
+     * 检测资源可用性
+     * @param d
+     * @param ignoreBorrow
+     * @param nowTS
+     * @private
+     */
+    private _checkOk(d: T, ignoreBorrow: boolean, nowTS?: number) {
+        try {
+            if (!ignoreBorrow && d[KEY_LINK_BACK]) {
+                return true;
+            }
+            if (nowTS) {
+                if ((d[KEY_LINK_TIME_INIT] + this._maxAliveTs) < nowTS) {
+                    return false;
+                }
+                if ((d[KEY_LINK_TIME_LAST] + this._maxIdelTs) < nowTS) {
+                    return false;
+                }
+            }
+            return this._fnCheck(d);
+        } catch (e) {
+            // console.warn("check_bad",e.message);
+            return false
+        }
+    }
+
     //等待池空闲执行
     private _wait() {
         if (this._waits.size || (this._num > this._limitMax && this._pool.size < 1)) {
@@ -226,25 +291,6 @@ export class SimplePool<T> {
         }
     }
 
-    //借出链接-资源
-    public borrow() {
-        this._wait();
-        // console.warn("pool++",this.name,this._num,this._pool.length)
-        let e = this._pool.shift();
-        if (e) {
-            e[KEY_LINK_BACK] = this._back;
-            if (Math.random() < this._randomBorrow && this._checkOk(e, true) == false) {
-                this._num--;
-                destory_only(e);
-            } else {
-                return e;
-            }
-        }
-        e = this._create(false);
-        e[KEY_LINK_BACK] = this._back;
-        return e;
-    }
-
     private _create(idel: boolean) {
         this._num++;
         try {
@@ -258,35 +304,5 @@ export class SimplePool<T> {
             this._num--;
             throw err;
         }
-    }
-
-    public dispose(cleanWaitTtl = 6180) {
-        let T = this;
-        if (!T._alive) {
-            return;
-        }
-        T._alive = true;
-        T._checkTimer && clearInterval(T._checkTimer);
-        T._num = -0xffff;
-        let _drop_fn = (T, tryNum) => {
-            while (T._waits.size > 0) {
-                try {
-                    T._notify();
-                } catch (e) {
-                }
-            }
-            coroutine.sleep(cleanWaitTtl);
-            while (T._waits.size > 0) {
-                try {
-                    T._notify();
-                } catch (e) {
-                }
-            }
-            let list = T._pool;
-            T._pool = new LinkQueue<T>();
-            list.forEach(e => destory_only(e));
-            tryNum > 0 && coroutine.start(_drop_fn, T, --tryNum);
-        }
-        coroutine.start(_drop_fn, T, 3);
     }
 }
