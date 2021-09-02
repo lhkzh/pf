@@ -1,6 +1,6 @@
 {
   "name": "pf_bsql",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "sql builder",
   "main": "./dist/index.js",
   "types": "./@types/index.d.ts",

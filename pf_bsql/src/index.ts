@@ -142,6 +142,8 @@ class BsqlWhereBase {
                 this.where(k.substr(0, k.length - 1), "<", row[k]);
             } else if (k.endsWith("=")) {
                 this.where(k.substr(0, k.length - 1), "=", row[k]);
+            } else if (k == "OR" && typeof row[k] == "object") {
+                this.orMult(row[k]);
             } else {
                 this.where(k, "=", row[k]);
             }
@@ -176,6 +178,25 @@ class BsqlWhereBase {
     public or(colum1: string, op1: BsqlOp, val1: any, colum2: string, op2: BsqlOp, val2: any) {
         this._pw(`${QE(colum1)}${op1}? OR ${QE(colum2)}${op2}?`)._whereValues.push(val1, val2);
         return this;
+    }
+
+    public orMult(kvObj: { [index: string]: any }) {
+        let ks = [], ps = [];
+        for (let k in kvObj) {
+            if (k.endsWith(">=")) {
+                ks.push(QE(k.substr(0, k.length - 2)) + ">=?");
+            } else if (k.endsWith("<=")) {
+                ks.push(QE(k.substr(0, k.length - 2)) + "<=?");
+            } else if (k.endsWith(">")) {
+                ks.push(QE(k.substr(0, k.length - 1)) + ">?");
+            } else if (k.endsWith("<")) {
+                ks.push(QE(k.substr(0, k.length - 1)) + "<?");
+            } else {
+                ks.push(QE(k) + "=?");
+            }
+            ps.push(kvObj[k]);
+        }
+        return this.sqlWhere("(" + ps.join(" OR ") + ")", ps);
     }
 
     public in(colum: string, vals: any[]) {
