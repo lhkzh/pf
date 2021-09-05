@@ -21,9 +21,12 @@ const ContentType_msgpack = "application/msgpack; charset=utf8";
 
 //基础定义writer
 export class AbsRes {
-    public code: number = 0;//主要相应吗（如果错误则为不为0和200)
-    public msg: string;//响应描述
-    public data: any;//返回数据
+    //主要相应码（如果错误则为不为0和200)
+    public code: number = 0;
+    //响应描述，例如错误信息
+    public msg: string;
+    //返回数据，一般成功时返回的数据
+    public data: any;
 
     //响应类型
     public contentType(): string {
