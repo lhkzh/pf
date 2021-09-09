@@ -1,4 +1,3 @@
-
 import * as http from "http";
 import * as hash from "hash";
 import * as coroutine from "coroutine";

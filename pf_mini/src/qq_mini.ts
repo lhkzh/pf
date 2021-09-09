@@ -9,7 +9,7 @@ import {Multipart} from "fibjs-multipart";
  */
 
 /**
- * 微信小游戏-帐号授权（接口调用凭证 和 帐号登录相关）
+ * qq小游戏-帐号授权（接口调用凭证 和 帐号登录相关）
  */
 export class auth {
     private appid: string;

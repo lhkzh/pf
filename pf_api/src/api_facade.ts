@@ -532,21 +532,21 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
                         ctx.writer.stat(500, "server busy").out(ctx);
                     }
                 }
-                Facade._hookErr && call_error_hook(ctx, e);
+                no_error_hook(ctx, e);
             } finally {
                 try {
                     if (imp && util.isFunction(imp["$_after"])) {//执行后收尾
                         imp["$_after"](ctx, apiPath, key);
                     }
                 } catch (e2) {
-                    Facade._hookErr ? Facade._hookErr(ctx, e2) : console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e2);
+                    no_error_hook(ctx, e2) && console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e2);
                 }
             }
         } finally {
             try {
                 ctx.runAfters();
             } catch (e3) {
-                Facade._hookErr ? call_error_hook(ctx, e3) : console.error("Facade|api_run_afters|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e3);
+                no_error_hook(ctx, e3) && console.error("Facade|api_run_afters|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e3);
             }
             if (start_ms) {//API耗时统计
                 Facade._hookTj(apiPath, Date.now() - start_ms);
@@ -567,12 +567,17 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
     }
 }
 
-function call_error_hook(ctx: AbsHttpCtx, err: Error) {
-    try {
-        Facade._hookErr(ctx, err);
-    } catch (ehook) {
-        console.error("Facade|api_run_wrap|%s", ctx.getPath(), ehook);
+//有hook则调用，否则返回true
+function no_error_hook(ctx: AbsHttpCtx, err: Error) {
+    if (Facade._hookErr) {
+        try {
+            Facade._hookErr(ctx, err);
+        } catch (ehook) {
+            console.error("Facade|api_run_hookErr|%s", ctx.getPath(), ehook);
+        }
+        return false;
     }
+    return true;
 }
 
 /**

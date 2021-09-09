@@ -22,6 +22,11 @@
 - virtualPay：虚拟支付
 - storage：开放数据域操作
 
+
++快手小游戏：ks_mini
+- auth：账号登录和access_token
+- subscribeMessage：发订阅数据  
+
 +微信支付相关 wx_pay
 - Wx_pay_hongbao：发红包
 - Wx_pay2wallet：企业付款给玩家
