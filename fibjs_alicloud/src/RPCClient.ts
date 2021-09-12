@@ -51,7 +51,7 @@ export class RPCClient {
 
         let res = http.request(opts.method, url, util.pick(opts, "headers", "body"));
         let json = res.data;
-        if (Buffer.isBuffer(json)) {
+        if (Buffer.isBuffer(json) && json[0]==123 && json[json.length-1]==125) {
             json = JSON.parse(json.toString());
         }
         if (json.Code && json.Code != 200 &&(!this.conf.codes || !this.conf.codes.includes(json.Code))) {

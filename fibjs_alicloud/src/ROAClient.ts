@@ -2,6 +2,7 @@ import * as hash from "hash";
 import * as querystring from "querystring";
 import * as http from "http";
 import {DEFAULT_CLIENT, DEFAULT_UA, makeNonce, sig} from "./helper";
+import {xmlToObjNoAttr} from "pf_xml";
 
 
 export class ROAClient {
@@ -24,11 +25,14 @@ export class ROAClient {
         return this.request('DELETE', path, query, '', headers);
     }
 
-    public request(method: string, uriPattern: string, query: any = {}, body: string = '', headers: any = {}) {
+    public request(method: string, uriPattern: string, query: any = {}, body: string | Class_Buffer = '', headers: any = {}) {
         var mixHeaders = Object.assign(this.buildHeaders(), keyLowerify(headers));
-        var postBody = Buffer.from(body, 'utf8');
-        mixHeaders['content-md5'] = hash.md5(postBody).digest('base64');
-        mixHeaders['content-length'] = postBody.length;
+        var postBody: Class_Buffer;
+        if (body) {
+            postBody = Buffer.isBuffer(body) ? <Class_Buffer>body : Buffer.from(<string>body, 'utf8');
+            mixHeaders['content-md5'] = hash.md5(postBody).digest('base64');
+            // mixHeaders['content-length'] = postBody.length;
+        }
 
         var url = `${this.conf.endpoint}${uriPattern}`;
         if (Object.keys(query).length) {
@@ -36,17 +40,18 @@ export class ROAClient {
         }
 
         const stringToSign = buildStringToSign(method, uriPattern, mixHeaders, query);
-        // debug('stringToSign: %s', stringToSign);
+        // console.log('stringToSign: %s', stringToSign);
         mixHeaders['authorization'] = this.buildAuthorization(stringToSign);
 
-        let res = http.request(method, url, {headers: headers, body: postBody});
+        let opts = postBody ? {headers: mixHeaders, body: postBody} : {headers: mixHeaders};
+        let res = http.request(method, url, opts);
         let result = res.data;
         if (Buffer.isBuffer(result)) {
             result = result.toString();
             if (result.charAt(0) == '{') {
                 result = JSON.parse(result);
-            } else {
-                result = require("pf_api").xml_helper.xml2json(result.toString());
+            } else if (result.charAt(0) == '<') {
+                result = xmlToObjNoAttr(result.toString());
             }
         }
         if (res.statusCode >= 400) {

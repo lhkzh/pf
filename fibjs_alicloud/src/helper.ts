@@ -7,7 +7,7 @@ export function sig(secret: string, stringToSign: string, codec: string = "base6
 }
 
 export function makeNonce() {
-    return uuid.random().toString();
+    return uuid.random().toString("hex");
 }
 
 export function utc_timestamp() {
