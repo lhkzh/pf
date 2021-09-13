@@ -6,6 +6,9 @@
  * api路由注册中心
  * @author zhh
  */
+
+import * as http from "http";
+import * as process from "process";
 import * as util from "util";
 import * as coroutine from "coroutine";
 import * as ws from "ws";
@@ -30,10 +33,8 @@ import {
     ApiMethod,
     CheckBaseParamRule
 } from "./api_ctx";
-import * as http from "http";
 import {DtoInstanceMake, DtoTypeCheck} from "./api_dto";
 import {getParamterNames} from "./utils";
-import * as process from "process";
 
 let current_apis: { [index: string]: Function } = {};
 let current_docs: any = {};
@@ -862,7 +863,7 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                     }
                 } else if (rule.type == Array && !Array.isArray(srcArg)) {
                     if (util.isString(srcArg)) {
-                        args[i] = srcArg.split(',');
+                        args[i] = srcArg.split(rule.separator || ',');
                     } else if (util.isObject(srcArg)) {//JSON.stringify TypeArray默认会变object
                         args[i] = Object.values(srcArg);
                     } else {

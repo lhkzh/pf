@@ -139,13 +139,20 @@ export interface BaseParamRule {
 
 //api参数规则
 export interface ApiParamRule extends BaseParamRule {
-    src?: string, //参数来源= get/post/header/cookie/path/socket/any/*
-    name?: string, //参数名字=从数据源中获取的名字，代替变量默认名字
-    // var?:string, //参数的变量名字==自动提取赋值
-    check_convert?: (d: any) => any, //自定义判断转换函数，返回null则表示转换失败
-    type?: Function,//转换类型--自动抓取定义
-    desc?: string,//描述
-    multline?: boolean,//开发工具生成需要-多行输入（支持换行）
+    //参数来源= get/post/header/cookie/path/socket/any/*
+    src?: string,
+    //参数名字=从数据源中获取的名字，代替变量默认名字
+    name?: string,
+    //自定义判断转换函数，返回null则表示转换失败
+    check_convert?: (d: any) => any,
+    //如果是数组类型type，传入参数是字符串，则可以定义separator切分成数组。（例如开发工具中使用）
+    separator?: string,
+    //转换类型--自动抓取定义
+    type?: Function,
+    //专用描述
+    desc?: string,
+    //开发工具生成需要-多行输入（支持换行）
+    multline?: boolean,
 }
 
 /**
@@ -217,13 +224,20 @@ export function CheckBaseParamRule(type: any, val: any, rule: BaseParamRule): bo
 
 //api-方法标记参数
 export interface ApiRouting {
-    method: string,//访问方法
-    path: string,//访问路径
-    code: number,//方法的访问编码
-    key: string,//源-方法名
-    rules: Array<ApiParamRule>,//参数规则
-    filter?: ApiFilterHandler, //序列化方式
-    res?: new () => AbsRes, //序列化方式
+    //http访问方法
+    method: string,
+    //访问路径定义，不写则默认函数名or类名
+    path: string,
+    //方法的编码形式访问码
+    code: number,
+    //源-方法名
+    key: string,
+    //本函数的路由-参数规则
+    rules: Array<ApiParamRule>,
+    //权限函数：返回true/false表示是否允许访问
+    filter?: ApiFilterHandler,
+    //序列化结果类
+    res?: new () => AbsRes,
 }
 
 //api过滤器参数
@@ -233,14 +247,18 @@ export interface ApiFilterHandler {
 
 //路由-类型参数
 export interface ApiMethod {
-    path?: string, //类级别路径
-    filter?: ApiFilterHandler, //序列化方式
-    res?: new () => AbsRes, //序列化方式
+    //访问路径定义，不写则默认函数名or类名
+    path?: string,
+    //权限函数：返回true/false表示是否允许访问
+    filter?: ApiFilterHandler,
+    //序列化结果类
+    res?: new () => AbsRes,
 }
 
 //类标记参数
 export interface ApiClass extends ApiMethod {
-    baseRules?: Array<ApiParamRule>, //通用字项参数规则
+    //本类下面函数的通用的参数规则
+    baseRules?: Array<ApiParamRule>,
 }
 
 //API调用错误
@@ -365,7 +383,7 @@ export class ApiHttpCtx extends AbsHttpCtx {
 
     //请求是否包含post/put数据
     public isHadBody() {
-        return this.req.body.size()>0;
+        return this.req.body.size() > 0;
     }
 
     //是否传统form请求
