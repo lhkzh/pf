@@ -19,10 +19,10 @@ export class ApiBase{
             arr.splice(1,0,cfg.region);
             this.host = arr.join(".");
         }
-        this.uri = "https://" + this.host;
+        this.uri = this.host.startsWith("http")==false ? "https://" + this.host : this.host;
     }
 
-    protected invoke(reqMethod: string, action: string, query: any, params: any, extHeaders:any={}){
+    public call(reqMethod: string, action: string, query: any, params: any, extHeaders:any={}){
         let date = new Date();
         let timeStamp = Math.round(date.getTime() / 1000);
         let timeDate = date.getUTCFullYear() + '-' + (date.getUTCMonth() > 8 ? '' : '0') + (date.getUTCMonth() + 1) + '-' + (date.getUTCDate() > 9 ? '' : '0') + date.getUTCDate();
@@ -43,6 +43,13 @@ export class ApiBase{
         let canonicalHeaders = "content-type:" + headers["Content-Type"] + "\n" +
             "host:" + headers["Host"] + "\n";
         let signedHeaders = "content-type;host";
+
+        if(!query){
+            query={};
+        }
+        if(!query.hasOwnProperty("Action")){
+            query.Action =  action;
+        }
 
         let canonicalUri = '/';
         let canonicalQueryString = querystring.stringify(query);

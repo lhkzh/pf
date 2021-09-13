@@ -14,7 +14,7 @@ export class SCFClient extends ApiBase{
      * @param params
      */
     public Invoke(params: { FunctionName: string, ClientContext?: string, InvocationType?: string, Qualifier?: string, LogType?: string, Namespace?: string, RoutingKey?: string }) {
-        return this.req_json('POST', "Invoke", {Action: "Invoke", FunctionName: params.FunctionName}, params);
+        return this.req_json('POST', "Invoke", {FunctionName: params.FunctionName}, params);
     }
 
     /**
@@ -23,10 +23,7 @@ export class SCFClient extends ApiBase{
      * @constructor
      */
     public UpdateFunctionCode(params: { FunctionName: string, Handler: string, CosBucketName?: string, CosObjectName?: string, CosBucketRegion?: string, ZipFile?: string, Namespace?: string, Publish?: string, EnvId?: string, Code?: ScfCode, CodeSource?: string }) {
-        return this.req_json('POST', "UpdateFunctionCode", {
-            Action: "UpdateFunctionCode",
-            FunctionName: params.FunctionName
-        }, params);
+        return this.req_json('POST', "UpdateFunctionCode", {FunctionName: params.FunctionName}, params);
     }
 
     /**
@@ -35,10 +32,7 @@ export class SCFClient extends ApiBase{
      * @constructor
      */
     public PublishVersion(params: { FunctionName: string, Description?: string, Namespace?: string }) {
-        return this.req_json('POST', "PublishVersion", {
-            Action: "PublishVersion",
-            FunctionName: params.FunctionName
-        }, params);
+        return this.req_json('POST', "PublishVersion", {FunctionName: params.FunctionName}, params);
     }
 
     /**
@@ -47,14 +41,11 @@ export class SCFClient extends ApiBase{
      * @constructor
      */
     public ListVersionByFunction(params: { FunctionName: string, Namespace?: string, Offset?: number, Limit?: number, Order?: string, OrderBy?: string }) {
-        return this.req_json('POST', "ListVersionByFunction", {
-            Action: "ListVersionByFunction",
-            FunctionName: params.FunctionName
-        }, params);
+        return this.req_json('POST', "ListVersionByFunction", {FunctionName: params.FunctionName}, params);
     }
 
     private req_json(reqMethod: string, action: string, query: any, params: any) {
-        return this.invoke(reqMethod, action, query, params).json();
+        return this.call(reqMethod, action, query, params).json();
     }
 }
 
