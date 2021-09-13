@@ -863,7 +863,7 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                     }
                 } else if (rule.type == Array && !Array.isArray(srcArg)) {
                     if (util.isString(srcArg)) {
-                        args[i] = srcArg.split(rule.separator || ',');
+                        args[i] = srcArg.split(rule.separator || (rule.multline ? '\n':','));
                     } else if (util.isObject(srcArg)) {//JSON.stringify TypeArray默认会变object
                         args[i] = Object.values(srcArg);
                     } else {
