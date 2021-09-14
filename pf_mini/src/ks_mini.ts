@@ -7,7 +7,7 @@ import {wx_base_api_res} from "./wx_mini";
  */
 
 /**
- * qq小游戏-帐号授权（接口调用凭证 和 帐号登录相关）
+ * 快手小游戏-帐号授权（接口调用凭证 和 帐号登录相关）
  */
 export class auth {
     private appid: string;
@@ -32,10 +32,8 @@ export class auth {
                 return {openid: body.open_id, session_key: body.session_key};
             }
             throw new Error(`jscode2session:${this.appid}:${body.result}_${body.error}_${body.error_msg}`);
-        } else {
-            throw new Error(`jscode2session:${this.appid}:${res.statusCode}:io_err`);
         }
-        return null;
+        throw new Error(`jscode2session:${this.appid}:${res.statusCode}:io_err`);
     }
 
     /**
