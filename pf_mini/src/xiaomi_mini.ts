@@ -5,7 +5,7 @@ import * as uuid from "uuid";
 /**
  * 小米快游戏相关接口
  */
-export class Xiaomi_mini{
+export class xiaomi_mini{
     constructor(private cfg: { pkgName: string, appKey: string, appSecret: string, appId:string }) {
     }
 

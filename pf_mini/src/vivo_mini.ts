@@ -5,7 +5,7 @@ import * as uuid from "uuid";
 /**
  * vivo小游戏相关接口
  */
-export class Vivo_mini{
+export class vivo_mini{
     constructor(private cfg: { pkgName: string, appKey: string, appSecret: string, appId:string }) {
     }
 
