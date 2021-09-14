@@ -1,6 +1,6 @@
 {
   "name": "pf_mini",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "小程序/小游戏 fibjs开发sdk",
   "main": "./dist/index.js",
   "types": "./@types/index.d.ts",
