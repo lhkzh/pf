@@ -688,8 +688,13 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
     }
     let fnComments = Facade.ignoreApiDoc ? {} : linkFnComment(getCalledFile(__dirname));//获取调用到注册的类的文件,提取文件中的文档注释
     path = path != null ? path : "/" + constructor.name.toLowerCase();//类方法名
-    if (path != "" && path.charAt(0) != '/') {
-        path = "/" + path;
+    if (path != "") {
+        if(path.charAt(0) != '/'){
+            path = "/" + path;
+        }
+        if(path.length>1 && path.charAt(path.length-1) == '/'){
+            path = path.substr(0, path.length-1);
+        }
     }
     let routing: Class_Routing = current_routing, apis: { [index: string]: Function } = current_apis,
         codeMap = current_codeMap;
