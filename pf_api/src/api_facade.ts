@@ -907,7 +907,7 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
         }
         if (failAt > -1) {
             // 缺少参数 or 参数类型错误
-            throw new ApiRunError("bad_arg:" + paramRules[failAt].name, 403);
+            throw new ApiRunError("bad_arg:" + paramRules[failAt].name, 400);
         } else {
             return srcFn.apply(this, args);
         }
