@@ -968,7 +968,7 @@ function route(method: string, pathInfo: string | ApiClass, target: any, key: st
         if (paramTypes[i] == UploadFileInfo) {
             tmpRule.src = "post";
         }
-        if (method == "GET" && ["post", "any"].includes(tmpRule.src)) {
+        if (method == "GET" && ["post", "any"].includes(tmpRule.src) && tmpRule.src.charAt(0) != '$') {
             if (tmpRule.src != "any") {
                 console.warn("Facade|route param.src!=routing.method => %s %s %s", p, tmpRule.name, tmpRule.src);
             }
