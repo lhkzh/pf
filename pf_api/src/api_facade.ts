@@ -208,7 +208,7 @@ function format_rule_src(info: ApiParamRule) {
         info.src = "get";
     } else if (info.src == "body") {
         info.src = "post";
-    } else if (info.src != "path" && info.src != "socket" && info.src != "header" && info.src != "cookie" && info.src != "get" && info.src != "any") {
+    } else if (info.src.charAt(0) != '$' && ["path","socket","header","cookie","get","any"].includes(info.src) == false) {
         info.src = "post";
     }
     return info;
@@ -297,14 +297,26 @@ export function Param(info: ApiParamRule = {}) {
     return RULE({...info, src: "any"});
 }
 
+/**
+ * Context for the request body
+ * @constructor
+ */
 export function CtxBody() {
     return RULE({src: "$body"});
 }
 
+/**
+ * Context for the request headers
+ * @constructor
+ */
 export function CtxHeaders() {
     return RULE({src: "$headers"});
 }
 
+/**
+ * Context for the request
+ * @constructor
+ */
 export function CtxApi() {
     return RULE({src: "$ctx"});
 }
