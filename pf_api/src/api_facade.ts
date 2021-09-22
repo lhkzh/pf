@@ -208,7 +208,7 @@ function format_rule_src(info: ApiParamRule) {
         info.src = "get";
     } else if (info.src == "body") {
         info.src = "post";
-    } else if (info.src != "path" && info.src != "socket" && info.src != "header" && info.src != "cookie" && info.src != "get" && info.src != "any") {
+    } else if (info.src.charAt(0) != '$' && ["path","socket","header","cookie","get","any"].includes(info.src) == false) {
         info.src = "post";
     }
     return info;
@@ -297,14 +297,26 @@ export function Param(info: ApiParamRule = {}) {
     return RULE({...info, src: "any"});
 }
 
+/**
+ * Context for the request body
+ * @constructor
+ */
 export function CtxBody() {
     return RULE({src: "$body"});
 }
 
+/**
+ * Context for the request headers
+ * @constructor
+ */
 export function CtxHeaders() {
     return RULE({src: "$headers"});
 }
 
+/**
+ * Context for the request
+ * @constructor
+ */
 export function CtxApi() {
     return RULE({src: "$ctx"});
 }
@@ -912,7 +924,7 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
         }
         if (failAt > -1) {
             // 缺少参数 or 参数类型错误
-            throw new ApiRunError("bad_arg:" + paramRules[failAt].name, 403);
+            throw new ApiRunError("bad_arg:" + paramRules[failAt].name, 400);
         } else {
             return srcFn.apply(this, args);
         }
@@ -961,7 +973,7 @@ function route(method: string, pathInfo: string | ApiClass, target: any, key: st
         if (paramTypes[i] == UploadFileInfo) {
             tmpRule.src = "post";
         }
-        if (method == "GET" && ["post", "any"].includes(tmpRule.src)) {
+        if (method == "GET" && ["post", "any"].includes(tmpRule.src) && tmpRule.src.charAt(0) != '$') {
             if (tmpRule.src != "any") {
                 console.warn("Facade|route param.src!=routing.method => %s %s %s", p, tmpRule.name, tmpRule.src);
             }
