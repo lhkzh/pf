@@ -69,6 +69,10 @@ function get_xml_child_val(child: Class_XmlNode, K: any, V: any | Array<any>) {
                 let nv = Number(val);
                 if (Number.isFinite(nv)) {
                     val = nv;
+                } else if(val == "true" || val == "false"){
+                    val = Boolean(val);
+                } else if(val.length > 2 && val[0] == '"' && val.charAt(val.length-1) == '"'){
+                    val = val.substr(1, val.length-2);
                 }
             }
             V[K] = val;
@@ -81,9 +85,30 @@ function get_xml_child_val(child: Class_XmlNode, K: any, V: any | Array<any>) {
                     _vc = {};
                 }
             }
-            V[K] = val;
+            val = sub_rows_to_obj(val);
+            if(V.hasOwnProperty(K)){
+                if(!Array.isArray(V[K])){
+                    V[K] = [V[K], val];
+                } else {
+                    V[K].push(val);
+                }
+            } else {
+                V[K] = [val];
+            }
             return true;
         }
     }
     return false;
+}
+function sub_rows_to_obj(arr_sub_objs){
+    if(arr_sub_objs.some(e=>Object.keys(e).length>1)==false){
+        var r = {};
+        for(var i=0;i<arr_sub_objs.length;i++){
+            for(let [k,v] of Object.entries(arr_sub_objs[i])){
+                r[k] = v;
+            }
+        }
+        return r;
+    }
+    return arr_sub_objs;
 }

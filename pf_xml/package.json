@@ -1,6 +1,6 @@
 {
   "name": "pf_xml",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "fibjs xml to json helper",
   "main": "./dist/index.js",
   "types": "./@types/index.d.ts",
