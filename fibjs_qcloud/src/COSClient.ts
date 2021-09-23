@@ -12,6 +12,29 @@ export class COSClient {
     constructor(protected conf: { secretId: string, secretKey: string, endpoint:string, bucket: string }) {
     }
 }
+export class COSBucket extends COSClient{
+    private reqUri:string;
+    constructor(protected conf: { secretId: string, secretKey: string, endpoint:string, bucket: string, outUri?:string }) {
+        super(conf);
+        this.reqUri = buildEndpoint(conf.endpoint, conf.bucket);
+    }
+    public listObjects(opt:{prefix?:string, delimiter?:string, "encoding-type"?:string, marker?:string, "max-keys"?:number}){
+        let uri = this.reqUri+'/';
+        let query = opt;
+        let headers: any = _signatureFixAuthorization(this.conf, query, "GET", uri);
+        try {
+            let rsp = http.request('GET', uri, {headers: headers, query:query});
+            if (rsp.statusCode == 200) {
+                return xmlToObjNoAttr(rsp.data.toString());
+            }
+            console.error("list_object_fail:%s", uri, (rsp.data||"").toString());
+            return null;
+        } catch (e) {
+            console.error("list_object_fail:%s", uri, e);
+            return undefined;
+        }
+    }
+}
 export class COSObject extends COSClient{
     private reqUri:string;
     private outUri:string;
@@ -20,7 +43,6 @@ export class COSObject extends COSClient{
         this.reqUri = buildEndpoint(conf.endpoint, conf.bucket);
         this.outUri = conf.outUri ? conf.outUri:buildCdnEndPoint(this.reqUri);
     }
-
 
     /**
      * 查看对象head

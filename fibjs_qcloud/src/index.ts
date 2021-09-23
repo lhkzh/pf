@@ -3,12 +3,13 @@ import * as ssl from "ssl";
 ssl.loadRootCerts();
 
 import { sigTc3HmacSha256 } from "./helper";
-import {COSObject} from "./COSClient";
+import {COSObject, COSBucket} from "./COSClient";
 import {ApiBase} from "./ApiBase";
 import { SCFClient } from "./SCFClient";
 
 export {
     sigTc3HmacSha256,
+    COSBucket,
     COSObject,
     ApiBase,
     SCFClient,
