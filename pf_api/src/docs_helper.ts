@@ -83,7 +83,10 @@ export function docs_list(project: string, docs: { [index: string]: DocNode }, g
     let No = 0;
     for (let base in docs) {
         let node: DocNode = docs[base];
-        if (!node.list || !node.list.length) {
+        let subGroupList = !node.list ? null:node.list.filter(e=>{
+            return group=="all" || (e.cms && e.cms.group ? e.cms.group==group : (node.cms && node.cms.group ? node.cms.group==group:true))
+        });
+        if (!subGroupList || !subGroupList.length) {
             continue;
         }
         let module = `<tr style='border-top: 3px solid #333; border-bottom: 2px solid #ccc; background: #ddd;'>
@@ -94,14 +97,11 @@ export function docs_list(project: string, docs: { [index: string]: DocNode }, g
             .replace("{$moduleName}", node.name)
             .replace("{$moduleDesc}", node.cms ? node.cms.desc : "")
             .replace("{$desc}", node.cms ? node.cms.desc : ""));
-        for (let j = 0; j < node.list.length; j++) {
-            let item = node.list[j];
-            if (group != "all" && (!item.cms || item.cms.group != group)) {
-                continue;
-            }
+        for (let j = 0; j < subGroupList.length; j++) {
+            let item = subGroupList[j];
             let link = curPagePath + "?s=" + encodeURIComponent(item.path);
             parts.push(
-                "<tr><td style='text-align: center;'>" + No + "</td><td style='text-align: center;'>" + (item.cms ? item.cms.state : "unknow") + "</td>"
+                "<tr><td style='text-align: center;'>" + No + "</td><td style='text-align: center;'>" + (item.cms ? item.cms.state : (node.cms&&node.cms.state?node.cms.state:"unknow")) + "</td>"
             );
             parts.push("<td><a href='" + link + "' target='_blank'>" + (item.code != 0 ? item.path + "|" + item.code : item.path) + "</a></td>");
             // parts.push("<td>["+(item.cms?item.cms.desc:item.name)+"]</td><td>|"+(item.cms?item.cms.desc:"")+"</td></tr>");
