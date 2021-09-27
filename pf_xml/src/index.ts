@@ -64,7 +64,7 @@ export function xmlToObjNoAttr(xmlStr: string) {
 function get_xml_child_val(child: Class_XmlNode, K: any, V: any | Array<any>) {
     if (child.nodeType == 1) {
         if (child.childNodes.length == 1) {
-            let val: string | number = String(child.childNodes[0].nodeValue);
+            let val: string | number | boolean = String(child.childNodes[0].nodeValue);
             if (child.childNodes[0].nodeType == 3) {
                 let nv = Number(val);
                 if (Number.isFinite(nv)) {
