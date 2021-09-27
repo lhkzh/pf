@@ -691,7 +691,7 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
             br = format_rule_src(br);
             subs.forEach(ar => {
                 if (ar.rules.some(ir => {
-                    return ir.name == br.name && ir.src == br.src;
+                    return ir.name == br.name;
                 }) == false) {
                     ar.rules.push(br);
                 }
