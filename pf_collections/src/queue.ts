@@ -53,7 +53,7 @@ export class LinkQueue<T> extends AbsQueue<T> {
 
     public push(row: T) {
         let node = new LinkNode(row);
-        if (!this._h) {
+        if (!this._h || !this._e) {
             this._h = node;
             this._e = node;
         } else {
@@ -66,7 +66,7 @@ export class LinkQueue<T> extends AbsQueue<T> {
 
     public unshift(row: T) {
         let node = new LinkNode(row);
-        if (!this._h) {
+        if (!this._h || !this._e) {
             this._h = node;
             this._e = node;
         } else {
@@ -82,15 +82,17 @@ export class LinkQueue<T> extends AbsQueue<T> {
     }
 
     public shift() {
-        let r = this._h;
-        if (r) {
+        let e = this._h;
+        if (e) {
             this._n--;
-            this._h = r.next;
-            if (this._n == 1) {
+            this._h = e.next;
+            if (this._h) {
+                this._h.prev = null;
+            } else {
                 this._e = null;
             }
         }
-        return r ? r.data : undefined;
+        return e ? e.data : undefined;
     }
 
     public pop() {
@@ -98,7 +100,9 @@ export class LinkQueue<T> extends AbsQueue<T> {
         if (e) {
             this._n--;
             this._e = e.prev;
-            if (this._n == 1) {
+            if (this._e) {
+                this._e.next = null;
+            } else {
                 this._h = null;
             }
         }
@@ -276,12 +280,12 @@ export class BlockLinkQueue<T> extends LinkQueue<T> {
 
     public take(): T {
         this.lck.acquire();
-        try{
-            while (this.size<1){
+        try {
+            while (this.size < 1) {
                 this.evt.wait();
             }
             return this.shift();
-        }finally {
+        } finally {
             this.lck.release();
         }
     }
@@ -296,6 +300,7 @@ export class BlockLinkQueue<T> extends LinkQueue<T> {
         evt.set();
     }
 }
+
 export class BlockArrayQueue<T> extends ArrayQueue<T> {
     private evt: Class_Event;
     private lck: Class_Lock;
@@ -316,12 +321,12 @@ export class BlockArrayQueue<T> extends ArrayQueue<T> {
 
     public take(): T {
         this.lck.acquire();
-        try{
-            while (this.size<1){
+        try {
+            while (this.size < 1) {
                 this.evt.wait();
             }
             return this.shift();
-        }finally {
+        } finally {
             this.lck.release();
         }
     }
