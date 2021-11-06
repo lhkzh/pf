@@ -3,10 +3,13 @@ import * as http from "http";
 import * as util from "util";
 
 export class RPCClient {
-    constructor(private conf: { accessKeyId: string, accessKeySecret: string, securityToken?: string, endpoint: string, apiVersion: string, codes: Array<number> }) {
+    protected _codes: Array<string | number>;
+
+    constructor(private conf: { accessKeyId: string, accessKeySecret: string, securityToken?: string, endpoint: string, apiVersion: string, codes?: Array<number | string> }) {
+        this._codes = Array.isArray(conf.codes) && conf.codes.length > 0 ? conf.codes : ["OK", 200];
     }
 
-    public request(action: string, params: any = {}, opts: any = {}) {
+    public invoke(action: string, params: any = {}, opts: any = {}) {
         // 1. compose params and opts
         let headers = {
             'x-sdk-client': DEFAULT_CLIENT,
@@ -14,6 +17,9 @@ export class RPCClient {
             'x-acs-action': action,
             'x-acs-version': this.conf.apiVersion
         };
+        if (opts.headers) {
+            headers = {...headers, ...opts.headers}
+        }
 
         // format action until formatAction is false
         if (opts.formatAction !== false) {
@@ -43,26 +49,31 @@ export class RPCClient {
         const url = opts.method === 'POST' ? `${this.conf.endpoint}/` : `${this.conf.endpoint}/?${canonicalize(normalized)}`;
         // 4. send request
 
+        opts.headers = headers;
         if (opts.method === 'POST') {
-            opts.headers = opts.headers || {};
             opts.headers['content-type'] = 'application/x-www-form-urlencoded';
             opts.body = canonicalize(normalized);
         }
 
         let res = http.request(opts.method, url, util.pick(opts, "headers", "body"));
         let json = res.data;
-        if (Buffer.isBuffer(json) && json[0]==123 && json[json.length-1]==125) {
+        if (Buffer.isBuffer(json) && json[0] == 123 && json[json.length - 1] == 125) {
             json = JSON.parse(json.toString());
         }
-        if (json.Code && json.Code != 200 &&(!this.conf.codes || !this.conf.codes.includes(json.Code))) {
-            var err: any = new Error(`${json.Message}, URL: ${url}`);
-            err.name = json.Code + 'Error';
-            err.data = json;
-            err.code = json.Code;
+        return {url: url, status: res.statusCode, data: json};
+    }
+
+    public request(action: string, params: any = {}, opts: any = {}) {
+        let {data, url} = this.invoke(action, params, opts)
+        if (data.Code && this._codes.includes(data.Code) == false) {
+            var err: any = new Error(`${data.Message}, URL: ${url}`);
+            err.name = data.Code + 'Error';
+            err.data = data;
+            err.code = data.Code;
             err.url = url;
             throw err;
         }
-        return json;
+        return data;
     }
 
     private _buildParams() {
