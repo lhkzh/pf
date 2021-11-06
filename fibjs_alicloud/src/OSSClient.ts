@@ -26,6 +26,20 @@ export class OSSObject extends OSSClient {
     }
 
     /**
+     * 服务端生成post上传签名参数
+     * @param policy
+     */
+    public getUploadParams(policy:any){
+        let policyStr = Buffer.from(util.isString(policy) ? policy:JSON.stringify(policy)).toString("base64");
+        const signature:string = hash.hmac_sha1(<any>this.conf.accessKeySecret, <any>policyStr).digest("base64");
+        return {
+            OSSAccessKeyId: this.conf.accessKeyId,
+            policy: policyStr,
+            signature: signature,
+        };
+    }
+
+    /**
      * 查看对象head
      * @param key
      */
@@ -138,8 +152,7 @@ export class OSSObject extends OSSClient {
     /**
      * copy数据
      * @param key
-     * @param buffer
-     * @param contentType
+     * @param sourceBucketKey
      */
     public copyObject(key: string, sourceBucketKey: string) {
         let headers: any = {
