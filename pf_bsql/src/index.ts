@@ -387,7 +387,7 @@ export class BsqlQuery extends BsqlWhereBase {
     }
 
     public build(has?: boolean) {
-        let _cs = this._colums ? QS(this._colums).join(',') : '*';
+        let _cs = this._colums && this._colums.length > 0 ? QS(this._colums).join(',') : '*';
         let pre = `SELECT ${_cs} FROM ${this._table}`;
         if (this._wheres.length) {
             pre = pre + ' WHERE ' + this._wheres.join(' ');
