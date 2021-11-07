@@ -26,8 +26,9 @@ export class OSSObject extends OSSClient {
     }
 
     /**
-     * 服务端生成post上传签名参数
+     * 服务端生成post上传签名参数。使用上根据自己情况加工
      * @param policy
+     * @see https://help.aliyun.com/document_detail/92883.html
      */
     public getUploadParams(policy:any){
         let policyStr = Buffer.from(util.isString(policy) ? policy:JSON.stringify(policy)).toString("base64");
