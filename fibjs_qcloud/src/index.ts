@@ -6,6 +6,7 @@ import { sigTc3HmacSha256 } from "./helper";
 import {COSObject, COSBucket} from "./COSClient";
 import {ApiBase} from "./ApiBase";
 import { SCFClient } from "./SCFClient";
+import { STS } from "./STS";
 
 export {
     sigTc3HmacSha256,
@@ -13,4 +14,5 @@ export {
     COSObject,
     ApiBase,
     SCFClient,
+    STS,
 }

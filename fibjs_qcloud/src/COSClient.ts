@@ -44,6 +44,45 @@ export class COSObject extends COSClient{
         this.outUri = conf.outUri ? conf.outUri:buildCdnEndPoint(this.reqUri);
     }
 
+    // 用于 PostObject 签名保护
+    public getPostParam(key:string, timeOut:number=900){
+        var now = Math.round(Date.now() / 1000);
+        var exp = now + timeOut;
+        var qKeyTime = now + ';' + exp;
+        var qSignAlgorithm = 'sha1';
+        var policy = JSON.stringify({
+            'expiration': new Date(exp * 1000).toISOString(),
+            'conditions': [
+                // {'acl': query.ACL},
+                // ['starts-with', '$Content-Type', 'image/'],
+                // ['starts-with', '$success_action_redirect', redirectUrl],
+                // ['eq', '$x-cos-server-side-encryption', 'AES256'],
+                {'q-sign-algorithm': qSignAlgorithm},
+                {'q-ak': this.conf.secretId},
+                {'q-sign-time': qKeyTime},
+                {'bucket': this.conf.bucket},
+                {'key': key},
+            ]
+        });
+
+        // 签名算法说明文档：https://www.qcloud.com/document/product/436/7778
+        // 步骤一：生成 SignKey
+        var signKey = hash.hmac_sha1(<any>this.conf.secretKey, <any>qKeyTime).digest('hex');
+        // 步骤二：生成 StringToSign
+        var stringToSign = hash.sha1(<any>policy).digest('hex');
+        // 步骤三：生成 Signature
+        var qSignature = hash.hmac_sha1(<any>signKey, <any>stringToSign).digest('hex');
+        return {
+            // policyObj: JSON.parse(policy),
+            policy: Buffer.from(policy).toString('base64'),
+            qSignAlgorithm: qSignAlgorithm,
+            qAk: this.conf.secretId,
+            qKeyTime: qKeyTime,
+            qSignature: qSignature,
+            // securityToken: securityToken, // 如果使用临时密钥，要返回在这个资源 sessionToken 的值
+        };
+    }
+
     /**
      * 查看对象head
      * @param key
