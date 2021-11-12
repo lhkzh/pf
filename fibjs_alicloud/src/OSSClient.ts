@@ -10,8 +10,61 @@ import * as querystring from "querystring";
 export class OSSClient {
     constructor(protected conf: { accessKeyId: string, accessKeySecret: string, securityToken?: string, endpoint: string }) {
     }
+    protected _get_base_headers() {
+        let h: any = {"Date": new Date()["toGMTString"]()};
+        if (this.conf.securityToken) {
+            h["x-oss-security-token:security-token"] = this.conf.securityToken;
+        }
+        return h;
+    }
 }
+export class OSSBucket extends OSSClient{
+    private bucketEndpoint: string;
+    private bucketHost: string;
 
+    constructor(protected conf: { accessKeyId: string, accessKeySecret: string, securityToken?: string, endpoint: string, bucket: string, outUri?:string }) {
+        super(conf);
+        this.bucketEndpoint = buildEndpoint(conf.endpoint, conf.bucket);
+        this.bucketHost = url.parse(this.bucketEndpoint).host;
+    }
+    public listObjects(opt:{delimiter:string,marker:string,"max-keys"?:number,prefix?:string,"encoding-type"?:string}){
+        let key = '';
+        let headers: any = this._get_base_headers();
+        let querys = opt||{};
+        headers = _signatureFixAuthorization(this.conf, key, "GET", headers, {});
+        let url = this.bucketEndpoint + '/' + key;
+        try {
+            let rsp = http.request('GET', url, {headers: headers, query:querys});
+            // console.log(rsp.statusCode, rsp.statusMessage)
+            if (rsp.statusCode == 200) {
+                return xmlToObjNoAttr(rsp.data.toString());
+            }
+            return null;
+        } catch (e) {
+            console.error(key, e);
+            return undefined;
+        }
+    }
+    public listObjects2(opt:{Prefix?:string, Delimiter?:string, "Start-after"?:string, "Continuation-token"?:string, "Max-keys"?:number, "Encoding-type"?:string, "Fetch-owner"?:boolean}){
+        let key = '';
+        let headers: any = this._get_base_headers();
+        let querys = opt||{};
+        querys["List-type"] = 2;
+        headers = _signatureFixAuthorization(this.conf, key, "GET", headers, {});
+        let url = this.bucketEndpoint + '/?list-type=2&' + key+require("querystring").stringify(querys);
+        try {
+            let rsp = http.request('GET', url, {headers: headers, query:querys});
+            // console.log(rsp.statusCode, rsp.statusMessage)
+            if (rsp.statusCode == 200) {
+                return xmlToObjNoAttr(rsp.data.toString());
+            }
+            return null;
+        } catch (e) {
+            console.error(key, e);
+            return undefined;
+        }
+    }
+}
 /**
  * OSS存储Object操作相关
  */
@@ -298,14 +351,6 @@ export class OSSObject extends OSSClient {
     }
     private get_out_uri(){
         return (this.conf.outUri||this.bucketEndpoint.replace("-internal.","."));
-    }
-
-    private _get_base_headers() {
-        let h: any = {"Date": new Date()["toGMTString"]()};
-        if (this.conf.securityToken) {
-            h["x-oss-security-token:security-token"] = this.conf.securityToken;
-        }
-        return h;
     }
 }
 
