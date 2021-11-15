@@ -1,6 +1,6 @@
 {
   "name": "fibjs_alicloud",
-  "version": "1.0.6",
+  "version": "1.0.9",
   "description": "阿里云部分接口fibjs版本封装",
   "main": "./dist/index.js",
   "types": "./@types/index.d.ts",
@@ -29,6 +29,6 @@
   ],
   "dependencies": {
     "mime-types": "latest",
-    "pf_xml": "latest"
+    "parse-wechat-xml": "^0.1.0"
   }
 }

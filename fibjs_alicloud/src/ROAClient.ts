@@ -1,8 +1,7 @@
 import * as hash from "hash";
 import * as querystring from "querystring";
 import * as http from "http";
-import {DEFAULT_CLIENT, DEFAULT_UA, makeNonce, sig} from "./helper";
-import {xmlToObjNoAttr} from "pf_xml";
+import {DEFAULT_CLIENT, DEFAULT_UA, makeNonce, parseXML, sig} from "./helper";
 
 
 export class ROAClient {
@@ -51,7 +50,7 @@ export class ROAClient {
             if (result.charAt(0) == '{') {
                 result = JSON.parse(result);
             } else if (result.charAt(0) == '<') {
-                result = xmlToObjNoAttr(result.toString());
+                result = parseXML(result.toString());
             }
         }
         if (res.statusCode >= 400) {

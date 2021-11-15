@@ -3,8 +3,8 @@ import * as hash from "hash";
 import * as util from "util";
 import * as url from "url";
 import * as http from "http";
-import {xmlToObjNoAttr} from "pf_xml";
 import * as querystring from "querystring";
+import {parseXML} from "./helper";
 
 
 export class OSSClient {
@@ -37,7 +37,7 @@ export class OSSBucket extends OSSClient{
             let rsp = http.request('GET', url, {headers: headers, query:querys});
             // console.log(rsp.statusCode, rsp.statusMessage)
             if (rsp.statusCode == 200) {
-                return xmlToObjNoAttr(rsp.data.toString());
+                return parseXML(rsp.data.toString(), ["Contents"]);
             }
             return null;
         } catch (e) {
@@ -56,7 +56,7 @@ export class OSSBucket extends OSSClient{
             let rsp = http.request('GET', url, {headers: headers, query:querys});
             // console.log(rsp.statusCode, rsp.statusMessage)
             if (rsp.statusCode == 200) {
-                return xmlToObjNoAttr(rsp.data.toString());
+                return parseXML(rsp.data.toString(), ["Contents"]);
             }
             return null;
         } catch (e) {
@@ -304,7 +304,7 @@ export class OSSObject extends OSSClient {
             let rsp = http.get(url, {headers: headers});
             if (rsp.statusCode = 200) {
                 // return rsp.readAll();
-                return xmlToObjNoAttr(rsp.data.toString());
+                return parseXML(rsp.data.toString());
             }
             return undefined;
         } catch (e) {

@@ -2,8 +2,7 @@ import * as url from "url";
 import * as http from "http";
 import * as hash from "hash";
 import * as fs from "fs";
-import {sigHmacSha1} from "./helper";
-import {xmlToObjNoAttr} from "pf_xml";
+import {parseXML, sigHmacSha1} from "./helper";
 
 /**
  * 腾讯云cos简易使用client
@@ -25,7 +24,7 @@ export class COSBucket extends COSClient{
         try {
             let rsp = http.request('GET', uri, {headers: headers, query:query});
             if (rsp.statusCode == 200) {
-                return xmlToObjNoAttr(rsp.data.toString());
+                return parseXML(rsp.data.toString(), ["Contents"]);
             }
             console.error("list_object_fail:%s", uri, (rsp.data||"").toString());
             return null;
@@ -258,7 +257,7 @@ export class COSObject extends COSClient{
         try {
             let rsp = http.get(uri, {headers: headers});
             if(rsp.statusCode == 200){
-                return xmlToObjNoAttr(rsp.data.toString());
+                return parseXML(rsp.data.toString());
             }
             return undefined;
         } catch (e) {
