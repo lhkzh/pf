@@ -834,7 +834,7 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                     source = {[rule.name]: _};
                 }
             } else if (rule.src == "socket") {
-                source = ctx.getSocket();
+                source = ctx.getSocket().hasOwnProperty(rule.name)?ctx.getSocket():ctx.getSocket()["stream"];
             } else if (rule.src.charAt(0) == "$") {
                 if (rule.src == "$ctx") {
                     args[i] = ctx;
