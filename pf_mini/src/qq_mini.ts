@@ -180,10 +180,10 @@ export class subscribeMessage {
     /**
      * 发送订阅消息（用户在小程序/小游戏主动订阅之后）
      * @param params
-     * @see https://q.qq.com/wiki/develop/miniprogram/server/open_port/port_module.html
+     * @see https://q.qq.com/wiki/develop/game/server/open-port/port_subscrib.html
      */
-    public send(params: { appid: string, touser: string, template_id: string, form_id?: string, data: { [index: string]: { value: string } } | any, page?: string, emphasis_keyword?: string, oac_appid?: string }): wx_base_api_res {
-        let url = `https://api.q.qq.com/api/json/template/send?access_token=${this.access_token}`;
+    public send(params: { touser: string, template_id: string, data: { [index: string]: { value: string } } | any, page?: string, emphasis_keyword?: string, oac_appid?: string, use_robot?:number }): wx_base_api_res {
+        let url = `https://api.q.qq.com/api/json/subscribe/SendSubscriptionMessage?access_token=${this.access_token}`;
         return http_post_json(url, params);
     }
 }
