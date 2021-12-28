@@ -56,7 +56,7 @@ export function genarateDocsHtml(filterGroup: string, service: string, assetLoca
         source = docs_desc(url, foundFn, false, ["X-Wx-Skey", "uid"], assetLocalDir);
     } else {
         // console.log(docs)
-        source = docs_list(cfg.project, docs, filterGroup || "all", cfg.groups, true, assetLocalDir, current_api_path());
+        source = docs_list(cfg.project, docs, filterGroup || "all", cfg.groups, true, assetLocalDir, "."+current_api_path());
     }
     return source;
 }
