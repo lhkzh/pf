@@ -196,7 +196,7 @@ export class virtualPay {
     private base_url: string;
 
     constructor(private access_token: string, private cfg: { appid: string, offer_secret: string }) {
-        this.base_url = `https://api.q.qq.com/api/json/openApiPay/`;
+        this.base_url = `https://api.q.qq.com/api/json/openApiPay`;
     }
 
     /**
