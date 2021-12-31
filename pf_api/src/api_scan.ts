@@ -25,7 +25,9 @@ export interface regist_opts {
     //API路径前缀
     prefix?: string | string[],
     //静态文件夹处理
-    static?: regist_static_file | string | Function | Class_Handler
+    static?: regist_static_file | string | Function | Class_Handler,
+    //在api扫描后，可以追加路由
+    inject?:(q:Class_Routing)=>Class_Routing
 }
 
 /**
@@ -76,6 +78,9 @@ function do_regist(requireFnWrap: Function, opts?: regist_opts) {
         routing = last_api_routing;
     }
     if (pf_reg_scan_suc) {
+        if(opts && opts.inject != null){
+            routing = opts.inject(routing) || routing;
+        }
         let filePatter: string;
         let fileFn: Function;
         if (opts.static) {
