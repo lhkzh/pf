@@ -1,0 +1,17 @@
+{
+  "name": "tsmsg_cli",
+  "version": "0.0.1",
+  "description": "",
+  "main": "./tool/cli.js",
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^4.5.4"
+  },
+  "scripts": {
+    "gen": "node tool/cli.js"
+  },
+  "files": [
+    "package.json",
+    "tool"
+  ]
+}

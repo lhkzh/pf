@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "target": "es6",
+    "module": "es6",
+    "strict": true,
+    "strictNullChecks": false,
+    "moduleResolution": "Node",
+    "skipLibCheck": true,
+    "outDir": "build/",
+    "rootDir": "./src"
+  },
+  "include": [
+    "./src/**/*",
+    "lib"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

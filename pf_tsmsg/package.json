@@ -1,0 +1,42 @@
+{
+  "name": "tsmsg",
+  "version": "0.0.1",
+  "description": "",
+  "main": "./index.cjs",
+  "exports": {
+    "require": "./index.cjs",
+    "import": "./index.mjs"
+  },
+  "typings": "./index.d.ts",
+  "directories": {
+    "doc": "docs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "dts-bundle": "^0.7.3",
+    "gulp": "^4.0.2",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "rollup": "^2.61.1",
+    "typescript": "^4.5.4",
+    "tslib": "^2.3.1"
+  },
+  "scripts": {
+    "build": "gulp build"
+  },
+  "files": [
+    "package.json",
+    "index.cjs",
+    "index.mjs",
+    "index.d.ts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lhkzh/pf.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": ""
+  },
+  "homepage": ""
+}
