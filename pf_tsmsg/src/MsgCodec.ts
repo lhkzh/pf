@@ -68,7 +68,7 @@ export class MsgCodec {
         return this.decs[type](val instanceof InStream ? val : new InStream(val.buffer), false);
     }
 
-    public buildDecFn(clazz: string, info: any) {
+    private buildDecFn(clazz: string, info: any) {
         let members = info.members;
 
         if (members.length == 1 && members[0][2] == 2) {//index_kv
@@ -87,17 +87,44 @@ export class MsgCodec {
                 return undefined;
             }
         } else {
-            let fns: Array<(input: InStream, option?: boolean) => any> = [];
+            let fns: Array<(input: InStream, option?: boolean) => any> = [], fnn:number=0;
             for (var node of members) {
                 //key = node[0], val=node[1], option=node[2]
                 fns.push(this.getStructFieldDecFn(node[0], node[1]));
+                if(node[2]==0){
+                    fnn++;
+                }
             }
             return function (input: InStream, option: boolean) {
-                var len = dObjLen(input, option);
+                // var len = dObjLen(input, option);
+                var len = dArrLen(input, option);
                 if (len >= 0) {
                     var rsp: any = {};
-                    for (var i = 0; i < members.length; i++) {
-                        rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
+
+                    if (len == members.length) {
+                        for (var i = 0; i < len; i++) {
+                            rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
+                        }
+                    }else if(len>members.length){
+                        for (var i = 0; i < members.length; i++) {
+                            rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
+                        }
+                        for(i=members.length; i<len; i++){
+                            msgpack.decode2(input);
+                        }
+                    }else if(len<fnn){
+                        throw new Error("decode_fail:members match fail");
+                    }else {
+                        for (var i = 0; i < members.length; i++) {
+                            if(i>=len){
+                                if(members[i][2]==0){
+                                    throw new Error("decode_fail:members match fail");
+                                }
+                                rsp[members[i][0]] = undefined;
+                            }else{
+                                rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
+                            }
+                        }
                     }
                     return rsp;
                 }
@@ -135,7 +162,8 @@ export class MsgCodec {
                 if (isNilOrUndefiend(v)) {
                     out.u8(0xc0);
                 } else {
-                    eObjLen(members.length, out);
+                    // eObjLen(members.length, out);
+                    packArrHeader(members.length, out);
                     for (var fn of fns) {
                         fn(v, out);
                     }
