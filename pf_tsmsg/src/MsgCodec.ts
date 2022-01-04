@@ -1,15 +1,15 @@
-import {msgpack} from "./msgpack";
-import OutStream = msgpack.OutStream;
-import packInt = msgpack.packInt;
-import packUInt = msgpack.packUInt;
-import packDate = msgpack.packDate;
-import packString = msgpack.packString;
-import packArrHeader = msgpack.packArrHeader;
-import packBool = msgpack.packBool;
-import InStream = msgpack.InStream;
-import unpackExt = msgpack.unpackExt;
-import unpackDate = msgpack.unpackDate;
-import packExt = msgpack.packExt;
+import {MsgPack} from "./MsgPack";
+import OutStream = MsgPack.OutStream;
+import packInt = MsgPack.packInt;
+import packUInt = MsgPack.packUInt;
+import packDate = MsgPack.packDate;
+import packString = MsgPack.packString;
+import packArrHeader = MsgPack.packArrHeader;
+import packBool = MsgPack.packBool;
+import InStream = MsgPack.InStream;
+import unpackExt = MsgPack.unpackExt;
+import unpackDate = MsgPack.unpackDate;
+import packExt = MsgPack.packExt;
 
 export type int8 = number;
 export type int16 = number;
@@ -110,7 +110,7 @@ export class MsgCodec {
                             rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
                         }
                         for(i=members.length; i<len; i++){
-                            msgpack.decode2(input);
+                            MsgPack.decode2(input);
                         }
                     }else if(len<fnn){
                         throw new Error("decode_fail:members match fail");
@@ -391,7 +391,8 @@ const encodeFnDict: { [index: string]: (v: any, out: OutStream) => OutStream } =
     "uint": euint,
     "float32": ef32,
     "float64": ef64,
-    "number": enumber,
+    "number": enumber, 
+    "byte": ei8,
     "short": ei16,
     "long": eint,
     "boolean": packBool,
@@ -733,7 +734,8 @@ const decodeFnDict: { [index: string]: (input: InStream, option?: boolean) => an
     "uint": dint,
     "float32": df32,
     "float64": df64,
-    "number": dnumber,
+    "number": dnumber, 
+    "byte": di8,
     "short": di16,
     "long": dint,
     "boolean": dbool,

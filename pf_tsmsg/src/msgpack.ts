@@ -1,4 +1,4 @@
-export module msgpack {
+export module MsgPack {
 
     export function decode(b: ArrayBuffer | { buffer: ArrayBuffer, byteLength: number }) {
         return unpack(new InStream(b instanceof ArrayBuffer ? <ArrayBuffer>b : b.buffer));
