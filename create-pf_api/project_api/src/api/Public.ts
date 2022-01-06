@@ -76,6 +76,6 @@ class Public {
         if (process.env.PRODUCT && process.env.PRODUCT!="dev") {
             return "null";
         }
-        return docs_helper.genarateDocsHtml({group:group, service:service});
+        return docs_helper.genarateDocsHtml({group:group, api:service});
     }
 }
