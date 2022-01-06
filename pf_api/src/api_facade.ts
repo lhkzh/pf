@@ -15,7 +15,6 @@ import * as ws from "ws";
 import * as path from "path";
 import * as fs from "fs";
 import * as timers from "timers";
-import {Reflection as Reflect} from '@abraham/reflection';
 import {linkFnComment, getCalledFile} from "./docs_comment_helper";
 import {DocNode} from "./docs_helper";
 import {type_convert, UploadFileInfo, IntNumber} from "./api_types";
@@ -35,6 +34,7 @@ import {
 } from "./api_ctx";
 import {DtoInstanceMake, DtoTypeCheck} from "./api_dto";
 import {getParamterNames} from "./utils";
+import {Reflection} from "./reflection";
 
 let current_apis: { [index: string]: Function } = {};
 let current_docs: any = {};
@@ -955,7 +955,7 @@ function route(method: string, pathInfo: string | ApiMethod, target: any, key: s
         p = '/' + p;
     }
     let srcFn: Function = desc.value;
-    let paramTypes: Array<Function> = Reflect.getMetadata("design:paramtypes", target, key);//参数类型
+    let paramTypes: Array<Function> = Reflection.getMetadata("design:paramtypes", target, key);//参数类型
     let paramNames: Array<string> = getParamterNames(srcFn);//方法的各参数名
     let paramRules: Array<ApiParamRule> = [];//方法的各参数规则
     let args_names: { [index: string]: ApiParamRule } = {};

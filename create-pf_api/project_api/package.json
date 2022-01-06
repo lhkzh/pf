@@ -3,7 +3,8 @@
   "version": "1.0.8",
   "private": true,
   "dependencies": {
-    "pf_api": "latest"
+    "pf_api": "latest",
+    "pf_xml": "latest"
   },
   "devDependencies": {
     "@fibjs/types": "latest"

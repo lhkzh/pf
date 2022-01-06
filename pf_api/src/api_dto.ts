@@ -6,17 +6,17 @@
  * dto: 根据注解规则，实现参数object-转数据类定义
  * @author zhh
  */
-import {Reflection as Reflect} from "@abraham/reflection";
 import {BaseParamRule, CheckBaseParamRule} from "./api_ctx";
 import {type_convert} from "./api_types";
+import {Reflection} from "./reflection";
 
 const $_VAL_TYPE_FIELDS = "$_val_type_fields";
 
 function save_dto_fields(target: any, pk: string, rule: any) {
-    if (!Reflect.hasMetadata($_VAL_TYPE_FIELDS, target)) {
-        Reflect.defineMetadata($_VAL_TYPE_FIELDS, {}, target);
+    if (!Reflection.hasMetadata($_VAL_TYPE_FIELDS, target)) {
+        Reflection.defineMetadata($_VAL_TYPE_FIELDS, {}, target);
     }
-    Reflect.getMetadata($_VAL_TYPE_FIELDS, target)[pk] = rule;
+    Reflection.getMetadata($_VAL_TYPE_FIELDS, target)[pk] = rule;
 }
 
 /**
@@ -40,7 +40,7 @@ export function DtoField(rule?: BaseParamRule) {
  * @constructor
  */
 export function DtoTypeCheck(type: any) {
-    return type && Reflect.hasMetadata($_VAL_TYPE_FIELDS, type.prototype);
+    return type && Reflection.hasMetadata($_VAL_TYPE_FIELDS, type.prototype);
 }
 
 /**
@@ -51,12 +51,12 @@ export function DtoTypeCheck(type: any) {
  */
 export function DtoInstanceMake(type: any, _data: any) {
     let _kvs;
-    if (!_data || !(_kvs = <any>Reflect.getMetadata($_VAL_TYPE_FIELDS, type.prototype))) {
+    if (!_data || !(_kvs = <any>Reflection.getMetadata($_VAL_TYPE_FIELDS, type.prototype))) {
         return null;
     }
     let _imp = new (<any>type)();
     for (let _k in _kvs) {
-        let _t = Reflect.getMetadata("design:type", type.prototype, _k);
+        let _t = Reflection.getMetadata("design:type", type.prototype, _k);
         let _v = _data.hasOwnProperty(_k) ? type_convert(_t, _data[_k]) : undefined;
         let _r = _kvs[_k];
         if (_r) {

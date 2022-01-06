@@ -11,7 +11,6 @@
 import * as util from "util";
 import * as msgpack from "msgpack";
 import {type_convert, UploadFileInfo} from "./api_types";
-import {objToXmlNoAttr, xmlToObjNoAttr} from "pf_xml";
 import {Facade} from "./api_facade";
 
 
@@ -419,7 +418,7 @@ export class ApiHttpCtx extends AbsHttpCtx {
             if (this.isCtForm()) {
                 this.b = this.req.form;
             } else if (this.isCtXml()) {
-                this.b = xmlToObjNoAttr(this.req.data.toString());
+                this.b = require("pf_xml").xmlToObjNoAttr(this.req.data.toString());
             } else if (this.b.length > 1) {
                 let head = this.b.readUInt8(0), end = this.b.readUInt8(this.b.length - 1);
                 if ((head == 123 && end == 125) || (head == 91 && end == 93)) {//[] {}
@@ -542,7 +541,7 @@ export class ApiHttpCtx extends AbsHttpCtx {
     public sendXml(xml: any, contentType?: string) {
         var src = xml;
         if (!util.isString(xml) || xml.charAt(0) != '<') {
-            xml = objToXmlNoAttr(xml);
+            xml = require("pf_xml").objToXmlNoAttr(xml);
         }
         this.send_res(src, xml, contentType);
     }
@@ -746,7 +745,7 @@ export class WsApiHttpCtx extends AbsHttpCtx {
     public sendXml(xml: any, contentType?: string) {
         this.debug(xml);
         if (!util.isString(xml) || xml.charAt(0) != '<') {
-            xml = objToXmlNoAttr(xml);
+            xml = require("pf_xml").objToXmlNoAttr(xml);
         }
         this.sendStr(xml, contentType);
     }
