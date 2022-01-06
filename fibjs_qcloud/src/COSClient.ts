@@ -269,6 +269,42 @@ export class COSObject extends COSClient{
     public fullOutUrl(key: string){
         return this.outUri+'/'+key;
     }
+
+    /**
+     * 调用文本审核
+     * @see https://cloud.tencent.com/document/product/460/56285
+     * @param opt
+     * @param conf
+     */
+    public auditing_text(opt:{Object?:string, Content?:string, Url?:string}, conf:{DetectType?:string,BizType?:string,Callback?:string,CallbackVersion?:string}={DetectType:"Porn,Illegal,Abuse"}){
+        let inputs:string;
+        for(var k in opt){
+            if(opt[k]){
+                inputs = `<${k}>${opt[k]}</k>`;
+                break;
+            }
+        }
+        let confs = [];
+        for(var k in conf){
+            confs.push(`<${k}>${conf[k]}</${k}>`)
+        }
+        let body = `<Request><Input>${inputs}</Input><Conf>${confs.join("")}</Conf></Request>`;
+        let uri = this.reqUri.replace(".cos.",".ci.") + '/text/auditing';
+        let headers = { "Content-Type": "application/xml", "Content-Length": body.length };
+        headers = _signatureFixAuthorization(this.conf, headers, 'POST', uri);
+        delete headers["Content-Length"];
+        try {
+            let rsp = http.post(uri, {headers: headers, body:body});
+            // console.log(rsp.data.toString())
+            if(rsp.statusCode == 200){
+                return parseXML(rsp.data.toString());
+            }
+            return undefined;
+        } catch (e) {
+            console.error(uri, e);
+            return undefined;
+        }
+    }
 }
 
 function _signatureFixAuthorization(cfg:{secretId:string, secretKey:string}, headers:any, httpMethod: string, uri: string, expireSecond: number = 3600){
