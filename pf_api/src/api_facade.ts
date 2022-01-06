@@ -65,6 +65,8 @@ export class Facade {
     public static _hookErr: (ctx: AbsHttpCtx, err: Error) => void;
     //耗时统计函数
     public static _hookTj: (apiPath: string, costMsTime: number) => void;
+    //debug钩子函数
+    public static _hookDebug: (ctxInfo: { path: string, query?: any, body?: any, headers?: any, mark?: any }, data: any) => void
 
     //api路径
     public static get _docs(): { [index: string]: DocNode } {
@@ -717,6 +719,9 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
         let node = subs[i];
         let key = node.key;
         let relativePath = path == '/' && node.path.charAt(0) == '/' ? node.path : path + node.path;
+        if(node.absolute){
+            relativePath = node.path.charAt(0)!='/' ? '/'+node.path:node.path;
+        }
         node.path = relativePath;
         let fn = api_run_wrap(constructor, node.res || res, key, node.filter || filter, relativePath);
         let ignore_path_case = Facade.ignorePathCase && normal_path_reg.test(relativePath);
@@ -941,9 +946,9 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
  * @param desc 属性描述符，可替换其包裹的方法
  * @param pathCode 路由的数字表示数
  */
-function route(method: string, pathInfo: string | ApiClass, target: any, key: string, desc: PropertyDescriptor, pathCode: number) {
+function route(method: string, pathInfo: string | ApiMethod, target: any, key: string, desc: PropertyDescriptor, pathCode: number) {
     // console.log(p,typeof target[key])
-    let pathOpt: ApiClass = !util.isString(pathInfo) ? pathInfo as ApiClass : null;
+    let pathOpt: ApiMethod = !util.isString(pathInfo) ? pathInfo as ApiMethod : null;
     let path: string = pathInfo == null ? null : (pathOpt ? pathOpt.path : pathInfo.toString());
     let p: string = (path != null ? path : key);
     if (p != "" && p.charAt(0) != '/') {
@@ -989,6 +994,7 @@ function route(method: string, pathInfo: string | ApiClass, target: any, key: st
     if (pathOpt) {
         if (pathOpt.filter) routingInfo.filter = pathOpt.filter;
         if (pathOpt.res) routingInfo.res = pathOpt.res;
+        if (pathOpt.absolute) routingInfo.absolute = pathOpt.absolute;
     }
     if (!target["$subs"]) {
         target["$subs"] = [routingInfo];

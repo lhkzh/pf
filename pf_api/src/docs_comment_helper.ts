@@ -7,7 +7,6 @@
  * @link https://github.com/yavorskiy/comment-parser
  */
 import fs = require("fs");
-import path = require("path");
 
 //获取-调用方法的文件
 export function getCalledFile(curFile) {

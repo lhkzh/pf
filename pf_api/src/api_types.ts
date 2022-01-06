@@ -55,11 +55,6 @@ cast_type_map.set(Array, v => {
     return Array.isArray(v) ? v : Array(v);
 });
 cast_type_map.set(global["BigInt"], v => {
-    if (!Number.isFinite(v)) {
-        if (HadNoNumberReg.test(v)) {
-            v = Number(v);
-        }
-    }
     return global["BigInt"](v);
 });
 cast_type_map.set(Map, v => {

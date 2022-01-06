@@ -12,6 +12,7 @@ import * as util from "util";
 import * as msgpack from "msgpack";
 import {type_convert, UploadFileInfo} from "./api_types";
 import {objToXmlNoAttr, xmlToObjNoAttr} from "pf_xml";
+import {Facade} from "./api_facade";
 
 
 const ContentType_html = "text/html; charset=utf8";
@@ -238,6 +239,8 @@ export interface ApiRouting {
     filter?: ApiFilterHandler,
     //序列化结果类
     res?: new () => AbsRes,
+    //是否需要忽略类路径（避免前缀追加问题）
+    absolute?: boolean,
 }
 
 //api过滤器参数
@@ -245,8 +248,7 @@ export interface ApiFilterHandler {
     (ctx: AbsHttpCtx): boolean;
 }
 
-//路由-类型参数
-export interface ApiMethod {
+interface ApiRoute{
     //访问路径定义，不写则默认函数名or类名
     path?: string,
     //权限函数：返回true/false表示是否允许访问
@@ -255,8 +257,14 @@ export interface ApiMethod {
     res?: new () => AbsRes,
 }
 
+//路由-类型参数
+export interface ApiMethod extends ApiRoute{
+    //是否需要忽略类路径（避免前缀追加问题）
+    absolute?: boolean,
+}
+
 //类标记参数
-export interface ApiClass extends ApiMethod {
+export interface ApiClass extends ApiRoute {
     //本类下面函数的通用的参数规则
     baseRules?: Array<ApiParamRule>,
 }
@@ -270,16 +278,6 @@ export class ApiRunError extends Error {
         // this.name="ApiRunError";
         this.code = code;
     }
-}
-
-let debugHook: (ctxInfo: { path: string, query: any, body: any, headers: any, mark: any }, data: any) => void;
-
-/**
- * 设置-调试用的钩子函数
- * @param fn
- */
-export function setApiDebugHook(fn: (ctxInfo: { path: string, query: any, body: any, headers: any, mark: any }, data: any) => void) {
-    debugHook = fn;
 }
 
 //基础上下文
@@ -353,15 +351,13 @@ export abstract class AbsHttpCtx {
     public abstract runAfters();
 
     protected debug(obj) {
-        if (debugHook) {
-            debugHook({
-                path: this.getPath(),
-                query: this.getQuery(),
-                body: this.getBody(),
-                headers: this.getHeaders(),
-                mark: this.debugMark
-            }, obj);
-        }
+        Facade._hookDebug && Facade._hookDebug({
+            path: this.getPath(),
+            query: this.getQuery(),
+            body: this.getBody(),
+            headers: this.getHeaders(),
+            mark: this.debugMark
+        }, obj);
     }
 }
 

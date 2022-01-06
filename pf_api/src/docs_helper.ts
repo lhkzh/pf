@@ -8,35 +8,25 @@
 import {ApiParamRule} from "./api_ctx";
 import {current_api_ctx, current_api_path, Facade} from "./api_facade";
 
-const CDN_JS_PRE = "https://lib.baomitu.com/jquery/1.12.4/";
-const CDN_CSS_PRE = "https://lib.baomitu.com/semantic-ui/2.4.1/";
+const CDN_JS_PRE = "https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/";
+const CDN_CSS_PRE = "https://cdn.bootcdn.net/ajax/libs/semantic-ui/2.4.1/components/";
 const CDN_CSS_PRE_CS = CDN_CSS_PRE + "components/";
 
 //删减所有换行符为一行
 export function html2line(source: string): string {
-    let rep = /\n+/g;
-    let repone = /<!--.*?-->/ig;
-    let reptwo = /\/\*.*?\*\//ig;
-    let reptree = /[ ]+</ig;
-    let sourceZero = source.replace(rep, "");
-    let sourceOne = sourceZero.replace(repone, "");
-    let sourceTwo = sourceOne.replace(reptwo, "");
-    let sourceTree = sourceTwo.replace(reptree, "<");
-    return sourceTree;
-    // return source;
+    return source.replace(/\n+/g, "")
+        .replace(/<!--.*?-->/ig, "")
+        .replace(/\/\*.*?\*\//ig, "")
+        .replace(/[ ]+</ig, "<");
 }
-
+const DEFAULT_DOCS_OPT = { project: "app", groups: {"user": "客户接口", "server": "内网接口", "dev": "开发工具", "all": "所有", "inner": "系统内循环"}};
 //构造接口文档html
-export function genarateDocsHtml(filterGroup: string, service: string, assetLocalDir?: string, cfg: { project: string, groups: { [index: string]: string } } = {
-    project: "app",
-    groups: {"user": "客户接口", "server": "内网接口", "dev": "开发工具", "all": "所有", "inner": "系统内循环"}
-}) {
-    // let local_doc_res = null;//"doc_res/";//如果选择用默认库中公共CDN资源设置为null
+export function genarateDocsHtml(cfg: { api?:string, group?:string, assetLocalDir?:string, docPath?:string, project?: string, groups?:{[index:string]:string}} ) {
+    cfg = {...DEFAULT_DOCS_OPT, ...cfg};
     let docs = Facade._docs;
     let source: string;
-    if (service) {
-        service = decodeURIComponent(service);
-        // console.log(JSON.stringify(docs));
+    if (cfg.api) {
+        let service = decodeURIComponent(cfg.api);
         let foundFn = null;
         M:for (let k in docs) {
             let module = docs[k].list;
@@ -50,13 +40,11 @@ export function genarateDocsHtml(filterGroup: string, service: string, assetLoca
         if (!foundFn) {
             return "NotFound:" + service;
         }
-        // console.log(JSON.stringify(foundFn))
         let headers = current_api_ctx(this).getHeaders();
         let url = (headers["X-Forwarded-Proto"] || "http") + "://" + headers["host"] + service;
-        source = docs_desc(url, foundFn, false, ["X-Wx-Skey", "uid"], assetLocalDir);
+        source = docs_desc(url, foundFn, false, ["X-Wx-Skey", "uid"], cfg.assetLocalDir);
     } else {
-        // console.log(docs)
-        source = docs_list(cfg.project, docs, filterGroup || "all", cfg.groups, true, assetLocalDir, "."+current_api_path());
+        source = docs_list(cfg.project, docs, cfg.group || "all", cfg.groups, true, cfg.assetLocalDir, cfg.docPath||current_api_path());
     }
     return source;
 }
@@ -70,7 +58,7 @@ export function genarateDocsHtml(filterGroup: string, service: string, assetLoca
  * @param comporess
  * @param doc_res_dir
  */
-export function docs_list(project: string, docs: { [index: string]: DocNode }, group?: string, groupNameMap?: { [index: string]: string }, comporess?: boolean, doc_res_dir?: string, curPagePath: string = "docs.php") {
+export function docs_list(project: string, docs: { [index: string]: DocNode }, group?: string, groupNameMap?: { [index: string]: string }, comporess?: boolean, doc_res_dir?: string, docPagePath: string = "docs.php") {
     group = group || "all";
     groupNameMap = groupNameMap || {"user": "客户接口", "server": "内网接口", "dev": "开发工具", "all": "所有"};
     let group_options = "";
@@ -99,7 +87,7 @@ export function docs_list(project: string, docs: { [index: string]: DocNode }, g
             .replace("{$desc}", node.cms ? node.cms.desc : ""));
         for (let j = 0; j < subGroupList.length; j++) {
             let item = subGroupList[j];
-            let link = curPagePath + "?s=" + encodeURIComponent(item.path);
+            let link = docPagePath + "?s=" + encodeURIComponent(item.path);
             parts.push(
                 "<tr><td style='text-align: center;'>" + No + "</td><td style='text-align: center;'>" + (item.cms ? item.cms.state : (node.cms&&node.cms.state?node.cms.state:"unknow")) + "</td>"
             );
