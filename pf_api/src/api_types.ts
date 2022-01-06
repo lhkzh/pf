@@ -99,11 +99,16 @@ export function type_convert(type: any, arg: any): any {
     } catch (e) {
         var es = e + "";
         if (es.includes("TypeError") && es.includes("constructor")) {
-            var proxy = function (a) {
-                return new type(a);
+            try{
+                var proxy = function (a) {
+                    return new type(a);
+                }
+                let rsp = proxy(arg);
+                rsp && cast_type_map.set(type, proxy);
+                return rsp;
+            }catch (err){
+                throw e;
             }
-            cast_type_map.set(type, proxy);
-            return proxy(arg);
         }
         throw e;
     }

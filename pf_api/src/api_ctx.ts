@@ -127,157 +127,6 @@ export class MsgpackRes extends AbsRes {
     }
 }
 
-export interface BaseParamRule {
-    option?: boolean, //是否可选
-    default?: any, //默认值
-    min?: number | bigint,  //最小值
-    max?: number | bigint,  //最大值
-    in?: Array<any>, //范围内的可选项
-    regexp?: RegExp  //正则判断
-    each?: boolean,//如果是数组，针对每项进行检测=默认是false
-}
-
-//api参数规则
-export interface ApiParamRule extends BaseParamRule {
-    //参数来源= get/post/header/cookie/path/socket/any/*
-    src?: string,
-    //参数名字=从数据源中获取的名字，代替变量默认名字
-    name?: string,
-    //自定义判断转换函数，返回null则表示转换失败
-    check_convert?: (d: any) => any,
-    //如果是数组类型type，传入参数是字符串，则可以定义separator切分成数组。（例如开发工具中使用）
-    separator?: string,
-    //转换类型--自动抓取定义
-    type?: Function,
-    //专用描述
-    desc?: string,
-    //开发工具生成需要-多行输入（支持换行）
-    multline?: boolean,
-}
-
-/**
- * 检测参数是否符合规则
- * @param type 参数的类型定义
- * @param val  测试的实际值
- * @param rule 设置的测试规则
- * @constructor
- */
-export function CheckBaseParamRule(type: any, val: any, rule: BaseParamRule): boolean {
-    if (type == Number) {
-        if (isNaN(val) ||
-            (rule.min != undefined && val < rule.min) || (rule.max != undefined && val > rule.max) ||
-            (rule.in && !rule.in.includes(val))
-        ) {
-            return false;
-        }
-    } else if (type == global["BigInt"]) {
-        var tmp = val;
-        if (
-            (rule.min != undefined && tmp < rule.min) || (rule.max != undefined && tmp > rule.max) ||
-            (rule.in && !rule.in.includes(tmp))
-        ) {
-            return false;
-        }
-    } else if (type == String) {
-        var size = val.length;
-        if (
-            (rule.min != undefined && size < rule.min) || (rule.max != undefined && size > rule.max) ||
-            (rule.in && !rule.in.includes(val)) ||
-            (rule.regexp && !rule.regexp.test(val))
-        ) {
-            return false;
-        }
-    } else if (type == Date) {
-        var time = (<Date>val).getTime();
-        if (
-            (rule.min != undefined && time < rule.min) || (rule.max != undefined && time > rule.max)
-        ) {
-            return false;
-        }
-    } else if (rule.each && val != null) {//逐项检测
-        var eachArr = null;
-        if (Array.isArray(val) || util.isTypedArray(val)) {
-            eachArr = val;
-        } else if (util.isObject(val)) {
-            eachArr = Object.values(val);
-        }
-        if (eachArr) {
-            for (var x = 0; x < eachArr.length; x++) {
-                var eachItem: any = eachArr[x];
-                if (rule.in && !rule.in.includes(eachItem)) {
-                    return false
-                }
-                if (Number.isFinite(eachItem)) {
-                    if ((rule.min != undefined && eachItem < rule.min) || (rule.max != undefined && eachItem > rule.max)) {
-                        return false;
-                    }
-                } else if (util.isString(eachItem)) {
-                    if ((rule.min != undefined && eachItem.length < rule.min) || (rule.max != undefined && eachItem.length > rule.max)) {
-                        return false;
-                    }
-                }
-            }
-        }
-    }
-    return true;
-}
-
-//api-方法标记参数
-export interface ApiRouting {
-    //http访问方法
-    method: string,
-    //访问路径定义，不写则默认函数名or类名
-    path: string,
-    //方法的编码形式访问码
-    code: number,
-    //源-方法名
-    key: string,
-    //本函数的路由-参数规则
-    rules: Array<ApiParamRule>,
-    //权限函数：返回true/false表示是否允许访问
-    filter?: ApiFilterHandler,
-    //序列化结果类
-    res?: new () => AbsRes,
-    //是否需要忽略类路径（避免前缀追加问题）
-    absolute?: boolean,
-}
-
-//api过滤器参数
-export interface ApiFilterHandler {
-    (ctx: AbsHttpCtx): boolean;
-}
-
-interface ApiRoute{
-    //访问路径定义，不写则默认函数名or类名
-    path?: string,
-    //权限函数：返回true/false表示是否允许访问
-    filter?: ApiFilterHandler,
-    //序列化结果类
-    res?: new () => AbsRes,
-}
-
-//路由-类型参数
-export interface ApiMethod extends ApiRoute{
-    //是否需要忽略类路径（避免前缀追加问题）
-    absolute?: boolean,
-}
-
-//类标记参数
-export interface ApiClass extends ApiRoute {
-    //本类下面函数的通用的参数规则
-    baseRules?: Array<ApiParamRule>,
-}
-
-//API调用错误
-export class ApiRunError extends Error {
-    public code: number;
-
-    constructor(message: string, code: number = 500) {
-        super(message);
-        // this.name="ApiRunError";
-        this.code = code;
-    }
-}
 
 //基础上下文
 export abstract class AbsHttpCtx {
@@ -814,4 +663,156 @@ export class WsApiHttpCtx extends AbsHttpCtx {
             v[0](...v[1]);
         }
     }
+}
+
+//API调用错误
+export class ApiRunError extends Error {
+    public code: number;
+
+    constructor(message: string, code: number = 500) {
+        super(message);
+        // this.name="ApiRunError";
+        this.code = code;
+    }
+}
+
+
+export interface BaseParamRule {
+    option?: boolean, //是否可选
+    default?: any, //默认值
+    min?: number | bigint,  //最小值
+    max?: number | bigint,  //最大值
+    in?: Array<any>, //范围内的可选项
+    regexp?: RegExp  //正则判断
+    each?: boolean,//如果是数组，针对每项进行检测=默认是false
+}
+
+//api参数规则
+export interface ApiParamRule extends BaseParamRule {
+    //参数来源= get/post/header/cookie/path/socket/any/*
+    src?: string,
+    //参数名字=从数据源中获取的名字，代替变量默认名字
+    name?: string,
+    //自定义判断转换函数，返回null则表示转换失败
+    check_convert?: (d: any) => any,
+    //如果是数组类型type，传入参数是字符串，则可以定义separator切分成数组。（例如开发工具中使用）
+    separator?: string,
+    //转换类型--自动抓取定义
+    type?: Function,
+    //专用描述
+    desc?: string,
+    //开发工具生成需要-多行输入（支持换行）
+    multline?: boolean,
+}
+
+/**
+ * 检测参数是否符合规则
+ * @param type 参数的类型定义
+ * @param val  测试的实际值
+ * @param rule 设置的测试规则
+ * @constructor
+ */
+export function CheckBaseParamRule(type: any, val: any, rule: BaseParamRule): boolean {
+    if (type == Number) {
+        if (isNaN(val) ||
+            (rule.min != undefined && val < rule.min) || (rule.max != undefined && val > rule.max) ||
+            (rule.in && !rule.in.includes(val))
+        ) {
+            return false;
+        }
+    } else if (type == global["BigInt"]) {
+        var tmp = val;
+        if (
+            (rule.min != undefined && tmp < rule.min) || (rule.max != undefined && tmp > rule.max) ||
+            (rule.in && !rule.in.includes(tmp))
+        ) {
+            return false;
+        }
+    } else if (type == String) {
+        var size = val.length;
+        if (
+            (rule.min != undefined && size < rule.min) || (rule.max != undefined && size > rule.max) ||
+            (rule.in && !rule.in.includes(val)) ||
+            (rule.regexp && !rule.regexp.test(val))
+        ) {
+            return false;
+        }
+    } else if (type == Date) {
+        var time = (<Date>val).getTime();
+        if (
+            (rule.min != undefined && time < rule.min) || (rule.max != undefined && time > rule.max)
+        ) {
+            return false;
+        }
+    } else if (rule.each && val != null) {//逐项检测
+        var eachArr = null;
+        if (Array.isArray(val) || util.isTypedArray(val)) {
+            eachArr = val;
+        } else if (util.isObject(val)) {
+            eachArr = Object.values(val);
+        }
+        if (eachArr) {
+            for (var x = 0; x < eachArr.length; x++) {
+                var eachItem: any = eachArr[x];
+                if (rule.in && !rule.in.includes(eachItem)) {
+                    return false
+                }
+                if (Number.isFinite(eachItem)) {
+                    if ((rule.min != undefined && eachItem < rule.min) || (rule.max != undefined && eachItem > rule.max)) {
+                        return false;
+                    }
+                } else if (util.isString(eachItem)) {
+                    if ((rule.min != undefined && eachItem.length < rule.min) || (rule.max != undefined && eachItem.length > rule.max)) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+//api-方法标记参数
+export interface ApiRouting {
+    //http访问方法
+    method: string,
+    //访问路径定义，不写则默认函数名or类名
+    path: string,
+    //方法的编码形式访问码
+    code: number,
+    //源-方法名
+    key: string,
+    //本函数的路由-参数规则
+    rules: Array<ApiParamRule>,
+    //权限函数：返回true/false表示是否允许访问
+    filter?: ApiFilterHandler,
+    //序列化结果类
+    res?: new () => AbsRes,
+    //是否需要忽略类路径（避免前缀追加问题）
+    absolute?: boolean,
+}
+
+//api过滤器参数
+export interface ApiFilterHandler {
+    (ctx: AbsHttpCtx): boolean;
+}
+
+interface ApiRoute{
+    //访问路径定义，不写则默认函数名or类名
+    path?: string,
+    //权限函数：返回true/false表示是否允许访问
+    filter?: ApiFilterHandler,
+    //序列化结果类
+    res?: new () => AbsRes,
+}
+
+//路由-类型参数
+export interface ApiMethod extends ApiRoute{
+    //是否需要忽略类路径（避免前缀追加问题）
+    absolute?: boolean,
+}
+
+//类标记参数
+export interface ApiClass extends ApiRoute {
+    //本类下面函数的通用的参数规则
+    baseRules?: Array<ApiParamRule>,
 }

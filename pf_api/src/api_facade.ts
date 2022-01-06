@@ -544,8 +544,8 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
                     if (e instanceof ApiRunError) {//明确的业务错误，告知错误信息
                         ctx.writer.stat(e.code, e.message).out(ctx);
                     } else {//不明确的错误，只告知错误不告知详情，避免系统敏感信息泄露
-                        (!Facade._hookErr) && console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e);
                         ctx.writer.stat(500, "server busy").out(ctx);
+                        (!Facade._hookErr) && console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e);
                     }
                 }
                 no_error_hook(ctx, e);

@@ -8,11 +8,14 @@ require("ssl").loadRootCerts();
 import {newWebServer} from "fibjs_server";
 import * as docs_helper from "./docs_helper";
 import * as api_scan from "./api_scan";
+// import { DtoField,DtoInstanceMake } from "./api_dto";
 
 export{
     newWebServer,
     docs_helper,
-    api_scan
+    api_scan,
+
+    // DtoField,DtoInstanceMake
 }
 
 export *  from "./api_types";
