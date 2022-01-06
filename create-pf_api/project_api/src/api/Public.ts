@@ -24,10 +24,11 @@ class Public {
      * @returns string data
      * @tpl ok {"code":0,"data":"hi,Jenny"}
      */
-    @ANY("/testAny")
-    public testAny(nick:string){
+    @ANY("/hello")
+    public hello(nick:string){
         return "hi, "+nick;
     }
+
     /**
      * 获取路径参数
      * @state ok
@@ -51,7 +52,7 @@ class Public {
      */
     @GET()
     public getIP(@Ip() cip:string, @Header({name:"User-Agent"}) ua:string){
-        return {ip:cip, now:Date.now()};
+        return {ip:cip, now:Date.now(), ua:ua};
     }
 
     /**
@@ -75,6 +76,6 @@ class Public {
         if (process.env.PRODUCT && process.env.PRODUCT!="dev") {
             return "null";
         }
-        return docs_helper.genarateDocsHtml(group, service);
+        return docs_helper.genarateDocsHtml({group:group, service:service});
     }
 }
