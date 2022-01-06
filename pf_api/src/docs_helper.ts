@@ -9,7 +9,7 @@ import {ApiParamRule} from "./api_ctx";
 import {current_api_ctx, current_api_path, Facade} from "./api_facade";
 
 const CDN_JS_PRE = "https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/";
-const CDN_CSS_PRE = "https://cdn.bootcdn.net/ajax/libs/semantic-ui/2.4.1/components/";
+const CDN_CSS_PRE = "https://cdn.bootcdn.net/ajax/libs/semantic-ui/2.4.1/";
 const CDN_CSS_PRE_CS = CDN_CSS_PRE + "components/";
 
 //删减所有换行符为一行
@@ -429,11 +429,11 @@ const tpl_api_desc = `
 </div>
 {$js_tpl}
 </body>
-    <link rel="stylesheet" href="${CDN_CSS_PRE}semantic.min.css">
-    <link rel="stylesheet" href="${CDN_CSS_PRE_CS}table.min.css">
-    <link rel="stylesheet" href="${CDN_CSS_PRE_CS}container.min.css">
-    <link rel="stylesheet" href="${CDN_CSS_PRE_CS}message.min.css">
-    <link rel="stylesheet" href="${CDN_CSS_PRE_CS}label.min.css">
+<link rel="preload" onload="this.rel='stylesheet'" href="${CDN_CSS_PRE}semantic.min.css">
+<link rel="preload" onload="this.rel='stylesheet'" href="${CDN_CSS_PRE_CS}table.min.css">
+<link rel="preload" onload="this.rel='stylesheet'" href="${CDN_CSS_PRE_CS}container.min.css">
+<link rel="preload" onload="this.rel='stylesheet'" href="${CDN_CSS_PRE_CS}message.min.css">
+<link rel="preload" onload="this.rel='stylesheet'" href="${CDN_CSS_PRE_CS}label.min.css">
 </html>
 `
 const js_tpl_desc = `    <script type="text/javascript">
