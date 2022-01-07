@@ -210,7 +210,7 @@ function format_rule_src(info: ApiParamRule) {
         info.src = "get";
     } else if (info.src == "body") {
         info.src = "post";
-    } else if (info.src.charAt(0) != '$' && ["path","socket","header","cookie","get","any"].includes(info.src) == false) {
+    } else if (info.src.charAt(0) != '$' && ["path", "socket", "header", "cookie", "get", "any"].includes(info.src) == false) {
         info.src = "post";
     }
     return info;
@@ -704,11 +704,11 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
     let fnComments = Facade.ignoreApiDoc ? {} : linkFnComment(getCalledFile(__dirname));//获取调用到注册的类的文件,提取文件中的文档注释
     path = path != null ? path : "/" + constructor.name.toLowerCase();//类方法名
     if (path != "") {
-        if(path.charAt(0) != '/'){
+        if (path.charAt(0) != '/') {
             path = "/" + path;
         }
-        if(path.length>1 && path.charAt(path.length-1) == '/'){
-            path = path.substr(0, path.length-1);
+        if (path.length > 1 && path.charAt(path.length - 1) == '/') {
+            path = path.substr(0, path.length - 1);
         }
     }
     let routing: Class_Routing = current_routing, apis: { [index: string]: Function } = current_apis,
@@ -719,8 +719,8 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
         let node = subs[i];
         let key = node.key;
         let relativePath = path == '/' && node.path.charAt(0) == '/' ? node.path : path + node.path;
-        if(node.absolute){
-            relativePath = node.path.charAt(0)!='/' ? '/'+node.path:node.path;
+        if (node.absolute) {
+            relativePath = node.path.charAt(0) != '/' ? '/' + node.path : node.path;
         }
         node.path = relativePath;
         let fn = api_run_wrap(constructor, node.res || res, key, node.filter || filter, relativePath);
@@ -840,7 +840,7 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                     source = {[rule.name]: _};
                 }
             } else if (rule.src == "socket") {
-                source = ctx.getSocket().hasOwnProperty(rule.name)?ctx.getSocket():ctx.getSocket()["stream"];
+                source = ctx.getSocket().hasOwnProperty(rule.name) ? ctx.getSocket() : ctx.getSocket()["stream"];
             } else if (rule.src.charAt(0) == "$") {
                 if (rule.src == "$ctx") {
                     args[i] = ctx;
@@ -886,7 +886,7 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                     }
                 } else if (rule.type == Array && !Array.isArray(srcArg)) {
                     if (util.isString(srcArg)) {
-                        args[i] = srcArg.split(rule.separator || (rule.multline ? '\n':','));
+                        args[i] = srcArg.split(rule.separator || (rule.multline ? '\n' : ','));
                     } else if (util.isObject(srcArg)) {//JSON.stringify TypeArray默认会变object
                         args[i] = Object.values(srcArg);
                     } else {
@@ -901,16 +901,15 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                     break M;
                 }
                 if (type == UploadFileInfo) {
-                    if (args[i] === null) {
+                    if (args[i] != null) {
+                        let size = args[i].body.size();
+                        if ((rule.min != undefined && size < rule.min) || (rule.max != undefined && size > rule.max)) {
+                            failAt = i;
+                            break; // 参数非法
+                        }
+                    } else if (!rule.option) {
                         failAt = i;
                         break;
-                    }
-                    let size = args[i].body.size();
-                    if (
-                        (rule.min != undefined && size < rule.min) || (rule.max != undefined && size > rule.max)
-                    ) {
-                        failAt = i;
-                        break;// 参数非法
                     }
                 } else if (type == IntNumber) {
                     if (isNaN(args[i]) ||

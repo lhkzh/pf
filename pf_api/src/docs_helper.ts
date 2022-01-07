@@ -429,11 +429,11 @@ const tpl_api_desc = `
 </div>
 {$js_tpl}
 </body>
-<link rel="preload" onload="this.rel='stylesheet'" href="${CDN_CSS_PRE}semantic.min.css">
-<link rel="preload" onload="this.rel='stylesheet'" href="${CDN_CSS_PRE_CS}table.min.css">
-<link rel="preload" onload="this.rel='stylesheet'" href="${CDN_CSS_PRE_CS}container.min.css">
-<link rel="preload" onload="this.rel='stylesheet'" href="${CDN_CSS_PRE_CS}message.min.css">
-<link rel="preload" onload="this.rel='stylesheet'" href="${CDN_CSS_PRE_CS}label.min.css">
+<link rel="stylesheet" href="${CDN_CSS_PRE}semantic.min.css">
+<link rel="stylesheet" href="${CDN_CSS_PRE_CS}table.min.css">
+<link rel="stylesheet" href="${CDN_CSS_PRE_CS}container.min.css">
+<link rel="stylesheet" href="${CDN_CSS_PRE_CS}message.min.css">
+<link rel="stylesheet" href="${CDN_CSS_PRE_CS}label.min.css">
 </html>
 `
 const js_tpl_desc = `    <script type="text/javascript">
