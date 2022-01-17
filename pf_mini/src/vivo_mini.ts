@@ -18,7 +18,7 @@ export class vivo_mini{
         let url = `https://quickgame.vivo.com.cn/api/quickgame/cp/account/userInfo`;
         let timestamp = Date.now();
         let nonce = uuid.random().toString("hex");
-        let qs = `appKey=${this.cfg.appKey}&appSecret=${this.cfg.appSecret}$nonce=${nonce}&pkgName=${this.cfg.pkgName}&timeStamp=${timestamp}&token=${token}`;
+        let qs = `appKey=${this.cfg.appKey}&appSecret=${this.cfg.appSecret}&nonce=${nonce}&pkgName=${this.cfg.pkgName}&timestamp=${timestamp}&token=${token}`;
         let signature = hash.sha256(<any>qs).digest("hex");
         let query = {
             pkgName: this.cfg.pkgName,
