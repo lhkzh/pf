@@ -1,15 +1,15 @@
 import {MsgPack} from "./MsgPack";
 import OutStream = MsgPack.OutStream;
+import InStream = MsgPack.InStream;
+import packBool = MsgPack.packBool;
 import packInt = MsgPack.packInt;
 import packUInt = MsgPack.packUInt;
 import packDate = MsgPack.packDate;
 import packString = MsgPack.packString;
 import packArrHeader = MsgPack.packArrHeader;
-import packBool = MsgPack.packBool;
-import InStream = MsgPack.InStream;
+import packExt = MsgPack.packExt;
 import unpackExt = MsgPack.unpackExt;
 import unpackDate = MsgPack.unpackDate;
-import packExt = MsgPack.packExt;
 
 export type int8 = number;
 export type int16 = number;
@@ -21,8 +21,6 @@ export type int = number;
 export type uint = number;
 export type float32 = number;
 export type float64 = number;
-
-const gTypeArr = ["Int8Array", "Int16Array", "Int32Array", "Uint8Array", "Uint16Array", "Uint32Array", "Float32Array", "Float64Array"];
 
 export class MsgCodec {
     private encs: any = {};
@@ -44,14 +42,7 @@ export class MsgCodec {
                 this.ids[v.id] = k;
                 this.encs[k] = this.buildEncFn(k, v);
                 this.decs[k] = this.buildDecFn(k, v);
-
-                this.encs[`${k}[]`] = wrapArrEnc(this.encs[k]);
-                this.decs[`${k}[]`] = wrapArrDec(this.decs[k]);
-
-                this.encs[`{[index:string]:${k}}[]`] = wrapKvArrEnc(true, this.encs[k]);
-                this.encs[`{[index:number]:${k}}[]`] = wrapKvArrEnc(false, this.encs[k]);
-                this.decs[`{[index:string]:${k}}[]`] = wrapKvArrDec(true, this.decs[k]);
-                this.decs[`{[index:number]:${k}}[]`] = wrapKvArrDec(false, this.decs[k]);
+                link_x_codec(k, this.encs, this.decs);
             }
         }
     }
@@ -96,11 +87,9 @@ export class MsgCodec {
                 }
             }
             return function (input: InStream, option: boolean) {
-                // var len = dObjLen(input, option);
                 var len = dArrLen(input, option);
                 if (len >= 0) {
                     var rsp: any = {};
-
                     if (len == members.length) {
                         for (var i = 0; i < len; i++) {
                             rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
@@ -162,7 +151,6 @@ export class MsgCodec {
                 if (isNilOrUndefiend(v)) {
                     out.u8(0xc0);
                 } else {
-                    // eObjLen(members.length, out);
                     packArrHeader(members.length, out);
                     for (var fn of fns) {
                         fn(v, out);
@@ -242,6 +230,9 @@ export class MsgCodec {
     }
 }
 
+const gTypeArr = ["Int8Array", "Int16Array", "Int32Array", "Uint8Array", "Uint16Array", "Uint32Array", "Float32Array", "Float64Array"];
+
+
 function ei8(v: number, out: OutStream) {
     return isNilOrUndefiend(v) ? out.u8(0xc0) : out.u8(0xd0).i8(v);
 }
@@ -294,7 +285,7 @@ function enumber(v: number, out: OutStream) {
     }
     return Number.isInteger(v) ? packInt(v, out) : out.u8(0xcb).double(v);
 }
-
+//编码ArrayBuffer
 function ebuffer(v: ArrayBuffer, out: OutStream) {
     if (isNilOrUndefiend(v)) {
         return out.u8(0xc0);
@@ -309,7 +300,7 @@ function ebuffer(v: ArrayBuffer, out: OutStream) {
     }
     return out.blob(new Uint8Array(v));
 }
-
+//编码kv的长度头
 function eObjLen(len: number, out: OutStream) {
     if (len < 16) {
         out.u8(0x80 | len);
@@ -318,7 +309,7 @@ function eObjLen(len: number, out: OutStream) {
     }
     return out;
 }
-
+//包装基础类型编码
 function wrapBaseEnc(fn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
         if (isNilOrUndefiend(v)) {
@@ -327,9 +318,7 @@ function wrapBaseEnc(fn: (v: any, out: OutStream) => OutStream) {
         return fn(v, out);
     }
 }
-
-function wrapKvArrEnc(strKey: boolean, vFn: (v: any, out: OutStream) => OutStream) {
-    let kFn = strKey ? estr : (ev: any, eout: OutStream) => eint(Number(ev), eout);
+function wrapKvEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
         if (isNilOrUndefiend(v)) {
             return out.u8(0xc0);
@@ -343,7 +332,30 @@ function wrapKvArrEnc(strKey: boolean, vFn: (v: any, out: OutStream) => OutStrea
         return out;
     }
 }
-
+//包装kv数组编码
+function wrapKvArrEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream) {
+    return function (v: any, out: OutStream) {
+        if (isNilOrUndefiend(v)) {
+            return out.u8(0xc0);
+        }
+        packArrHeader(v.length, out);
+        for (var e of v) {
+            if (isNilOrUndefiend(e)) {
+                out.u8(0xc0);
+            } else {
+                let ekeys = Object.keys(e);
+                eObjLen(ekeys.length, out);
+                for (var k of ekeys) {
+                    kFn(k, out);
+                    vFn(e[k], out);
+                }
+                return out;
+            }
+        }
+        return out;
+    }
+}
+//包装一维数组编码
 function wrapArrEnc(fn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
         if (isNilOrUndefiend(v)) {
@@ -356,7 +368,7 @@ function wrapArrEnc(fn: (v: any, out: OutStream) => OutStream) {
         return out;
     }
 }
-
+//包装二维数组编码
 function wrapArr2Enc(fn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
         if (isNilOrUndefiend(v)) {
@@ -377,9 +389,11 @@ function wrapArr2Enc(fn: (v: any, out: OutStream) => OutStream) {
     }
 }
 
+const ekv_key_int = (k:any, out:OutStream)=>eint(Number(k), out);
+const ekv_key_str = <(k:any, out:OutStream)=>OutStream>packString;
 const estr = wrapBaseEnc(packString);
 const edate = wrapBaseEnc(packDate);
-
+//支持的编码字典
 const encodeFnDict: { [index: string]: (v: any, out: OutStream) => OutStream } = {
     "int8": ei8,
     "int16": ei16,
@@ -391,7 +405,7 @@ const encodeFnDict: { [index: string]: (v: any, out: OutStream) => OutStream } =
     "uint": euint,
     "float32": ef32,
     "float64": ef64,
-    "number": enumber, 
+    "number": enumber,
     "byte": ei8,
     "short": ei16,
     "long": eint,
@@ -400,17 +414,20 @@ const encodeFnDict: { [index: string]: (v: any, out: OutStream) => OutStream } =
     "string": estr,
 }
 
-for (var k in encodeFnDict) {
+for (var k in encodeFnDict) {//构建【一维数组、二维数组、intKv数组、strKv数组】
     encodeFnDict[k + "[]"] = wrapArrEnc(encodeFnDict[k]);
     encodeFnDict[k + "[][]"] = wrapArr2Enc(encodeFnDict[k]);
-    encodeFnDict[`{[index:string]:${k}}[]`] = wrapKvArrEnc(true, encodeFnDict[k]);
-    encodeFnDict[`{[index:number]:${k}}[]`] = wrapKvArrEnc(false, encodeFnDict[k]);
+    encodeFnDict[`{[index:string]:${k}}[]`] = wrapKvArrEnc(ekv_key_str, encodeFnDict[k]);
+    encodeFnDict[`{[index:number]:${k}}[]`] = wrapKvArrEnc(ekv_key_int, encodeFnDict[k]);
+    encodeFnDict[`{[index:string]:${k}}`] = wrapKvEnc(ekv_key_str, encodeFnDict[k]);
+    encodeFnDict[`{[index:number]:${k}}`] = wrapKvEnc(ekv_key_int, encodeFnDict[k]);
 }
-gTypeArr.forEach(type => {
+gTypeArr.forEach(type => {//扩展类型 & ArrayBuffer
     encodeFnDict[type] = packExt;
     encodeFnDict["ArrayBuffer"] = ebuffer;
 });
 
+//抛出解码错误
 function derr() {
     throw new Error("decode_fail");
 }
@@ -564,23 +581,22 @@ function dnumber(b: InStream, option?: boolean) {
 function dbool(b: InStream, option?: boolean) {
     return b.u8() == 0xc3;
 }
-
+//解码日期
 function ddate(b: InStream, option?: boolean) {
     let k: any = b.u8();
     if (k == 0xc0) {
         return option ? undefined : derr();
     }
-    if (b.u8() != 255) {//255=date@msg
-        derr();
-    }
-    if (k == 0xd6) {
-        return unpackDate(b, 4);
-    } else if (k == 0xd7) {
-        return unpackDate(b, 8);
+    if (b.u8() == 255) {//255=date@msg
+        if (k == 0xd6) {
+            return unpackDate(b, 4);
+        } else if (k == 0xd7) {
+            return unpackDate(b, 8);
+        }
     }
     derr();
 }
-
+//解码string
 function dstr(b: InStream, option?: boolean) {
     var k: any = b.u8();
     if (k == 0xc0) {
@@ -597,7 +613,7 @@ function dstr(b: InStream, option?: boolean) {
     }
     derr();
 }
-
+//解码 ArrayBuffer
 function dbuffer(b: InStream, option?: boolean) {
     var k = b.u8();
     if (k == 0xc0) {
@@ -616,6 +632,7 @@ function dbuffer(b: InStream, option?: boolean) {
     return b.bin(size).buffer;
 }
 
+//解码kv类型长度
 function dObjLen(b: InStream, option?: boolean) {
     var k = b.u8();
     if (k == 0xc0) {
@@ -631,6 +648,7 @@ function dObjLen(b: InStream, option?: boolean) {
     derr();
 }
 
+//解码数组长度
 function dArrLen(b: InStream, option?: boolean) {
     var k = b.u8();
     if (k == 0xc0) {
@@ -645,9 +663,7 @@ function dArrLen(b: InStream, option?: boolean) {
     }
     derr();
 }
-
-function wrapKvArrDec(strKey: boolean, vFn: (b: InStream, option?: boolean) => any) {
-    let kFn = strKey ? dstr : dint;
+function wrapKvDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
         let len = dObjLen(b, option);
         if (len >= 0) {
@@ -660,21 +676,42 @@ function wrapKvArrDec(strKey: boolean, vFn: (b: InStream, option?: boolean) => a
         return undefined;
     }
 }
-
-function wrapArrDec(fn: (b: InStream, option?: boolean) => any) {
+//kv类型的数组解码
+function wrapKvArrDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
         let len = dArrLen(b, option);
         if (len >= 0) {
             let rsp = new Array(len);
             for (var i = 0; i < len; i++) {
-                rsp[i] = fn(b);
+                var slen = dObjLen(b, option);
+                if (slen >= 0) {
+                    var srsp:any = {};
+                    for (var j = 0; j < slen; j++) {
+                        srsp[kFn(b)] = vFn(b, true);
+                    }
+                    rsp[i] = srsp;
+                }
             }
             return rsp;
         }
         return undefined;
     }
 }
-
+//解码一维数组
+function wrapArrDec(fn: (b: InStream, option?: boolean) => any) {
+    return function (b: InStream, option?: boolean) {
+        let len = dArrLen(b, option);
+        if (len >= 0) {
+            let rsp = new Array(len);
+            for (var i = 0; i < len; i++) {
+                rsp[i] = fn(b, true);
+            }
+            return rsp;
+        }
+        return undefined;
+    }
+}
+//解码二维数组
 function wrapArr2Dec(fn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
         let len = dArrLen(b, option);
@@ -682,21 +719,20 @@ function wrapArr2Dec(fn: (b: InStream, option?: boolean) => any) {
             let rsp = new Array(len);
             for (var i = 0; i < len; i++) {
                 var slen = dArrLen(b, option);
-                var srsp;
                 if (slen >= 0) {
-                    srsp = new Array(slen);
+                    var srsp:any = new Array(slen);
                     for (var j = 0; j < slen; j++) {
-                        srsp = fn(b);
+                        srsp = fn(b, true);
                     }
+                    rsp[i] = srsp;
                 }
-                rsp[i] = srsp;
             }
             return rsp;
         }
         return undefined;
     }
 }
-
+//解码-扩展类型
 function dext(b: InStream, option?: boolean) {
     var k = b.u8();
     if (k == 0xc0) {
@@ -722,7 +758,7 @@ function dext(b: InStream, option?: boolean) {
     }
     derr();
 }
-
+//支持的解码字典
 const decodeFnDict: { [index: string]: (input: InStream, option?: boolean) => any } = {
     "int8": di8,
     "int16": di16,
@@ -734,7 +770,7 @@ const decodeFnDict: { [index: string]: (input: InStream, option?: boolean) => an
     "uint": dint,
     "float32": df32,
     "float64": df64,
-    "number": dnumber, 
+    "number": dnumber,
     "byte": di8,
     "short": di16,
     "long": dint,
@@ -742,13 +778,27 @@ const decodeFnDict: { [index: string]: (input: InStream, option?: boolean) => an
     "Date": ddate,
     "string": dstr,
 }
-for (var k in decodeFnDict) {
+for (var k in decodeFnDict) {//构建【一维数组、二维数组、intKv数组、strKv数组】
     decodeFnDict[k + "[]"] = wrapArrDec(decodeFnDict[k]);
     decodeFnDict[k + "[][]"] = wrapArr2Dec(decodeFnDict[k]);
-    decodeFnDict[`{[index:string]:${k}}[]`] = wrapKvArrDec(true, decodeFnDict[k]);
-    decodeFnDict[`{[index:number]:${k}}[]`] = wrapKvArrDec(false, decodeFnDict[k]);
+    decodeFnDict[`{[index:string]:${k}}[]`] = wrapKvArrDec(dstr, decodeFnDict[k]);
+    decodeFnDict[`{[index:number]:${k}}[]`] = wrapKvArrDec(dint, decodeFnDict[k]);
+    decodeFnDict[`{[index:string]:${k}}`] = wrapKvDec(dstr, decodeFnDict[k]);
+    decodeFnDict[`{[index:number]:${k}}`] = wrapKvDec(dint, decodeFnDict[k]);
 }
-gTypeArr.forEach(type => {
+gTypeArr.forEach(type => {//扩展类型 & ArrayBuffer
     decodeFnDict[type] = dext;
     decodeFnDict["ArrayBuffer"] = dbuffer;
 });
+
+function link_x_codec(k:string, encs:any, decs:any){
+    encs[`${k}[]`] = wrapArrEnc(encs[k]);
+    encs[`{[index:string]:${k}}`] = wrapKvEnc(ekv_key_str, encs[k]);
+    encs[`{[index:string]:${k}}[]`] = wrapKvArrEnc(ekv_key_str, encs[k]);
+    encs[`{[index:string]:${k}}[]`] = wrapKvArrEnc(ekv_key_int, encs[k]);
+
+    decs[`${k}[]`] = wrapArrDec(decs[k]);
+    decs[`{[index:string]:${k}}`] = wrapKvDec(dstr, decs[k]);
+    decs[`{[index:string]:${k}}[]`] = wrapKvArrDec(dstr, decs[k]);
+    decs[`{[index:number]:${k}}[]`] = wrapKvArrDec(dint, decs[k]);
+}
