@@ -25,13 +25,12 @@ for (var i = 0; i < path_arr.length; i++) {
     }
 }
 class MsgAst {
-    static parse(source) {
+    static parse(source, baseMsgId = 0) {
         let output = {};
         // 1. get flatten nodes
         let src = ts.createSourceFile('', source, ts.ScriptTarget.ES3, true, ts.ScriptKind.TS);
-        let sid = 0;
         let sidFn = () => {
-            return ++sid;
+            return ++baseMsgId;
         };
         let info = this.getLinkDict(source, src, sidFn);
         let msgs = info.dict;
@@ -56,13 +55,19 @@ class MsgAst {
         }
         //ts.isTypeReferenceNode(node)
         var v_fields = [];
-        node.members.forEach((member, i) => {
+        node.members.forEach((member) => {
             if (ts.isPropertySignature(member)) {
-                if (ts.isComputedPropertyName(member.name) || !member.type || this.isBadType(member.type)) {
-                    throw new Error(`bad type: ${srcType}` + member.getText());
-                }
                 var fieldName = member.name.text, optional = member.questionToken;
-                var fieldType = this.getTypeName(member, srcType);
+                var fieldType;
+                if (member.type && member.type.getText().replace(/\s/g, "") == "any[]") {
+                    fieldType = "any[]";
+                }
+                else {
+                    if (ts.isComputedPropertyName(member.name) || !member.type || this.isBadType(member.type)) {
+                        throw new Error(`bad type: ${srcType}-` + member.getText());
+                    }
+                    fieldType = this.getTypeName(member, srcType);
+                }
                 v_fields.push([fieldName, fieldType, optional ? 1 : 0]);
             }
             else if (ts.isIndexSignatureDeclaration(member)) {
@@ -163,7 +168,7 @@ class MsgAst {
         let link = {};
         let output = {};
         let limit = {};
-        node.forEachChild(v => {
+        node.forEachChild((v) => {
             if (this.isBadType(v)) {
                 throw new Error("bad type:" + v.name.text);
             }
@@ -221,7 +226,7 @@ class MsgAst {
         // 要么全是正数， 要么全是字符串
         var str = false, num = false, fnum = false, min = 0;
         var initializer = 0, vals = [];
-        v.members.forEach(e => {
+        v.members.forEach((e) => {
             if (e.initializer) {
                 if (ts.isNumericLiteral(e.initializer)) {
                     if (str) {
@@ -283,4 +288,3 @@ class MsgAst {
     }
 }
 exports.MsgAst = MsgAst;
-

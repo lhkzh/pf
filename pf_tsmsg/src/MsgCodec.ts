@@ -10,6 +10,8 @@ import packArrHeader = MsgPack.packArrHeader;
 import packExt = MsgPack.packExt;
 import unpackExt = MsgPack.unpackExt;
 import unpackDate = MsgPack.unpackDate;
+import unpack = MsgPack.unpack;
+import packArray = MsgPack.packArray;
 
 export type int8 = number;
 export type int16 = number;
@@ -399,6 +401,13 @@ function wrapArr2Enc(fn: (v: any, out: OutStream) => OutStream) {
     }
 }
 
+function anysEnc(v: any, out: OutStream) {
+    if (isNilOrUndefiend(v)) {
+        return out.u8(0xc0);
+    }
+    return packArray(v, out);
+}
+
 const ekv_key_int = (k: any, out: OutStream) => eint(Number(k), out);
 const ekv_key_str = <(k: any, out: OutStream) => OutStream>packString;
 //支持的编码字典
@@ -421,6 +430,7 @@ const encodeFnDict: { [index: string]: (v: any, out: OutStream) => OutStream } =
     "boolean": packBool,
     "string": estr,
     "Date": edate,
+    "any[]": anysEnc,
 }
 
 for (var k in encodeFnDict) {//构建【一维数组、二维数组、intKv数组、strKv数组】
@@ -756,6 +766,18 @@ function wrapArr2Dec(fn: (b: InStream, option?: boolean) => any) {
     }
 }
 
+function anysDec(b: InStream, option?: boolean) {
+    let len = dArrLen(b, option);
+    if (len >= 0) {
+        let rsp = new Array(len);
+        for (var i = 0; i < len; i++) {
+            rsp[i] = unpack(b);
+        }
+        return rsp;
+    }
+    return undefined;
+}
+
 //解码-扩展类型
 function dext(b: InStream, option?: boolean) {
     var k = b.u8();
@@ -803,6 +825,7 @@ const decodeFnDict: { [index: string]: (input: InStream, option?: boolean) => an
     "boolean": dbool,
     "string": dstr,
     "Date": ddate,
+    "any[]": anysDec,
 }
 for (var k in decodeFnDict) {//构建【一维数组、二维数组、intKv数组、strKv数组】
     decodeFnDict[k + "[]"] = wrapArrDec(decodeFnDict[k]);

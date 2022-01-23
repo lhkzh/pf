@@ -169,7 +169,7 @@ export module MsgPack {
         return out;
     }
 
-    function packArray(v: any[], out: OutStream) {
+    export function packArray(v: any[], out: OutStream) {
         packArrHeader(v.length, out);
         for (var i = 0; i < v.length; i++) {
             pack(v[i], out);
@@ -281,7 +281,7 @@ export module MsgPack {
         return eb.bin();
     }
 
-    function unpack(b: InStream) {
+    export function unpack(b: InStream) {
         var k = b.u8();
         if (k <= 0x7f || k >= 0xe0) {//fixInt
             return k;
