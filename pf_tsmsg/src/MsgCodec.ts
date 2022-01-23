@@ -30,12 +30,12 @@ export class MsgCodec {
     private initCap: number;
     private incrCap: number;
 
-    constructor(cfg: { options: any, protocols: any }) {
+    constructor(cfg: { options: { initCap?: number, incrCap?: number, floatMapKey?: boolean }, protocols: { [index: string]: any } }) {
         this.encs = {};
         this.decs = {};
         this.protocols = cfg.protocols;
-        this.initCap = cfg.options && cfg.options.initCap ? cfg.options.initCap : 256;
-        this.incrCap = cfg.options && cfg.options.incrCap ? cfg.options.incrCap : 256;
+        this.initCap = cfg.options && cfg.options.initCap > 0 ? cfg.options.initCap : 256;
+        this.incrCap = cfg.options && cfg.options.incrCap > 0 ? cfg.options.incrCap : 256;
         for (var k in this.protocols) {
             var v = this.protocols[k];
             if (typeof v != "string") {
@@ -79,11 +79,11 @@ export class MsgCodec {
                 return undefined;
             }
         } else {
-            let fns: Array<(input: InStream, option?: boolean) => any> = [], fnn:number=0;
+            let fns: Array<(input: InStream, option?: boolean) => any> = [], fnn: number = 0;
             for (var node of members) {
                 //key = node[0], val=node[1], option=node[2]
                 fns.push(this.getStructFieldDecFn(node[0], node[1]));
-                if(node[2]==0){
+                if (node[2] == 0) {
                     fnn++;
                 }
             }
@@ -97,24 +97,24 @@ export class MsgCodec {
                             decode_at(clazz, members[i][0]);
                             rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
                         }
-                    }else if(len>members.length){
+                    } else if (len > members.length) {
                         for (var i = 0; i < members.length; i++) {
                             decode_at(clazz, members[i][0]);
                             rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
                         }
-                        for(i=members.length; i<len; i++){
+                        for (i = members.length; i < len; i++) {
                             MsgPack.decode2(input);
                         }
-                    }else if(len<fnn){
+                    } else if (len < fnn) {
                         throw new Error(`decode_fail:members match fail@${clazz}`);
-                    }else {
+                    } else {
                         for (var i = 0; i < members.length; i++) {
-                            if(i>=len){
-                                if(members[i][2]==0){
+                            if (i >= len) {
+                                if (members[i][2] == 0) {
                                     throw new Error(`decode_fail:members match fail@${clazz}`);
                                 }
                                 rsp[members[i][0]] = undefined;
-                            }else{
+                            } else {
                                 decode_at(clazz, members[i][0]);
                                 rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
                             }
@@ -290,12 +290,15 @@ function enumber(v: number, out: OutStream) {
     }
     return Number.isInteger(v) ? packInt(v, out) : out.u8(0xcb).double(v);
 }
-function estr(v:string, out:OutStream): OutStream{
+
+function estr(v: string, out: OutStream): OutStream {
     return isNilOrUndefiend(v) ? out.u8(0xc0) : packString(v.toString(), out);
 }
-function edate(v:Date, out:OutStream): OutStream{
+
+function edate(v: Date, out: OutStream): OutStream {
     return isNilOrUndefiend(v) ? out.u8(0xc0) : packDate(v, out);
 }
+
 //编码ArrayBuffer
 function ebuffer(v: ArrayBuffer, out: OutStream) {
     if (isNilOrUndefiend(v)) {
@@ -311,6 +314,7 @@ function ebuffer(v: ArrayBuffer, out: OutStream) {
     }
     return out.blob(new Uint8Array(v));
 }
+
 //编码kv的长度头
 function eObjLen(len: number, out: OutStream) {
     if (len < 16) {
@@ -335,6 +339,7 @@ function wrapKvEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out
         return out;
     }
 }
+
 //包装kv数组编码
 function wrapKvArrEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
@@ -358,6 +363,7 @@ function wrapKvArrEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, 
         return out;
     }
 }
+
 //包装一维数组编码
 function wrapArrEnc(fn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
@@ -371,6 +377,7 @@ function wrapArrEnc(fn: (v: any, out: OutStream) => OutStream) {
         return out;
     }
 }
+
 //包装二维数组编码
 function wrapArr2Enc(fn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
@@ -392,8 +399,8 @@ function wrapArr2Enc(fn: (v: any, out: OutStream) => OutStream) {
     }
 }
 
-const ekv_key_int = (k:any, out:OutStream)=>eint(Number(k), out);
-const ekv_key_str = <(k:any, out:OutStream)=>OutStream>packString;
+const ekv_key_int = (k: any, out: OutStream) => eint(Number(k), out);
+const ekv_key_str = <(k: any, out: OutStream) => OutStream>packString;
 //支持的编码字典
 const encodeFnDict: { [index: string]: (v: any, out: OutStream) => OutStream } = {
     "int8": ei8,
@@ -433,11 +440,13 @@ function isNilOrUndefiend(v: any) {
     return v === undefined || v === null;
 }
 
-const decode_in:{type:string, field:string}={type:"",field:""};
-function decode_at(type:string, field:string){
+const decode_in: { type: string, field: string } = {type: "", field: ""};
+
+function decode_at(type: string, field: string) {
     decode_in.type = type;
     decode_in.field = field;
 }
+
 //抛出解码错误
 function derr() {
     throw new Error(`decode_fail @${decode_in.type}.${decode_in.field}`);
@@ -588,6 +597,7 @@ function dnumber(b: InStream, option?: boolean) {
 function dbool(b: InStream, option?: boolean) {
     return b.u8() == 0xc3;
 }
+
 //解码日期
 function ddate(b: InStream, option?: boolean) {
     let k: any = b.u8();
@@ -603,6 +613,7 @@ function ddate(b: InStream, option?: boolean) {
     }
     derr();
 }
+
 //解码string
 function dstr(b: InStream, option?: boolean) {
     var k: any = b.u8();
@@ -620,6 +631,7 @@ function dstr(b: InStream, option?: boolean) {
     }
     derr();
 }
+
 //解码 ArrayBuffer
 function dbuffer(b: InStream, option?: boolean) {
     var k = b.u8();
@@ -670,6 +682,7 @@ function dArrLen(b: InStream, option?: boolean) {
     }
     derr();
 }
+
 function wrapKvDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
         let len = dObjLen(b, option);
@@ -683,6 +696,7 @@ function wrapKvDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStrea
         return undefined;
     }
 }
+
 //kv类型的数组解码
 function wrapKvArrDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
@@ -692,7 +706,7 @@ function wrapKvArrDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InSt
             for (var i = 0; i < len; i++) {
                 var slen = dObjLen(b, option);
                 if (slen >= 0) {
-                    var srsp:any = {};
+                    var srsp: any = {};
                     for (var j = 0; j < slen; j++) {
                         srsp[kFn(b)] = vFn(b, true);
                     }
@@ -704,6 +718,7 @@ function wrapKvArrDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InSt
         return undefined;
     }
 }
+
 //解码一维数组
 function wrapArrDec(fn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
@@ -718,6 +733,7 @@ function wrapArrDec(fn: (b: InStream, option?: boolean) => any) {
         return undefined;
     }
 }
+
 //解码二维数组
 function wrapArr2Dec(fn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
@@ -727,7 +743,7 @@ function wrapArr2Dec(fn: (b: InStream, option?: boolean) => any) {
             for (var i = 0; i < len; i++) {
                 var slen = dArrLen(b, option);
                 if (slen >= 0) {
-                    var srsp:any = new Array(slen);
+                    var srsp: any = new Array(slen);
                     for (var j = 0; j < slen; j++) {
                         srsp = fn(b, true);
                     }
@@ -739,6 +755,7 @@ function wrapArr2Dec(fn: (b: InStream, option?: boolean) => any) {
         return undefined;
     }
 }
+
 //解码-扩展类型
 function dext(b: InStream, option?: boolean) {
     var k = b.u8();
@@ -765,6 +782,7 @@ function dext(b: InStream, option?: boolean) {
     }
     derr();
 }
+
 //支持的解码字典
 const decodeFnDict: { [index: string]: (input: InStream, option?: boolean) => any } = {
     "int8": di8,
@@ -799,7 +817,7 @@ gTypeArr.forEach(type => {//扩展类型 & ArrayBuffer
     decodeFnDict["ArrayBuffer"] = dbuffer;
 });
 
-function link_x_codec(k:string, encs:any, decs:any){
+function link_x_codec(k: string, encs: any, decs: any) {
     encs[`${k}[]`] = wrapArrEnc(encs[k]);
     encs[`{[index:string]:${k}}`] = wrapKvEnc(ekv_key_str, encs[k]);
     encs[`{[index:string]:${k}}[]`] = wrapKvArrEnc(ekv_key_str, encs[k]);
