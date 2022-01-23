@@ -67,11 +67,12 @@ export class MsgCodec {
             const keyFn: any = members[0][0] == "string" ? dstr : dint;
             const valFn = decodeFnDict.hasOwnProperty(vType) ? decodeFnDict[vType] : this.getStructLinkDecFn(vType);
             return function (input: InStream, option: boolean) {
+                decode_at(clazz, "");
                 var len = dObjLen(input, option);
                 if (len >= 0) {
                     var rsp: any = {};
                     for (var i = 0; i < len; i++) {
-                        rsp[keyFn(input, false)] = valFn(input, false);
+                        rsp[keyFn(input, false)] = valFn(input, true);
                     }
                     return rsp;
                 }
@@ -87,30 +88,34 @@ export class MsgCodec {
                 }
             }
             return function (input: InStream, option: boolean) {
+                decode_at(clazz, "");
                 var len = dArrLen(input, option);
                 if (len >= 0) {
                     var rsp: any = {};
                     if (len == members.length) {
                         for (var i = 0; i < len; i++) {
+                            decode_at(clazz, members[i][0]);
                             rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
                         }
                     }else if(len>members.length){
                         for (var i = 0; i < members.length; i++) {
+                            decode_at(clazz, members[i][0]);
                             rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
                         }
                         for(i=members.length; i<len; i++){
                             MsgPack.decode2(input);
                         }
                     }else if(len<fnn){
-                        throw new Error("decode_fail:members match fail");
+                        throw new Error(`decode_fail:members match fail@${clazz}`);
                     }else {
                         for (var i = 0; i < members.length; i++) {
                             if(i>=len){
                                 if(members[i][2]==0){
-                                    throw new Error("decode_fail:members match fail");
+                                    throw new Error(`decode_fail:members match fail@${clazz}`);
                                 }
                                 rsp[members[i][0]] = undefined;
                             }else{
+                                decode_at(clazz, members[i][0]);
                                 rsp[members[i][0]] = fns[i](input, members[i][2] == 1);
                             }
                         }
@@ -285,6 +290,12 @@ function enumber(v: number, out: OutStream) {
     }
     return Number.isInteger(v) ? packInt(v, out) : out.u8(0xcb).double(v);
 }
+function estr(v:string, out:OutStream): OutStream{
+    return isNilOrUndefiend(v) ? out.u8(0xc0) : packString(v.toString(), out);
+}
+function edate(v:Date, out:OutStream): OutStream{
+    return isNilOrUndefiend(v) ? out.u8(0xc0) : packDate(v, out);
+}
 //编码ArrayBuffer
 function ebuffer(v: ArrayBuffer, out: OutStream) {
     if (isNilOrUndefiend(v)) {
@@ -309,15 +320,7 @@ function eObjLen(len: number, out: OutStream) {
     }
     return out;
 }
-//包装基础类型编码
-function wrapBaseEnc(fn: (v: any, out: OutStream) => OutStream) {
-    return function (v: any, out: OutStream) {
-        if (isNilOrUndefiend(v)) {
-            return out.u8(0xc0);
-        }
-        return fn(v, out);
-    }
-}
+
 function wrapKvEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
         if (isNilOrUndefiend(v)) {
@@ -391,8 +394,6 @@ function wrapArr2Enc(fn: (v: any, out: OutStream) => OutStream) {
 
 const ekv_key_int = (k:any, out:OutStream)=>eint(Number(k), out);
 const ekv_key_str = <(k:any, out:OutStream)=>OutStream>packString;
-const estr = wrapBaseEnc(packString);
-const edate = wrapBaseEnc(packDate);
 //支持的编码字典
 const encodeFnDict: { [index: string]: (v: any, out: OutStream) => OutStream } = {
     "int8": ei8,
@@ -409,9 +410,10 @@ const encodeFnDict: { [index: string]: (v: any, out: OutStream) => OutStream } =
     "byte": ei8,
     "short": ei16,
     "long": eint,
+    "bool": packBool,
     "boolean": packBool,
-    "Date": edate,
     "string": estr,
+    "Date": edate,
 }
 
 for (var k in encodeFnDict) {//构建【一维数组、二维数组、intKv数组、strKv数组】
@@ -427,13 +429,18 @@ gTypeArr.forEach(type => {//扩展类型 & ArrayBuffer
     encodeFnDict["ArrayBuffer"] = ebuffer;
 });
 
-//抛出解码错误
-function derr() {
-    throw new Error("decode_fail");
-}
-
 function isNilOrUndefiend(v: any) {
     return v === undefined || v === null;
+}
+
+const decode_in:{type:string, field:string}={type:"",field:""};
+function decode_at(type:string, field:string){
+    decode_in.type = type;
+    decode_in.field = field;
+}
+//抛出解码错误
+function derr() {
+    throw new Error(`decode_fail @${decode_in.type}.${decode_in.field}`);
 }
 
 function di8(b: InStream, option?: boolean) {
@@ -774,9 +781,10 @@ const decodeFnDict: { [index: string]: (input: InStream, option?: boolean) => an
     "byte": di8,
     "short": di16,
     "long": dint,
+    "bool": dbool,
     "boolean": dbool,
-    "Date": ddate,
     "string": dstr,
+    "Date": ddate,
 }
 for (var k in decodeFnDict) {//构建【一维数组、二维数组、intKv数组、strKv数组】
     decodeFnDict[k + "[]"] = wrapArrDec(decodeFnDict[k]);

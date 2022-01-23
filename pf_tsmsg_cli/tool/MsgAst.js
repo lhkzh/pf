@@ -99,9 +99,6 @@ class MsgAst {
         else if (member.type.kind === ts.SyntaxKind.BooleanKeyword) {
             fieldType = "boolean";
         }
-        else if (member.type.kind === ts.SyntaxKind.BooleanKeyword) {
-            fieldType = "boolean";
-        }
         else if (member.type.kind === ts.SyntaxKind.ArrayType) {
             // if(member.typeArguments){
             //     fieldType = this.getTypeName(member.typeArguments[0], srcType);
