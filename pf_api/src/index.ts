@@ -18,8 +18,9 @@ export{
     // DtoField,DtoInstanceMake
 }
 
-export *  from "./api_types";
-export *  from "./api_ctx";
-export *  from "./api_facade";
-export *  from "./api_dto";
+export {Inject, Provider} from "./api_inject";
+export * from "./api_types";
+export * from "./api_ctx";
+export * from "./api_facade";
+export * from "./api_dto";
 export * from "./utils";

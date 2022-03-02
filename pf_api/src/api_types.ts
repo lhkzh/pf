@@ -7,7 +7,7 @@
  * @author zhh
  */
 import * as util from "util";
-import {DtoInstanceMake, DtoTypeCheck} from "./api_dto";
+import {DtoConvert, DtoIs} from "./api_dto";
 
 const HadNoNumberReg = /\D/;
 const NumberReg = /^[0-9\.]+$/;
@@ -92,8 +92,8 @@ export function type_convert(type: any, arg: any): any {
         return cast_type_map.get(type)(arg);
     }
     try {
-        if (DtoTypeCheck(type)) {
-            return DtoInstanceMake(type, arg);
+        if (DtoIs(type)) {
+            return DtoConvert(type, arg);
         }
         return type(arg);
     } catch (e) {

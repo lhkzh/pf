@@ -32,9 +32,10 @@ import {
     ApiMethod,
     CheckBaseParamRule
 } from "./api_ctx";
-import {DtoInstanceMake, DtoTypeCheck} from "./api_dto";
+import {DtoConvert, DtoIs} from "./api_dto";
 import {getParamterNames} from "./utils";
 import {Reflection} from "./reflection";
+import { __do_inject } from "./api_inject";
 
 let current_apis: { [index: string]: Function } = {};
 let current_docs: any = {};
@@ -526,7 +527,7 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
             let imp: any;
             try {
                 if (filter(ctx)) {
-                    imp = new constructor(ctx);
+                    imp = __do_inject(new constructor(ctx));
                     // imp[VAR_API_CTX] = ctx;
                     if (util.isFunction(imp["$_before"])) {//执行前准备
                         imp["$_before"](ctx, apiPath, key);
@@ -604,7 +605,7 @@ function no_error_hook(ctx: AbsHttpCtx, err: Error) {
  */
 function websocket_run_wrap(constructor, opts, filter: ApiFilterHandler): any {
     return function (req: Class_HttpRequest, regPartPath: string = "") {
-        let imp = new constructor();
+        let imp = __do_inject(new constructor());
         let suc = true;
         if (imp.onCheck) {
             suc = imp.onCheck(req, regPartPath);
@@ -851,8 +852,8 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                         failAt = i;
                         break;
                     }
-                    if (DtoTypeCheck(rule.type)) {
-                        let _imp = DtoInstanceMake(rule.type, ctx.getBody());
+                    if (DtoIs(rule.type)) {
+                        let _imp = DtoConvert(rule.type, ctx.getBody());
                         if (!_imp) {
                             failAt = i;
                             break M;
@@ -969,7 +970,7 @@ function route(method: string, pathInfo: string | ApiMethod, target: any, key: s
         }
         if (!tmpRule || !util.isObject(tmpRule)) {
             tmpRule = {name: paramNames[i], src: "any"};
-            if (DtoTypeCheck(paramTypes[i])) {
+            if (DtoIs(paramTypes[i])) {
                 tmpRule.src = "$body";
             }
         } else if (tmpRule.src == "request") {

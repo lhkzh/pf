@@ -6,6 +6,7 @@
  * dto: 根据注解规则，实现参数object-转数据类定义
  * @author zhh
  */
+import { ApiRunError } from ".";
 import {BaseParamRule, CheckBaseParamRule} from "./api_ctx";
 import {type_convert} from "./api_types";
 import {Reflection} from "./reflection";
@@ -39,7 +40,7 @@ export function DtoField(rule?: BaseParamRule) {
  * @param type
  * @constructor
  */
-export function DtoTypeCheck(type: any) {
+export function DtoIs(type: any) {
     return type && Reflection.hasMetadata($_VAL_TYPE_FIELDS, type.prototype);
 }
 
@@ -47,11 +48,15 @@ export function DtoTypeCheck(type: any) {
  * 值类型-类实例化，转换规则不符合则返回NULL
  * @param type
  * @param _data
+ * @param _throw
  * @constructor
  */
-export function DtoInstanceMake(type: any, _data: any) {
+export function DtoConvert(type: any, _data: any, _throw?: boolean) {
     let _kvs;
     if (!_data || !(_kvs = <any>Reflection.getMetadata($_VAL_TYPE_FIELDS, type.prototype))) {
+        if(_throw){
+            throw new ApiRunError(`dto type bad,${type.name}`, 403);
+        }
         return null;
     }
     let _imp = new (<any>type)();
@@ -64,9 +69,15 @@ export function DtoInstanceMake(type: any, _data: any) {
                 if (_r.option) {
                     _v = _r.default;
                 } else {
+                    if(_throw){
+                        throw new ApiRunError(`dto field:${_k} 404,${type.name}`, 403);
+                    }
                     return null;
                 }
             } else if (!CheckBaseParamRule(_t, _v, _r)) {
+                if(_throw){
+                    throw new ApiRunError(`dto field:${_k} bad,${type.name}`, 403);
+                }
                 return null;
             }
         }
