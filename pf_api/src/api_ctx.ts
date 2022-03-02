@@ -131,7 +131,6 @@ export class MsgpackRes extends AbsRes {
 export abstract class AbsHttpCtx {
     pathArg: string;
     writer: AbsRes & { path?: string };
-    _debug: { key?: string, uin?: any };//调试-输出标记的用户信息
     _attrs:{[index:string]:any};
 
     public attrSet(k:string, v:any){
@@ -142,6 +141,13 @@ export abstract class AbsHttpCtx {
     }
     public attrGet<T>(k:string):T{
         return this._attrs?this._attrs[k]:undefined;
+    }
+    //调试-输出标记的用户信息
+    public get debugMark(){
+        return this.attrGet<any>("DEBUG");
+    }
+    public set debugMark(v:any){
+        this.attrSet("DEBUG", v);
     }
 
     public abstract hasFile(k: string): boolean
@@ -215,7 +221,7 @@ export abstract class AbsHttpCtx {
             query: this.getQuery(),
             body: this.getBody(),
             headers: this.getHeaders(),
-            mark: this._debug
+            mark: this.debugMark
         }, obj);
     }
 }
