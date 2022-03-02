@@ -127,12 +127,23 @@ export class MsgpackRes extends AbsRes {
     }
 }
 
-
 //基础上下文
 export abstract class AbsHttpCtx {
     pathArg: string;
     writer: AbsRes & { path?: string };
-    debugMark: { ticket?: string, uin?: any };//调试-输出标记的用户信息
+    _debug: { key?: string, uin?: any };//调试-输出标记的用户信息
+    _attrs:{[index:string]:any};
+
+    public attrSet(k:string, v:any){
+        if(!this._attrs){
+            this._attrs = {};
+        }
+        this._attrs[k] = v;
+    }
+    public attrGet<T>(k:string):T{
+        return this._attrs?this._attrs[k]:undefined;
+    }
+
     public abstract hasFile(k: string): boolean
 
     public abstract getFileInfo(k: string): { fileName: string, contentType: string, body: Class_SeekableStream }
@@ -204,7 +215,7 @@ export abstract class AbsHttpCtx {
             query: this.getQuery(),
             body: this.getBody(),
             headers: this.getHeaders(),
-            mark: this.debugMark
+            mark: this._debug
         }, obj);
     }
 }
@@ -214,9 +225,7 @@ export class ApiHttpCtx extends AbsHttpCtx {
     public req: Class_HttpRequest;
     public res: Class_HttpResponse;
     private b: any;
-    public pathArg: string;
-    public writer: AbsRes & { path?: string };
-    public debugMark: { ticket?: string, uin?: any };//调试-输出标记的用户信息
+
     constructor(req: Class_HttpRequest, pathArg?: string, writer?: AbsRes) {
         super();
         this.req = req;
@@ -496,12 +505,9 @@ export class WsApiHttpCtx extends AbsHttpCtx {
     private static EMPTY = Object.freeze({});
     private src: any;//[request_id,api_path,params_obj,header_obj]
     private con;//net.Socket
-    public pathArg: string;
-    public writer: AbsRes & { path?: string };
     private _path: string;
     private paramArg: any;//post+get
     private headerArg: any;//headers
-    public debugMark: { ticket?: string, uin?: any };//调试-输出标记的用户信息
     //链接socket, 事件消息
     constructor(con, msg: any) {
         super();

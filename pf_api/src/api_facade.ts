@@ -546,7 +546,7 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
                         ctx.writer.stat(e.code, e.message).out(ctx);
                     } else {//不明确的错误，只告知错误不告知详情，避免系统敏感信息泄露
                         ctx.writer.stat(500, "server busy").out(ctx);
-                        (!Facade._hookErr) && console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e);
+                        (!Facade._hookErr) && console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx._debug), e);
                     }
                 }
                 no_error_hook(ctx, e);
@@ -556,14 +556,14 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
                         imp["$_after"](ctx, apiPath, key);
                     }
                 } catch (e2) {
-                    no_error_hook(ctx, e2) && console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e2);
+                    no_error_hook(ctx, e2) && console.error("Facade|api_run_wrap|%s", ctx.getPath(), JSON.stringify(ctx._debug), e2);
                 }
             }
         } finally {
             try {
                 ctx.runAfters();
             } catch (e3) {
-                no_error_hook(ctx, e3) && console.error("Facade|api_run_afters|%s", ctx.getPath(), JSON.stringify(ctx.debugMark), e3);
+                no_error_hook(ctx, e3) && console.error("Facade|api_run_afters|%s", ctx.getPath(), JSON.stringify(ctx._debug), e3);
             }
             if (start_ms) {//API耗时统计
                 Facade._hookTj(apiPath, Date.now() - start_ms);
