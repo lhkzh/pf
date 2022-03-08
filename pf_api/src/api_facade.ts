@@ -415,7 +415,7 @@ export function REPEATER(apiRule: ApiMethod & { toUrl: string | string[], fixPat
                 ctx.req.address = toPath;
                 ctx.res.statusCode = 0;
                 try {
-                    ctx.req.response.removeHeader("Server");
+                    ctx.req.response.clear();
                     repeater.invoke(ctx.req);
                 } finally {
                     lastFn.apply(this, [toPath, ctx.res.statusCode == 200]);
