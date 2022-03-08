@@ -19,9 +19,9 @@ export function html2line(source: string): string {
         .replace(/\/\*.*?\*\//ig, "")
         .replace(/[ ]+</ig, "<");
 }
-const DEFAULT_DOCS_OPT = { project: "app", groups: {"user": "客户接口", "server": "内网接口", "dev": "开发工具", "all": "所有", "inner": "系统内循环"}};
+const DEFAULT_DOCS_OPT = { project: "app", groups: {"user": "客户接口", "server": "内网接口", "dev": "开发工具", "all": "所有", "inner": "系统内循环"}, globalArgs:[]};
 //构造接口文档html
-export function genarateDocsHtml(cfg: { api?:string, group?:string, assetLocalDir?:string, docPath?:string, project?: string, groups?:{[index:string]:string}} ) {
+export function genarateDocsHtml(cfg: { api?:string, group?:string, assetLocalDir?:string, docPath?:string, project?: string, groups?:{[index:string]:string}, globalArgs?:string[]} ) {
     cfg = {...DEFAULT_DOCS_OPT, ...cfg};
     let docs = Facade._docs;
     let source: string;
@@ -42,7 +42,7 @@ export function genarateDocsHtml(cfg: { api?:string, group?:string, assetLocalDi
         }
         let headers = current_api_ctx(this).getHeaders();
         let url = (headers["X-Forwarded-Proto"] || "http") + "://" + headers["host"] + service;
-        source = docs_desc(url, foundFn, false, ["X-Wx-Skey", "uid"], cfg.assetLocalDir);
+        source = docs_desc(url, foundFn, false, cfg.globalArgs||[], cfg.assetLocalDir);
     } else {
         source = docs_list(cfg.project, docs, cfg.group || "all", cfg.groups, true, cfg.assetLocalDir, cfg.docPath||current_api_path());
     }
