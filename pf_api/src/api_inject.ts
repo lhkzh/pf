@@ -28,7 +28,7 @@ export function __do_inject(imp: any) {
                 } else {
                     if (PROVIDERS.has(v)) {
                         if (PROVIDERS.get(v)) {
-                            if (CACHE_SINGLETON.has(v)) {
+                            if (!CACHE_SINGLETON.has(v)) {
                                 CACHE_SINGLETON.set(v, __do_inject(new v()));
                             }
                             imp[k] = CACHE_SINGLETON.get(v);

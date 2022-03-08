@@ -216,13 +216,7 @@ export abstract class AbsHttpCtx {
     public abstract runAfters();
 
     protected debug(obj) {
-        Facade._hookDebug && Facade._hookDebug({
-            path: this.getPath(),
-            query: this.getQuery(),
-            body: this.getBody(),
-            headers: this.getHeaders(),
-            mark: this.debugMark
-        }, obj);
+        Facade._hookDebug && Facade._hookDebug(this, obj);
     }
 }
 

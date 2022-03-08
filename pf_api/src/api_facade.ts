@@ -67,7 +67,7 @@ export class Facade {
     //耗时统计函数
     public static _hookTj: (apiPath: string, costMsTime: number) => void;
     //debug钩子函数
-    public static _hookDebug: (ctxInfo: { path: string, query?: any, body?: any, headers?: any, mark?: any }, data: any) => void
+    public static _hookDebug: (ctx: AbsHttpCtx, data: any) => void
 
     //api路径
     public static get _docs(): { [index: string]: DocNode } {
