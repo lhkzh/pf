@@ -1,11 +1,11 @@
 import { AbsHttpCtx, ApiHttpCtx, current_api_ctx, WsApiHttpCtx } from ".";
 import { Reflection } from "./reflection";
 
-const CACHE_INJECT = new Map();
+const CACHE_INJECT: Map<any, Map<string, { type: any, fn?: Function }>> = new Map();
 const CACHE_SINGLETON = new Map();
 const PROVIDERS = new Map();
 
-function savePropertyInject(target, field) {
+function savePropertyInject(target, field, fn: Function) {
     let type = Reflection.getMetadata("design:type", target, field);
     if (!type) {
         return;
@@ -15,28 +15,28 @@ function savePropertyInject(target, field) {
         last = new Map();
         CACHE_INJECT.set(target, last);
     }
-    last.set(field, type);
+    last.set(field, { type: type, fn: fn });
 }
 
-export function __do_inject(imp: any) {
+function __do_inject<T>(imp: T): T {
     if (imp && imp.constructor) {
         let m = CACHE_INJECT.get(imp.constructor.prototype);
         if (m) {
             for (const [k, v] of m) {
-                if (v == AbsHttpCtx || v == ApiHttpCtx || v == WsApiHttpCtx) {
+                if (v.type == AbsHttpCtx || v.type == ApiHttpCtx || v.type == WsApiHttpCtx) {
                     imp[k] = current_api_ctx();
                 } else {
-                    if (PROVIDERS.has(v)) {
-                        if (PROVIDERS.get(v)) {
-                            if (!CACHE_SINGLETON.has(v)) {
-                                CACHE_SINGLETON.set(v, __do_inject(new v()));
+                    if (!v.fn && PROVIDERS.has(v.type)) {
+                        if (PROVIDERS.get(v.type)) {
+                            if (!CACHE_SINGLETON.has(v.type)) {
+                                CACHE_SINGLETON.set(v.type, __do_inject(new v.type()));
                             }
-                            imp[k] = CACHE_SINGLETON.get(v);
+                            imp[k] = CACHE_SINGLETON.get(v.type);
                         } else {
-                            imp[k] = __do_inject(new v());
+                            imp[k] = __do_inject(new v.type());
                         }
                     } else {
-                        imp[k] = new v();
+                        imp[k] = v.fn.apply(imp);
                     }
                 }
             }
@@ -45,9 +45,13 @@ export function __do_inject(imp: any) {
     return imp;
 }
 
-export function Inject() {
+export function tryInjectNew<T>(Type: new (...args) => T, ...Args): T {
+    return __do_inject(new Type(...Args));
+}
+
+export function Inject(fn?: Function) {
     return function (target: any, targetKey: string): void {
-        savePropertyInject(target, targetKey);
+        savePropertyInject(target, targetKey, fn);
     };
 }
 export function Provider(singleton?: boolean): ClassDecorator {

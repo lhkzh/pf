@@ -18,7 +18,7 @@ export{
     // DtoField,DtoInstanceMake
 }
 
-export {Inject, Provider} from "./api_inject";
+export {Inject, Provider, tryInjectNew} from "./api_inject";
 export * from "./api_types";
 export * from "./api_ctx";
 export * from "./api_facade";

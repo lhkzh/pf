@@ -35,7 +35,7 @@ import {
 import {DtoConvert, DtoIs} from "./api_dto";
 import {getParamterNames} from "./utils";
 import {Reflection} from "./reflection";
-import { __do_inject } from "./api_inject";
+import { tryInjectNew } from "./api_inject";
 
 let current_apis: { [index: string]: Function } = {};
 let current_docs: any = {};
@@ -527,7 +527,7 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
             let imp: any;
             try {
                 if (filter(ctx)) {
-                    imp = __do_inject(new constructor(ctx));
+                    imp = tryInjectNew(constructor, ctx);
                     // imp[VAR_API_CTX] = ctx;
                     if (util.isFunction(imp["$_before"])) {//执行前准备
                         imp["$_before"](ctx, apiPath, key);
@@ -605,17 +605,21 @@ function no_error_hook(ctx: AbsHttpCtx, err: Error) {
  */
 function websocket_run_wrap(constructor, opts, filter: ApiFilterHandler): any {
     return function (req: Class_HttpRequest, regPartPath: string = "") {
-        let imp = __do_inject(new constructor());
+        const ctx = new ApiHttpCtx(req, regPartPath);
+        coroutine.current()[VAR_API_CTX] = ctx;
         let suc = true;
+        if (filter) {
+            suc = filter(ctx);
+        }
+        const imp:any = tryInjectNew(constructor);
         if (imp.onCheck) {
             suc = imp.onCheck(req, regPartPath);
-        } else if (filter) {
-            suc = filter(new ApiHttpCtx(req, regPartPath));
         }
         if (suc) {
             try {
                 ws.upgrade(opts, conn => {
                     try {
+                        coroutine.current()[VAR_API_CTX] = ctx;
                         if (imp.onOpen) {
                             imp.onOpen(conn, req, regPartPath);
                         }
@@ -657,6 +661,7 @@ function websocket_run_wrap(constructor, opts, filter: ApiFilterHandler): any {
             req.response.write(<any>"reject");
             req.end();
             req.socket["timeout"] = 1;
+            delete coroutine.current()[VAR_API_CTX];
         }
     }
 }
