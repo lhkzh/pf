@@ -846,7 +846,13 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                     source = {[rule.name]: _};
                 }
             } else if (rule.src == "socket") {
-                source = ctx.getSocket().hasOwnProperty(rule.name) ? ctx.getSocket() : ctx.getSocket()["stream"];
+                if(rule.name=="remoteAddress" && ctx.getHeaders()["X-Real-IP"]){
+                    source = rule;
+                    rule = {...rule, name:"X-Real-IP"};
+                }else{
+                    var csock:any = ctx.getSocket();
+                    source = csock[rule.name] ? csock:(csock.stream?csock.stream:csock);
+                }
             } else if (rule.src.charAt(0) == "$") {
                 if (rule.src == "$ctx") {
                     args[i] = ctx;

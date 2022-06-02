@@ -341,3 +341,84 @@ export class BlockArrayQueue<T> extends ArrayQueue<T> {
         evt.set();
     }
 }
+
+export class CircleQueue<T>{
+    //    数组的最大容量
+    protected maxSize:number;
+    //    front指向队列的第一个元素，初始值为0
+    protected front:number;
+    //    rear指向队列的最后一个元素的后一个位置，空出一个空间作为约定，初始值为0
+    protected rear:number;
+    //    存放数据，模拟队列
+    protected arr:T[];
+
+    //    创建队列构造器
+    public CircleQueue(maxSize:number) {
+        this.maxSize = maxSize;
+        this.front = 0;
+        this.rear = 0;
+        this.arr = new Array(maxSize);
+    }
+
+    //    判断队列是否已满
+    public isFull():boolean {
+        return (this.rear + 1) % this.maxSize == this.front;
+    }
+
+    //    判断队列是否为空
+    public isEmpty():boolean {
+        return this.rear == this.front;
+    }
+
+    //    查看队列数据,显示队列所有数据
+    public dump() {
+        if (this.isEmpty()) {
+            console.log("队列为空，没有数据！");
+            return;
+        }
+        //从front开始遍历，注意遍历的元素个数
+        for (var i = this.front; i < this.front + this.size(); i++) {
+            console.log(`arr[${i%this.maxSize}] = ${this.arr[i % this.maxSize]}`);
+        }
+    }
+
+    //    求出当前队列有效数据的个数
+    public size():number {
+        return (this.rear + this.maxSize - this.front) % this.maxSize;
+    }
+
+    //    添加数据到队列
+    public offer(n:T) {
+        if(n===undefined){
+            throw new RangeError("bad paramter");
+        }
+        if (this.isFull()) {
+            return false;
+        }
+        this.arr[this.rear] = n;
+        this.rear = (this.rear + 1) % this.maxSize;
+        return true;
+    }
+
+    //    显示队列的头数据，注意不是取出数据
+    public head():T {
+        if(this.isEmpty()){
+            return undefined;
+        }
+        return this.arr[this.front];
+    }
+    //    从队列取出数据,，出队列
+    public poll():T {
+        if(this.isEmpty()){
+            return undefined;
+        }
+        //        这里需要分析出front是指向队列的第一个元素
+        //        1. 先把front对应的值保留到一个临时变量
+        //        2. 将front后移，考虑取模
+        //        3. 将临时保存的变量取回
+        let value = this.arr[this.front];
+        this.arr[this.front] = undefined;
+        this.front = (this.front + 1) % this.maxSize;
+        return value;
+    }
+}
