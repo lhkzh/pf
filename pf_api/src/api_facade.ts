@@ -15,9 +15,9 @@ import * as ws from "ws";
 import * as path from "path";
 import * as fs from "fs";
 import * as timers from "timers";
-import {linkFnComment, getCalledFile} from "./docs_comment_helper";
-import {DocNode} from "./docs_helper";
-import {type_convert, UploadFileInfo, IntNumber} from "./api_types";
+import { linkFnComment, getCalledFile } from "./docs_comment_helper";
+import { DocNode } from "./docs_helper";
+import { type_convert, UploadFileInfo, IntNumber } from "./api_types";
 import {
     ApiRunError,
     AbsRes,
@@ -32,9 +32,9 @@ import {
     ApiMethod,
     CheckBaseParamRule
 } from "./api_ctx";
-import {DtoConvert, DtoIs} from "./api_dto";
-import {getParamterNames} from "./utils";
-import {Reflection} from "./reflection";
+import { DtoConvert, DtoIs } from "./api_dto";
+import { getParamterNames } from "./utils";
+import { Reflection } from "./reflection";
 import { tryInjectNew } from "./api_inject";
 
 let current_apis: { [index: string]: Function } = {};
@@ -114,7 +114,7 @@ export class Facade {
             // WsApiHttpCtx.send404(conn, path, args[0]);
             let ctx = new WsApiHttpCtx(conn, args);
             ctx = processCtx ? processCtx(ctx) : ctx;
-            ctx.sendJson({code: 404, msg: path})
+            ctx.sendJson({ code: 404, msg: path })
         }
     }
 
@@ -243,7 +243,7 @@ export function RULE(info: ApiParamRule): ParameterDecorator {
  * @constructor
  */
 export function Ip() {
-    return RULE({src: "socket", name: "remoteAddress", option: false});
+    return RULE({ src: "socket", name: "remoteAddress", option: false });
 }
 
 /**
@@ -252,7 +252,7 @@ export function Ip() {
  * @constructor
  */
 export function Path(info: ApiParamRule = {}) {
-    return RULE({...info, src: "path"});
+    return RULE({ ...info, src: "path" });
 }
 
 /**
@@ -261,7 +261,7 @@ export function Path(info: ApiParamRule = {}) {
  * @constructor
  */
 export function Header(info: ApiParamRule = {}) {
-    return RULE({...info, src: "header"});
+    return RULE({ ...info, src: "header" });
 }
 
 /**
@@ -270,7 +270,7 @@ export function Header(info: ApiParamRule = {}) {
  * @constructor
  */
 export function Cookie(info: ApiParamRule = {}) {
-    return RULE({...info, src: "cookie"});
+    return RULE({ ...info, src: "cookie" });
 }
 
 /**
@@ -279,7 +279,7 @@ export function Cookie(info: ApiParamRule = {}) {
  * @constructor
  */
 export function Query(info: ApiParamRule = {}) {
-    return RULE({...info, src: "get"});
+    return RULE({ ...info, src: "get" });
 }
 
 /**
@@ -288,7 +288,7 @@ export function Query(info: ApiParamRule = {}) {
  * @constructor
  */
 export function Body(info: ApiParamRule = {}) {
-    return RULE({...info, src: "post"});
+    return RULE({ ...info, src: "post" });
 }
 
 /**
@@ -297,7 +297,7 @@ export function Body(info: ApiParamRule = {}) {
  * @constructor
  */
 export function Param(info: ApiParamRule = {}) {
-    return RULE({...info, src: "any"});
+    return RULE({ ...info, src: "any" });
 }
 
 /**
@@ -305,7 +305,7 @@ export function Param(info: ApiParamRule = {}) {
  * @constructor
  */
 export function CtxBody() {
-    return RULE({src: "$body"});
+    return RULE({ src: "$body" });
 }
 
 /**
@@ -313,7 +313,7 @@ export function CtxBody() {
  * @constructor
  */
 export function CtxHeaders() {
-    return RULE({src: "$headers"});
+    return RULE({ src: "$headers" });
 }
 
 /**
@@ -321,7 +321,7 @@ export function CtxHeaders() {
  * @constructor
  */
 export function CtxApi() {
-    return RULE({src: "$ctx"});
+    return RULE({ src: "$ctx" });
 }
 
 /**
@@ -425,7 +425,7 @@ export function REPEATER(apiRule: ApiMethod & { toUrl: string | string[], fixPat
                 let rsp: Class_HttpResponse;
                 try {
                     if (ctx.isHadBody()) {
-                        rsp = http.post(toUrl, {query: ctx.getBody(), json: ctx.getBody()});
+                        rsp = http.post(toUrl, { query: ctx.getBody(), json: ctx.getBody() });
                     } else {
                         rsp = http.get(toUrl);
                     }
@@ -461,7 +461,7 @@ export function REPEATER(apiRule: ApiMethod & { toUrl: string | string[], fixPat
 export function API(info?: string | ApiClass): ClassDecorator {
     let map: ApiClass = <ApiClass>info;
     if (util.isString(info)) {
-        map = {path: info + ""};
+        map = { path: info + "" };
     } else if (info == null) {
         map = {}
     } else if (util.isFunction(info) && info["prototype"] && info["prototype"]["$subs"]) {
@@ -489,7 +489,7 @@ export function WEBSOCKET(path: string = "websocket", opts: { [index: string]: a
     return function (type) {
         let p = type && type.prototype ? type.prototype : null;
         if (p && (p.onMessage || p.onBuffer || p.onText)) {
-            p["$subs"] = {length: -1};
+            p["$subs"] = { length: -1 };
             p["$opts"] = opts;
             regist(type, path, Facade.defaultRes, filter);
         }
@@ -611,7 +611,7 @@ function websocket_run_wrap(constructor, opts, filter: ApiFilterHandler): any {
         if (filter) {
             suc = filter(ctx);
         }
-        const imp:any = tryInjectNew(constructor);
+        const imp: any = tryInjectNew(constructor);
         if (imp.onCheck) {
             suc = imp.onCheck(req, regPartPath);
         }
@@ -657,7 +657,7 @@ function websocket_run_wrap(constructor, opts, filter: ApiFilterHandler): any {
             }
         }
         if (!suc) {
-            req.response.writeHead(403, {Connection: "close"});
+            req.response.writeHead(403, { Connection: "close" });
             req.response.write(<any>"reject");
             req.end();
             req.socket["timeout"] = 1;
@@ -745,7 +745,7 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
             rules: node.rules,
             cms: fnComments[node.key]
         });
-        current_docs[constructor.name] = {name: constructor.name, cms: fnComments[constructor.name], list: doc_list};
+        current_docs[constructor.name] = { name: constructor.name, cms: fnComments[constructor.name], list: doc_list };
         if (routing) {
             let fnArr = [];
             if (node.method == "ANY") {
@@ -777,8 +777,8 @@ function regist(constructor: any, path: string, res: any, filter: ApiFilterHandl
         }
     }
     if (subs.length < 0 && path) {//websocket
-        doc_list.push({method: "get", name: constructor.name, path: path, code: 0, rules: [], cms: fnComments[path]});
-        current_docs[constructor.name] = {name: constructor.name, cms: fnComments[constructor.name], list: doc_list};
+        doc_list.push({ method: "get", name: constructor.name, path: path, code: 0, rules: [], cms: fnComments[path] });
+        current_docs[constructor.name] = { name: constructor.name, cms: fnComments[constructor.name], list: doc_list };
 
         let fn = websocket_run_wrap(constructor, constructor.prototype["$opts"], filter);
         apis[path] = fn;
@@ -816,7 +816,7 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
         //     throw new ApiRunError("bad_method", 405);
         // }
         let args = [], failAt = -1;
-        M:for (let i = 0; i < paramRules.length; i++) {
+        M: for (let i = 0; i < paramRules.length; i++) {
             let rule = paramRules[i], type = rule.type;
             let source: any = null;
             if (rule.src == "get") {
@@ -843,15 +843,15 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
             } else if (rule.src == "cookie") {
                 let _ = ctx.getCookie(rule.name);
                 if (_ !== undefined) {
-                    source = {[rule.name]: _};
+                    source = { [rule.name]: _ };
                 }
             } else if (rule.src == "socket") {
-                if(rule.name=="remoteAddress" && ctx.getHeaders()["X-Real-IP"]){
+                if (rule.name == "remoteAddress" && ctx.getHeaders()["X-Real-IP"] && checkIsIp(ctx.getHeaders()["X-Real-IP"])) {
                     source = rule;
-                    rule = {...rule, name:"X-Real-IP"};
-                }else{
-                    var csock:any = ctx.getSocket();
-                    source = csock[rule.name] ? csock:(csock.stream?csock.stream:csock);
+                    rule = { ...rule, name: "X-Real-IP" };
+                } else {
+                    var csock: any = ctx.getSocket();
+                    source = csock[rule.name] ? csock : (csock.stream ? csock.stream : csock);
                 }
             } else if (rule.src.charAt(0) == "$") {
                 if (rule.src == "$ctx") {
@@ -974,13 +974,13 @@ function route(method: string, pathInfo: string | ApiMethod, target: any, key: s
         let tmpRule = srcFn["param$" + i];
         if (path && path.includes(':')) {
             if (tmpRule == null && path.includes(paramNames[i].toLowerCase())) {
-                tmpRule = {src: "path", name: paramNames[i]};
+                tmpRule = { src: "path", name: paramNames[i] };
             } else if (tmpRule != null && tmpRule.src == "path") {
-                tmpRule = {src: "path", name: paramNames[i]};
+                tmpRule = { src: "path", name: paramNames[i] };
             }
         }
         if (!tmpRule || !util.isObject(tmpRule)) {
-            tmpRule = {name: paramNames[i], src: "any"};
+            tmpRule = { name: paramNames[i], src: "any" };
             if (DtoIs(paramTypes[i])) {
                 tmpRule.src = "$body";
             }
@@ -1001,7 +1001,7 @@ function route(method: string, pathInfo: string | ApiMethod, target: any, key: s
         args_names[tmpRule.name] = tmpRule;
     }
     desc.value = decorator_route_proxy(method, srcFn, paramRules);
-    let routingInfo: ApiRouting = {method: method, path: p, key: key, rules: paramRules, code: pathCode};
+    let routingInfo: ApiRouting = { method: method, path: p, key: key, rules: paramRules, code: pathCode };
     if (pathOpt) {
         if (pathOpt.filter) routingInfo.filter = pathOpt.filter;
         if (pathOpt.res) routingInfo.res = pathOpt.res;
@@ -1066,7 +1066,7 @@ export function tmp_call_api(reqInfo: { path: string, params?: any, headers?: an
     let req_param = reqInfo.params || {};
     let req_headers = reqInfo.headers || {};
     let req_path_arg = reqInfo["pathArg"] || null;
-//[request_id, api_path,params_obj,header_obj]
+    //[request_id, api_path,params_obj,header_obj]
 
     Facade.run_by_ws(<any>{
         remoteAddress: req_ip,
@@ -1083,4 +1083,32 @@ export function tmp_call_api(reqInfo: { path: string, params?: any, headers?: an
         }).bind(ctx);
         return ctx;
     });
+}
+
+/**
+ * 验证IP地址
+ */
+function checkIsIp(ip: string) {
+    return checkIPv4(ip) || checkIPv6(ip);
+}
+function checkIPv4(IP) {
+    let arr = IP.split(".");
+    if (arr.length !== 4) return false;
+    for (let i of arr) {
+        let e = Number(i);
+        if (Object.is(e, NaN) || e > 255 || e < 0 || i[0] === '0' && i.length !== 1) {
+            return false;
+        }
+    }
+    return true;
+}
+function checkIPv6(IP) {
+    let arr = IP.split(":");
+    if (arr.length !== 8) return false;
+    for (let i of arr) {
+        if (i.length > 4 || Object.is(parseInt(i, 16), NaN)) {
+            return false;
+        }
+    }
+    return true;
 }
