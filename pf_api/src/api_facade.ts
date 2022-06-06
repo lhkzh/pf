@@ -846,8 +846,8 @@ function decorator_route_proxy(requestMethod: string, srcFn: Function, paramRule
                     source = { [rule.name]: _ };
                 }
             } else if (rule.src == "socket") {
-                if (rule.name == "remoteAddress" && ctx.getHeaders()["X-Real-IP"] && checkIsIp(ctx.getHeaders()["X-Real-IP"])) {
-                    source = rule;
+                if (rule.name == "remoteAddress" && ctx.getHeaders()["X-Real-IP"]) {
+                    source = ctx.getHeaders();
                     rule = { ...rule, name: "X-Real-IP" };
                 } else {
                     var csock: any = ctx.getSocket();
