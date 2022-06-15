@@ -508,12 +508,12 @@ export class WsApiHttpCtx extends AbsHttpCtx {
     private _path: string;
     private paramArg: any;//post+get
     private headerArg: any;//headers
-    //链接socket, 事件消息
-    constructor(con, msg: any) {
+    //链接socket, 事件消息[requestId, path|pathCode, params, headers, pathParams]
+    constructor(con, msg: [number, string|number, any, any, any]) {
         super();
         this.con = con;
         this.src = msg;
-        this._path = msg[1];
+        this._path = <string>msg[1];
         this.paramArg = msg[2];
         this.headerArg = msg[3];
         this.pathArg = msg[4];

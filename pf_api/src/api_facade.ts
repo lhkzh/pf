@@ -104,9 +104,9 @@ export class Facade {
     }
 
     //通过websocket数据执行请求
-    public static run_by_ws(conn: Class_WebSocket, args: any, opt?: number, overrideResWriter?: any, processCtx?: (ctx: any) => any) {
+    public static run_by_ws(conn: Class_WebSocket, args: [number, string|number, any, any, any], opt?: number, overrideResWriter?: any, processCtx?: (ctx: any) => any) {
         //@see Facade.run_by_ws_check
-        let api_path = Number.isFinite(args[1]) && old_codeMap.has(args[1]) ? old_codeMap.get(args[1]) : args[1];
+        let api_path = Number.isInteger(args[1]) && old_codeMap.has(<number>args[1]) ? old_codeMap.get(<number>args[1]) : args[1];
         let fn = old_apis[api_path];
         if (fn) {
             fn(conn, args, opt, overrideResWriter, processCtx);
@@ -512,7 +512,7 @@ function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandl
             if (request.response) {
                 ctx = new ApiHttpCtx(request, pathArg, new res());
             } else {
-                ctx = new WsApiHttpCtx(request, pathArg);
+                ctx = new WsApiHttpCtx(request, <any>pathArg/** call by run @run_by_ws*/);
                 if (markFlag != 8) {//非系统内对websocket绑定的调用，需要发送数据给客户端（客户端主动请求、服务端定时主动调用模拟请求后发回）
                     ctx.writer = new (overrideResWriter || res)();
                     if (markFlag == 9) {//websocket服务端发送到客户端的通知类型（例如 服务端定时主动调用模拟请求后发回，添加path让客户端区分通知消息具体是哪个）
