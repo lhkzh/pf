@@ -241,26 +241,22 @@ export class ApiHttpCtx extends AbsHttpCtx {
 
     //是否传统form请求
     public isCtForm(tag: string = "form") {
-        var ct: string = this.req.headers["Content-Type"];
-        return ct != null && ct.includes(tag);
+        return this.req.hasHeader("Content-Type") && this.req.firstHeader("Content-Type").includes(tag);
     }
 
     //是否Json请求头
     public isCtJson() {
-        var ct: string = this.req.headers["Content-Type"];
-        return ct != null && ct.includes("json");
+        return this.req.hasHeader("Content-Type") && this.req.firstHeader("Content-Type").includes("json");
     }
 
     //是否xml请求头
     public isCtXml() {
-        var ct: string = this.req.headers["Content-Type"];
-        return ct != null && ct.includes("xml");
+        return this.req.hasHeader("Content-Type") && this.req.firstHeader("Content-Type").includes("xml");
     }
 
     //是否msgpack请求头
     public isCtMsgpack() {
-        var ct: string = this.req.headers["Content-Type"];
-        return ct != null && ct.includes("msgpack");
+        return this.req.hasHeader("Content-Type") && this.req.firstHeader("Content-Type").includes("msgpack");
     }
 
     //解析或者获取上传的body对象：需要post/put
@@ -287,9 +283,9 @@ export class ApiHttpCtx extends AbsHttpCtx {
         return this.b;
     }
 
-    //request=post/put/get
+    //request=post/put/get/header
     public hasParam(k: string): boolean {
-        return this.hasPart(k) || this.hasQuery(k);
+        return this.hasPart(k) || this.hasQuery(k) || this.req.hasHeader(k);
     }
 
     //是否有 -url的query参数
@@ -334,6 +330,9 @@ export class ApiHttpCtx extends AbsHttpCtx {
         }
         if (this.hasPart(k)) {
             return this.getBody()[k];
+        }
+        if (this.req.hasHeader(k)) {
+            return this.req.firstHeader(k);
         }
         return undefined;
     }
