@@ -148,6 +148,8 @@ export function docs_desc(url: string, node: DocApiNode, comporess?: boolean, gl
         .replace(/\{\$path\}/g, node.path);
     if (node.method == "GET" || node.method == "HEAD") {
         doc = doc.replace("{$request_method}", '<option value="GET">GET</option>');
+    } else if (node.method == "ANY") {
+        doc = doc.replace("{$request_method}", '<option value="GET">GET</option><option value="POST">POST</option>');
     } else {
         doc = doc.replace("{$request_method}", '<option value="POST">POST</option>');
     }
