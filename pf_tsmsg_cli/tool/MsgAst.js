@@ -26,7 +26,6 @@ for (var i = 0; i < path_arr.length; i++) {
 }
 class MsgAst {
     static parse(source, baseMsgId = 0) {
-        let output = {};
         // 1. get flatten nodes
         let src = ts.createSourceFile('', source, ts.ScriptTarget.ES3, true, ts.ScriptKind.TS);
         let sidFn = () => {
@@ -83,6 +82,12 @@ class MsgAst {
                 }
                 let valType = this.getTypeName(member, srcType);
                 v_fields.push([keyType, valType, 2]);
+            }
+            else if(ts.isPropertyDeclaration(member)){
+                var fieldName = member.name.text, optional = member.questionToken;
+                let valType = this.getTypeName(member, srcType);
+                // console.warn(member.type.name, valType)
+                v_fields.push([fieldName, valType, optional ? 1 : 0]);
             }
             else {
                 throw new Error(`bad type: ${srcType}` + member.getText());
@@ -169,6 +174,7 @@ class MsgAst {
         let output = {};
         let limit = {};
         node.forEachChild((v) => {
+            // console.warn(this.isBadType(v),ts.isModuleDeclaration(v), ts.isInterfaceDeclaration(v), v.flags, v.kind, v.type, ts.isClassDeclaration(v))
             if (this.isBadType(v)) {
                 throw new Error("bad type:" + v.name.text);
             }
@@ -195,24 +201,19 @@ class MsgAst {
             else if (ts.isInterfaceDeclaration(v)) {
                 output[v.name.text] = { id: sidFn(), type: v };
             }
+            else if(ts.isClassDeclaration(v)){
+                output[v.name.text] = { id: sidFn(), type: v };
+            }
             else if (ts.isEnumDeclaration(v) && v.members.length > 0) {
                 let enumInfo = this.getEnumInfo(v);
                 link[v.name.text] = enumInfo.type;
                 limit[v.name.text] = enumInfo.members;
             }
-            else if (ts.isModuleDeclaration(v) && (v.flags & ts.NodeFlags.Namespace)) {
-                if (v.body && v.body.kind === ts.SyntaxKind.ModuleBlock) {
-                    // 递归生成子树
-                    let children = this.getLinkDict(source, v.body, sidFn);
-                    let subLink = children.link;
-                    let subDict = children.dict;
-                    let subLimit = children.limit;
-                    for (let tmp in subDict) {
-                        output[v.name.text + '.' + tmp] = subDict[tmp];
-                    }
-                    for (var tmp in subLimit) {
-                        link[v.name.text + '.' + tmp] = subLimit[tmp];
-                    }
+            else if(ts.isModuleDeclaration(v) && v.body){
+                //export namespace p
+                //export module p
+                if (v.body.kind === ts.SyntaxKind.ModuleBlock || v.body.kind===ts.SyntaxKind.TypeAliasDeclaration) {
+                    this.getDeepChildren(source, v, output, link, sidFn);
                 }
             }
         });
@@ -221,6 +222,19 @@ class MsgAst {
             dict: output,
             limit: limit
         };
+    }
+    static getDeepChildren(source, v, output, link, sidFn){
+        // 递归生成子树
+        let children = this.getLinkDict(source, v.body, sidFn);
+        let subLink = children.link;
+        let subDict = children.dict;
+        let subLimit = children.limit;
+        for (let tmp in subDict) {
+            output[v.name.text + '.' + tmp] = subDict[tmp];
+        }
+        for (var tmp in subLimit) {
+            link[v.name.text + '.' + tmp] = subLimit[tmp];
+        }
     }
     static getEnumInfo(v) {
         // 要么全是正数， 要么全是字符串
