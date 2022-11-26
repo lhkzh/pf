@@ -18,12 +18,15 @@ export module MsgPack {
 
     const ExtNativeTypesArray = [Int8Array, Uint8Array, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array];
     const ExtNativeEncoderMap = new Map();
+    // let ExtBigInt: { is: (v: any) => boolean, isSafe: (v: any) => boolean, toNumber: (v: any) => number, encodeX: (v: any, out: OutStream) => void, decodeX: (v: Uint8Array) => any } = null;
     ExtNativeEncoderMap.set((new Date()).constructor, (obj: Date, out: OutStream) => {
         return packDate(obj, out);
     });
-    // ExtNativeEncoderMap.set(BigInt, (obj:BigInt, out:OutStream)=>{
-    //     return out.long(obj);
-    // });
+    if (typeof (BigInt) == "function") {
+        ExtNativeEncoderMap.set(BigInt, (obj: BigInt, out: OutStream) => {
+            return packBigInt(<any>obj, out);
+        });
+    }
     // ExtNativeEncoderMap.set(Buffer.constructor, (obj:Buffer, out:OutStream)=>{
     //     return packRawSizeHeader(obj.byteLength, out).blob(new Uint8Array(obj).buffer);
     // });
@@ -74,9 +77,9 @@ export module MsgPack {
         if (length <= 0xff) {
             var c = ExtLens[length];
             if (c) {
-                out.bb(c, type);
+                out.bu(c, type);
             } else {
-                out.bb(0xc7, length).u8(type);
+                out.bu(0xc7, length).u8(type);
             }
         } else if (length < 0xffff) {
             out.u8(0xc8).u16(length).u8(type);
@@ -114,7 +117,7 @@ export module MsgPack {
         return v < 0 ? packXInt(v, out) : packUInt(v, out);
     }
 
-    function packXInt(v: number, out: OutStream) {
+    export function packXInt(v: number, out: OutStream) {
         if (v >= -128) {
             out.u8(0xd0).i8(v);
         } else if (v >= -32768) {
@@ -122,7 +125,8 @@ export module MsgPack {
         } else if (v >= (1 << 31)) {
             out.u8(0xd2).i32(v);
         } else {
-            out.u8(0xd3).long(v);
+            // out.u8(0xd3).long(v);
+            out.u8(0xcb).double(v);
         }
         return out;
     }
@@ -131,13 +135,28 @@ export module MsgPack {
         if (v < 128) {
             out.i8(v);
         } else if (v < 256) {
-            out.bb(0xcc, v);
+            out.bu(0xcc, v);
         } else if (v < (1 << 16)) {
             out.u8(0xcd).u16(v);
         } else if (v < (1 << 32)) {
             out.u8(0xce).u32(v);
         } else {
-            out.u8(0xcf).long(v);
+            // out.u8(0xcf).long(v);
+            out.u8(0xcb).double(v);
+        }
+        return out;
+    }
+
+    export function packBigInt(v: bigint, out: OutStream) {
+        let d = Number(v);
+        if (Number.isSafeInteger(d)) {
+            packInt(d, out);
+        } else {
+            if (v < 0) {
+                out.u8(0xd3).i64(v);
+            } else {
+                out.u8(0xcf).u64(v);
+            }
         }
         return out;
     }
@@ -154,8 +173,20 @@ export module MsgPack {
         return out.u8(v ? 0xc3 : 0xc2);
     }
 
-    function packNil(out: OutStream) {
+    export function packNil(out: OutStream) {
         return out.u8(0xc0);
+    }
+    export function isInt(v: number) {
+        return Number.isInteger(v);
+    }
+    export function isLong(v: any) {
+        return typeof (v) == "bigint";
+    }
+    export function toLong(n: number) {
+        return BigInt(n);
+    }
+    export function toN53(n: bigint) {
+        return Number(n);
     }
 
     export function packArrHeader(arrLength: number, out: OutStream) {
@@ -176,9 +207,7 @@ export module MsgPack {
         }
         return out;
     }
-
-    function packObject(v: any, out: OutStream) {
-        var a: string[] = Object.keys(v), l = a.length;
+    export function packObjHeader(l: number, out: OutStream) {
         if (l < 16) {
             out.u8(0x80 | l);
         } else if (l < 0xffff) {
@@ -186,6 +215,11 @@ export module MsgPack {
         } else {
             out.u8(0xdf).u32(l);
         }
+        return out;
+    }
+    function packObject(v: any, out: OutStream) {
+        var a: string[] = Object.keys(v), l = a.length;
+        packObjHeader(l, out);
         for (var k of a) {
             packString(k, out);
             pack(v[k], out);
@@ -207,8 +241,11 @@ export module MsgPack {
         }
         return out;
     }
+    export function packNative(v: any, out: OutStream) {
+        return ExtNativeEncoderMap.get(v.constructor)(v, out);
+    }
 
-    function pack(v: any, out: OutStream): OutStream {
+    export function pack(v: any, out: OutStream): OutStream {
         if (v == null) {
             out.u8(0xc0)
         } else if (Number.isFinite(v)) {
@@ -220,7 +257,7 @@ export module MsgPack {
         } else if (Array.isArray(v)) {
             packArray(v, out);
         } else if (v.constructor && ExtNativeEncoderMap.has(v.constructor)) {
-            ExtNativeEncoderMap.get(v.constructor)(v, out);
+            packNative(v, out);
         } else {
             var t = typeof v;
             if (t == "boolean") {
@@ -228,7 +265,7 @@ export module MsgPack {
             } else if (t == "string") {
                 packString(v, out);
             } else if (t == "bigint") {
-                packInt(Number(v), out);
+                packBigInt(v, out);
             } else if (v.constructor.name == "Object") {
                 packObject(v, out);
             } else if (Ext.encode) {
@@ -280,7 +317,6 @@ export module MsgPack {
         }
         return eb.bin();
     }
-
     export function unpack(b: InStream) {
         var k = b.u8();
         if (k <= 0x7f || k >= 0xe0) {//fixInt
@@ -312,16 +348,16 @@ export module MsgPack {
                 return b.i16();
             case 0xd2:
                 return b.i32();
-            case 0xd3:
-                return b.long();
             case 0xcc:
                 return b.u8();
             case 0xcd:
                 return b.u16();
             case 0xce:
                 return b.u32();
+            case 0xd3:
+                return b.i64();
             case 0xcf:
-                return b.long();
+                return b.u64();
             case 0xdc:
                 return unpackArray(b, b.u16());
             case 0xdd:
@@ -363,6 +399,56 @@ export module MsgPack {
         }
     }
 
+    export function unpackNumber(b: InStream) {
+        let k: any = b.u8();
+        if (k == 0xc0) {
+            return undefined;
+        }
+        if (k <= 0x7f || k >= 0xe0) {//fixInt
+            return k;
+        }
+        switch (k) {
+            case 0xd0:
+                return b.i8();
+            case 0xd1:
+                return b.i16();
+            case 0xd2:
+                return b.i32();
+            case 0xcc:
+                return b.u8();
+            case 0xcd:
+                return b.u16();
+            case 0xce:
+                return b.u32();
+            case 0xd3:
+                return b.i64();
+            case 0xcf:
+                return b.u64();
+            case 0xca:
+                return b.float();
+            case 0xcb:
+                return b.double();
+        }
+        return NaN;
+    }
+
+    export function unpackStr(b: InStream) {
+        var k: any = b.u8();
+        if (k == 0xc0) {
+            return null;
+        }
+        if ((k & 0xe0) == 0xa0) {//fixedString
+            return b.str(k & 0x1F);
+        } else if (k == 0xd9) {
+            return b.str(b.u8());
+        } else if (k == 0xda) {
+            return b.str(b.u16());
+        } else if (k == 0xdb) {
+            return b.str(b.u32());
+        }
+        return undefined;
+    }
+
     export function packDate(d: Date, out: OutStream) {
         var millis = d.getTime()//d * 1
         var seconds = Math.floor(millis / 1000)
@@ -372,9 +458,9 @@ export module MsgPack {
             var upperSeconds = seconds / Math.pow(2, 32)
             var upper = (upperNanos + upperSeconds) & 0xffffffff
             var lower = seconds & 0xffffffff
-            return out.bb(0xd7, 255).i32(upper).i32(lower);
+            return out.bu(0xd7, 255).i32(upper).i32(lower);
         } else {// Timestamp32
-            return out.bb(0xd6, 255).i32(Math.floor(millis / 1000));
+            return out.bu(0xd6, 255).i32(Math.floor(millis / 1000));
         }
     }
 
@@ -418,7 +504,14 @@ export module MsgPack {
             this.i = 0;
         }
 
-        public bb(a: number, b: number) {
+        public bi(a: number, b: number) {
+            let T = this;
+            T.c(2);
+            T.s.setUint8(T.i++, a);
+            T.s.setInt8(T.i++, b);
+            return T;
+        }
+        public bu(a: number, b: number) {
             let T = this;
             T.c(2);
             T.s.setUint8(T.i++, a);
@@ -472,19 +565,20 @@ export module MsgPack {
             return T;
         }
 
-        public long(v: number) {
+        public i64(v: bigint) {
             let T = this;
-            if (!Number.isSafeInteger(v)) {
-                throw new RangeError("encode_out_range:" + v);
-            }
-            T.c(8);
-            var n = NM32,
-                l = (v % n) | 0,
-                h = (v / n) | 0;
-            T.s.setInt32(T.i, h);
-            T.s.setInt32(T.i + 4, l);
+            T.s.setBigInt64(T.i, v);
             T.i += 8;
-            return T;
+        }
+        public u64(v: bigint) {
+            let T = this;
+            T.s.setBigUint64(T.i, v);
+            T.i += 8;
+        }
+
+        public process(n: number, f: (dataView: DataView, offset: number) => number) {
+            this.c(n);
+            this.i += f(this.s, this.i);
         }
 
         public float(v: number) {
@@ -591,13 +685,29 @@ export module MsgPack {
             return n;
         }
 
-        public long(): number {
+        public i64() {
             let T = this,
-                h = T.v.getInt32(T.i),
-                l = T.v.getInt32(T.i + 4);
+                n = T.v.getBigInt64(T.i);
             T.i += 8;
-            return h * NM32 + (l >>> 0);
+            return n;
         }
+        public u64() {
+            let T = this,
+                n = T.v.getBigUint64(T.i);
+            T.i += 8;
+            return n;
+        }
+        // public long(): number {
+        //     if (ExtBigInt) {
+        //         let vv = ExtBigInt.decodeX(this.bin(8));
+        //         return ExtBigInt.isSafe(vv) ? ExtBigInt.toNumber(vv) : vv;
+        //     }
+        //     let T = this,
+        //         h = T.v.getInt32(T.i),
+        //         l = T.v.getInt32(T.i + 4);
+        //     T.i += 8;
+        //     return h * NM32 + (l >>> 0);
+        // }
 
         public float(): number {
             let T = this,
@@ -687,10 +797,10 @@ export module MsgPack {
     const NM32 = Math.pow(2, 32);
     let Ext: { encode?: (v: any, toBuf: OutStream) => OutStream, decode?: (type: number, fromBuf: InStream) => any } = {};
     let Str: { encode: (str: string) => Uint8Array, decode: (buf: ArrayLike<number>) => string } = Utf8Coder;
-    let Opt: { float32: boolean, capInit?: number, capIncr?: number } = {float32: false, capInit: 256, capIncr: 256}
+    let Opt: { float32: boolean, capInit?: number, capIncr?: number } = { float32: false, capInit: 256, capIncr: 256 }
 
     export function setOpt(opt: { float32: boolean, capInit?: number, capIncr?: number }) {
-        Opt = {...Opt, ...opt};
+        Opt = { ...Opt, ...opt };
     }
 
     export function setExt(codec: { encode?: (v: any, toBuf: OutStream) => OutStream, decode?: (type: number, fromBuf: InStream) => any }) {

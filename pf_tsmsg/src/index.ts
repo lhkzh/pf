@@ -1,17 +1,19 @@
-import {MsgPack} from "./MsgPack";
-import {
-    int8,int16,int32,
-    uint8,uint16,uint32,
-    int,uint,
-    float32,float64,
-    MsgCodec
-} from "./MsgCodec";
+import { MsgPack } from "./MsgPack";
+import { MsgCodec } from "./MsgCodec";
+
+export type int8 = number;
+export type int16 = number;
+export type int32 = number;
+export type uint8 = number;
+export type uint16 = number;
+export type uint32 = number;
+export type int = number;
+export type uint = number;
+export type long = bigint;
+export type float32 = number;
+export type float64 = number;
 
 export {
-    int8,int16,int32,
-    uint8,uint16,uint32,
-    int,uint,
-    float32,float64,
     MsgCodec,
     MsgPack
 }

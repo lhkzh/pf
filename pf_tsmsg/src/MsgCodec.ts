@@ -1,38 +1,38 @@
-import {MsgPack} from "./MsgPack";
+import { MsgPack } from "./MsgPack";
 import OutStream = MsgPack.OutStream;
 import InStream = MsgPack.InStream;
 import packBool = MsgPack.packBool;
 import packInt = MsgPack.packInt;
-import packUInt = MsgPack.packUInt;
+import packBigInt = MsgPack.packBigInt;
 import packDate = MsgPack.packDate;
 import packString = MsgPack.packString;
 import packArrHeader = MsgPack.packArrHeader;
+import packObjHeader = MsgPack.packObjHeader;
+import packNative = MsgPack.packNative;
 import packExt = MsgPack.packExt;
+import packNil = MsgPack.packNil;
 import unpackExt = MsgPack.unpackExt;
-import unpackDate = MsgPack.unpackDate;
-import unpack = MsgPack.unpack;
+import unpackStr = MsgPack.unpackStr;
 import packArray = MsgPack.packArray;
 
-export type int8 = number;
-export type int16 = number;
-export type int32 = number;
-export type uint8 = number;
-export type uint16 = number;
-export type uint32 = number;
-export type int = number;
-export type uint = number;
-export type float32 = number;
-export type float64 = number;
+import unpack = MsgPack.unpack;
+import isInt = MsgPack.isInt;
+import isLong = MsgPack.isLong;
+import toLong = MsgPack.toLong;
+import toN53 = MsgPack.toN53;
 
 export class MsgCodec {
     private encs: any = {};
     private decs: any = {};
     private ids: any = {};
+    private sdi: any = {};
+    private enci = new Map();
+    private deci = new Map();
     private protocols: any;
     private initCap: number;
     private incrCap: number;
 
-    constructor(cfg: { options: { initCap?: number, incrCap?: number, floatMapKey?: boolean }, protocols: { [index: string]: any } }) {
+    constructor(cfg: { options: { initCap?: number, incrCap?: number }, protocols: { [index: string]: any } }) {
         this.encs = {};
         this.decs = {};
         this.protocols = cfg.protocols;
@@ -42,23 +42,36 @@ export class MsgCodec {
             var v = this.protocols[k];
             if (typeof v != "string") {
                 this.ids[v.id] = k;
+                this.sdi[k] = v.id;
                 this.encs[k] = this.buildEncFn(k, v);
                 this.decs[k] = this.buildDecFn(k, v);
+                this.enci.set(v.id, this.encs[k]);
+                this.deci.set(v.id, this.decs[k]);
                 link_x_codec(k, this.encs, this.decs);
             }
         }
     }
 
-    public getTypeById(id: number): string {
+    public id2name(id: number): string {
         return this.ids[id];
     }
-
-    public encode(type: string, data: any, out?: OutStream) {
-        return this.encs[type](data, out || new OutStream(this.initCap, this.incrCap)).bin();
+    public name2id(name: string): number {
+        return this.sdi[name] || NaN;
     }
 
-    public decode(type: string, val: Uint8Array | InStream) {
+    public encode(type: string, data: any, out?: OutStream): OutStream {
+        return this.encs[type](data, out || new OutStream(this.initCap, this.incrCap));
+    }
+
+    public decode(type: string, val: Uint8Array | InStream): any {
         return this.decs[type](val instanceof InStream ? val : new InStream(val.buffer), false);
+    }
+
+    public encodeX(id: number, data: any, out?: OutStream): OutStream {
+        return this.enci.get(id)(data, out || new OutStream(this.initCap, this.incrCap));
+    }
+    public decodeX(id: number, val: Uint8Array | InStream): any {
+        return this.deci.get(id)(val instanceof InStream ? val : new InStream(val.buffer), false);
     }
 
     private buildDecFn(clazz: string, info: any) {
@@ -66,19 +79,12 @@ export class MsgCodec {
 
         if (members.length == 1 && members[0][2] == 2) {//index_kv
             let vType = this.getLinkType(members[0][1]);
-            const keyFn: any = members[0][0] == "string" ? dstr : dint;
+            const keyFn: any = members[0][0] == "string" ? dstr : decodeInt;
             const valFn = decodeFnDict.hasOwnProperty(vType) ? decodeFnDict[vType] : this.getStructLinkDecFn(vType);
             return function (input: InStream, option: boolean) {
                 decode_at(clazz, "");
-                var len = dObjLen(input, option);
-                if (len >= 0) {
-                    var rsp: any = {};
-                    for (var i = 0; i < len; i++) {
-                        rsp[keyFn(input, false)] = valFn(input, true);
-                    }
-                    return rsp;
-                }
-                return undefined;
+                let rsp: any = dObj(input, option, keyFn, valFn, true);
+                return rsp;
             }
         } else {
             let fns: Array<(input: InStream, option?: boolean) => any> = [], fnn: number = 0;
@@ -133,19 +139,10 @@ export class MsgCodec {
         let members = info.members;
         if (members.length == 1 && members[0][2] == 2) {//index_kv
             let vType = this.getLinkType(members[0][1]);
-            const keyFn: any = members[0][0] == "string" ? estr : eint;
+            const keyFn: any = members[0][0] == "string" ? estr : ekv_key_int;
             const valFn = encodeFnDict.hasOwnProperty(vType) ? encodeFnDict[vType] : this.getStructLinkEncFn(vType);
             return function (v: any, out: OutStream) {
-                if (isNilOrUndefiend(v)) {
-                    out.u8(0xc0);
-                } else {
-                    let eks = Object.keys(v);
-                    eObjLen(eks.length, out);
-                    for (var ek of eks) {
-                        keyFn(ek, out);
-                        valFn(v[ek], out);
-                    }
-                }
+                eObj(v, out, keyFn, valFn);
                 return out;
             }
         } else {
@@ -156,7 +153,7 @@ export class MsgCodec {
             }
             return function (v: any, out: OutStream) {
                 if (isNilOrUndefiend(v)) {
-                    out.u8(0xc0);
+                    packNil(out);
                 } else {
                     packArrHeader(members.length, out);
                     for (var fn of fns) {
@@ -188,7 +185,7 @@ export class MsgCodec {
     private getStructLinkEncFn(t: string | any[]) {
         let self = this;
         if (Array.isArray(t)) {
-            return this.buildEncFn("", {members: t});
+            return this.buildEncFn("", { members: t });
         }
         return function (v: any, out: OutStream) {
             return self.encs[t.toString()](v, out);
@@ -215,7 +212,7 @@ export class MsgCodec {
     private getStructLinkDecFn(t: string) {
         let self = this;
         if (Array.isArray(t)) {
-            return this.buildDecFn("", {members: t});
+            return this.buildDecFn("", { members: t });
         }
         return function (input: InStream, option?: boolean) {
             return self.decs[t](input, option);
@@ -240,192 +237,113 @@ export class MsgCodec {
 const gTypeArr = ["Int8Array", "Int16Array", "Int32Array", "Uint8Array", "Uint16Array", "Uint32Array", "Float32Array", "Float64Array"];
 
 
-function ei8(v: number, out: OutStream) {
-    return isNilOrUndefiend(v) ? out.u8(0xc0) : out.u8(0xd0).i8(v);
+function encodeInt(v: number, out: OutStream) {
+    return packInt(isInt(v) ? v : 0, out);
 }
-
-function ei16(v: number, out: OutStream) {
-    return isNilOrUndefiend(v) ? out.u8(0xc0) : out.u8(0xd1).i16(v);
-}
-
-function ei32(v: number, out: OutStream) {
-    return isNilOrUndefiend(v) ? out.u8(0xc0) : out.u8(0xd2).i32(v);
-}
-
-function eu8(v: number, out: OutStream) {
-    return isNilOrUndefiend(v) ? out.u8(0xc0) : out.bb(0xcc, v);
-}
-
-function eu16(v: number, out: OutStream) {
-    return isNilOrUndefiend(v) ? out.u8(0xc0) : out.u8(0xcd).u16(v);
-}
-
-function eu32(v: number, out: OutStream) {
-    return isNilOrUndefiend(v) ? out.u8(0xc0) : out.u8(0xce).u32(v);
-}
-
-function eint(v: number, out: OutStream) {
-    if (isNilOrUndefiend(v)) {
-        return out.u8(0xc0);
-    }
-    return packInt(v, out);
-}
-
-function euint(v: number, out: OutStream) {
-    if (isNilOrUndefiend(v)) {
-        return out.u8(0xc0);
-    }
-    return packUInt(v, out);
+function encodeLong(v: bigint, out: OutStream) {
+    return packBigInt(isLong(v) ? v : toLong(0), out);
 }
 
 function ef32(v: number, out: OutStream) {
-    return isNilOrUndefiend(v) ? out.u8(0xc0) : out.u8(0xca).float(v);
+    return out.u8(0xca).float(Number.isFinite(v) ? v : 0);
 }
 
 function ef64(v: number, out: OutStream) {
-    return isNilOrUndefiend(v) ? out.u8(0xc0) : out.u8(0xcb).double(v);
+    return out.u8(0xcb).double(Number.isFinite(v) ? v : 0);
 }
 
 function enumber(v: number, out: OutStream) {
-    if (isNilOrUndefiend(v)) {
-        return out.u8(0xc0);
-    }
+    v = Number.isFinite(v) ? v : 0;
     return Number.isInteger(v) ? packInt(v, out) : out.u8(0xcb).double(v);
 }
 
 function estr(v: string, out: OutStream): OutStream {
-    return isNilOrUndefiend(v) ? out.u8(0xc0) : packString(v.toString(), out);
+    return isNilOrUndefiend(v) ? packNil(out) : packString(v.toString(), out);
 }
 
 function edate(v: Date, out: OutStream): OutStream {
-    return isNilOrUndefiend(v) ? out.u8(0xc0) : packDate(v, out);
+    return isNilOrUndefiend(v) ? packNil(out) : packDate(v, out);
 }
 
-//编码ArrayBuffer
-function ebuffer(v: ArrayBuffer, out: OutStream) {
+function eObj(v: any, out: OutStream, kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream): OutStream {
     if (isNilOrUndefiend(v)) {
-        return out.u8(0xc0);
+        return packNil(out);
     }
-    let size = v.byteLength;
-    if (size < 256) {
-        out.u8(0xc4).u8(size);
-    } else if (size <= 0xffff) {
-        out.u8(0xc5).u16(size);
-    } else {
-        out.u8(0xc6).u32(size);
+    let keys = Object.keys(v);
+    packObjHeader(keys.length, out);
+    for (var ek of keys) {
+        kFn(ek, out);
+        vFn(v[ek], out);
     }
-    return out.blob(new Uint8Array(v));
+    return out;
 }
-
-//编码kv的长度头
-function eObjLen(len: number, out: OutStream) {
-    if (len < 16) {
-        out.u8(0x80 | len);
-    } else {
-        out.u8(0xde).u16(len);
+function eArr(v: any, out: OutStream, fn: (v: any, out: OutStream) => OutStream): OutStream {
+    if (isNilOrUndefiend(v)) {
+        return packNil(out);
+    }
+    packArrHeader(v.length, out);
+    for (var e of v) {
+        fn(e, out);
     }
     return out;
 }
 
 function wrapKvEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
-        if (isNilOrUndefiend(v)) {
-            return out.u8(0xc0);
-        }
-        let keys = Object.keys(v);
-        eObjLen(keys.length, out);
-        for (var ek of keys) {
-            kFn(ek, out);
-            vFn(v[ek], out);
-        }
-        return out;
+        return eObj(v, out, kFn, vFn);
     }
 }
 
 //包装kv数组编码
 function wrapKvArrEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream) {
+    let fn = (e: any, out: OutStream) => {
+        return eObj(e, out, kFn, vFn);
+    };
     return function (v: any, out: OutStream) {
-        if (isNilOrUndefiend(v)) {
-            return out.u8(0xc0);
-        }
-        packArrHeader(v.length, out);
-        for (var e of v) {
-            if (isNilOrUndefiend(e)) {
-                out.u8(0xc0);
-            } else {
-                let ekeys = Object.keys(e);
-                eObjLen(ekeys.length, out);
-                for (var k of ekeys) {
-                    kFn(k, out);
-                    vFn(e[k], out);
-                }
-                return out;
-            }
-        }
-        return out;
+        return eArr(v, out, fn);
     }
 }
 
 //包装一维数组编码
 function wrapArrEnc(fn: (v: any, out: OutStream) => OutStream) {
-    return function (v: any, out: OutStream) {
-        if (isNilOrUndefiend(v)) {
-            return out.u8(0xc0);
-        }
-        packArrHeader(v.length, out);
-        for (var e of v) {
-            fn(e, out);
-        }
-        return out;
+    return function (v: any, out: OutStream): OutStream {
+        return eArr(v, out, fn);
     }
 }
 
 //包装二维数组编码
 function wrapArr2Enc(fn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
-        if (isNilOrUndefiend(v)) {
-            return out.u8(0xc0);
-        }
-        packArrHeader(v.length, out);
-        for (var e of v) {
-            if (isNilOrUndefiend(e)) {
-                out.u8(0xc0);
-            } else {
-                packArrHeader(e.length, out);
-                for (var ee of e) {
-                    fn(ee, out);
-                }
-            }
-        }
-        return out;
+        return eArr(v, out, (ev, eout) => {
+            return eArr(ev, eout, fn);
+        });
     }
 }
 
 function anysEnc(v: any, out: OutStream) {
-    if (isNilOrUndefiend(v)) {
-        return out.u8(0xc0);
-    }
-    return packArray(v, out);
+    return isNilOrUndefiend(v) ? packNil(out) : packArray(v, out);
 }
 
-const ekv_key_int = (k: any, out: OutStream) => eint(Number(k), out);
+const ekv_key_int = (k: any, out: OutStream) => encodeInt(Number(k), out);
 const ekv_key_str = <(k: any, out: OutStream) => OutStream>packString;
 //支持的编码字典
 const encodeFnDict: { [index: string]: (v: any, out: OutStream) => OutStream } = {
-    "int8": ei8,
-    "int16": ei16,
-    "int32": ei32,
-    "uint8": eu8,
-    "uint16": eu16,
-    "uint32": eu32,
-    "int": eint,
-    "uint": euint,
+    "int8": encodeInt,
+    "int16": encodeInt,
+    "int32": encodeInt,
+    "uint8": encodeInt,
+    "uint16": encodeInt,
+    "uint32": encodeInt,
+    "int": encodeInt,
+    "uint": encodeInt,
     "float32": ef32,
     "float64": ef64,
     "number": enumber,
-    "byte": ei8,
-    "short": ei16,
-    "long": eint,
+    "float": ef32,
+    "double": ef64,
+    "byte": encodeInt,
+    "short": encodeInt,
+    "long": encodeLong,
     "bool": packBool,
     "boolean": packBool,
     "string": estr,
@@ -443,14 +361,14 @@ for (var k in encodeFnDict) {//构建【一维数组、二维数组、intKv数�
 }
 gTypeArr.forEach(type => {//扩展类型 & ArrayBuffer
     encodeFnDict[type] = packExt;
-    encodeFnDict["ArrayBuffer"] = ebuffer;
+    encodeFnDict["ArrayBuffer"] = packNative;
 });
 
 function isNilOrUndefiend(v: any) {
     return v === undefined || v === null;
 }
 
-const decode_in: { type: string, field: string } = {type: "", field: ""};
+const decode_in: { type: string, field: string } = { type: "", field: "" };
 
 function decode_at(type: string, field: string) {
     decode_in.type = type;
@@ -462,146 +380,46 @@ function derr() {
     throw new Error(`decode_fail @${decode_in.type}.${decode_in.field}`);
 }
 
-function di8(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    } else if (k != 0xd0) {
+function decodeInt(b: InStream, option?: boolean) {
+    let n = MsgPack.unpackNumber(b);
+    if (n === undefined) {
+        if (option) {
+            derr();
+        }
+        return 0;
+    } else if (Number.isNaN(n)) {
         derr();
     }
-    return b.i8();
+    if (isLong(n)) {
+        return toN53(n);
+    }
+    return Math.floor(n);
 }
-
-function di16(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    } else if (k != 0xd1) {
+function decodeLong(b: InStream, option?: boolean) {
+    let n = MsgPack.unpackNumber(b);
+    if (n === undefined) {
+        if (option) {
+            derr();
+        }
+        return toLong(0);
+    } else if (Number.isNaN(n)) {
         derr();
     }
-    return b.i16();
+    return isLong(n) ? n : toLong(n);
 }
-
-function di32(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    } else if (k != 0xd2) {
+function decodeNumber(b: InStream, option?: boolean) {
+    let n = MsgPack.unpackNumber(b);
+    if (n === undefined) {
+        if (option) {
+            derr();
+        }
+        return 0;
+    } else if (Number.isNaN(n)) {
         derr();
+    } else if (isLong(n)) {
+        return toN53(n);
     }
-    return b.i32();
-}
-
-function du8(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    } else if (k != 0xcc) {
-        derr();
-    }
-    return b.u8();
-}
-
-function du16(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    } else if (k != 0xcd) {
-        derr();
-    }
-    return b.u16();
-}
-
-function du32(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    } else if (k != 0xce) {
-        derr();
-    }
-    return b.u32();
-}
-
-function dint(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    }
-    if (k <= 0x7f || k >= 0xe0) {//fixInt
-        return k;
-    }
-    switch (k) {
-        case 0xd0:
-            return b.i8();
-        case 0xd1:
-            return b.i16();
-        case 0xd2:
-            return b.i32();
-        case 0xd3:
-            return b.long();
-        case 0xcc:
-            return b.u8();
-        case 0xcd:
-            return b.u16();
-        case 0xce:
-            return b.u32();
-        case 0xcf:
-            return b.long();
-    }
-    derr();
-}
-
-function df32(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    } else if (k != 0xca) {
-        derr();
-    }
-    return b.float();
-}
-
-function df64(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    } else if (k != 0xcb) {
-        derr();
-    }
-    return b.double();
-}
-
-function dnumber(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    }
-    if (k <= 0x7f || k >= 0xe0) {//fixInt
-        return k;
-    }
-    switch (k) {
-        case 0xca:
-            return b.float();
-        case 0xcb:
-            return b.double();
-        case 0xd0:
-            return b.i8();
-        case 0xd1:
-            return b.i16();
-        case 0xd2:
-            return b.i32();
-        case 0xd3:
-            return b.long();
-        case 0xcc:
-            return b.u8();
-        case 0xcd:
-            return b.u16();
-        case 0xce:
-            return b.u32();
-        case 0xcf:
-            return b.long();
-    }
-    derr();
+    return Number(n);
 }
 
 function dbool(b: InStream, option?: boolean) {
@@ -609,56 +427,41 @@ function dbool(b: InStream, option?: boolean) {
 }
 
 //解码日期
-function ddate(b: InStream, option?: boolean) {
-    let k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
-    }
-    if (b.u8() == 255) {//255=date@msg
-        if (k == 0xd6) {
-            return unpackDate(b, 4);
-        } else if (k == 0xd7) {
-            return unpackDate(b, 8);
+function ddate(b: InStream, option?: boolean): Date {
+    let d = unpack(b);
+    if (d === undefined) {
+        if (option) {
+            derr();
         }
+        return d;
     }
-    derr();
+    if (!(d instanceof Date)) {
+        derr();
+    }
+    return d;
 }
 
 //解码string
 function dstr(b: InStream, option?: boolean) {
-    var k: any = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
+    let s: string = unpackStr(b);
+    if (s === undefined || (s === null && !option)) {
+        derr();
     }
-    if ((k & 0xe0) == 0xa0) {//fixedString
-        return b.str(k & 0x1F);
-    } else if (k == 0xd9) {
-        return b.str(b.u8());
-    } else if (k == 0xda) {
-        return b.str(b.u16());
-    } else if (k == 0xdb) {
-        return b.str(b.u32());
-    }
-    derr();
+    return s;
 }
 
 //解码 ArrayBuffer
-function dbuffer(b: InStream, option?: boolean) {
-    var k = b.u8();
-    if (k == 0xc0) {
-        return option ? undefined : derr();
+function dbuffer(b: InStream, option?: boolean): ArrayBuffer {
+    let d = unpack(b);
+    if (isNilOrUndefiend(d)) {
+        if (!option) derr();
+
+        return d;
     }
-    let size;
-    if (k == 0xc4) {
-        size = b.u8();
-    } else if (k == 0xc5) {
-        size = b.u16();
-    } else if (k == 0xc6) {
-        size = b.u32();
-    } else {
-        derr();
+    if (d instanceof ArrayBuffer) {
+        return d;
     }
-    return b.bin(size).buffer;
+    derr();
 }
 
 //解码kv类型长度
@@ -676,6 +479,17 @@ function dObjLen(b: InStream, option?: boolean) {
     }
     derr();
 }
+function dObj(b: InStream, option: boolean, kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any, vOption?: boolean) {
+    let len = dObjLen(b, option);
+    if (len >= 0) {
+        var rsp: any = {};
+        for (var i = 0; i < len; i++) {
+            rsp[kFn(b)] = vFn(b, vOption);
+        }
+        return rsp;
+    }
+    return undefined;
+}
 
 //解码数组长度
 function dArrLen(b: InStream, option?: boolean) {
@@ -692,90 +506,52 @@ function dArrLen(b: InStream, option?: boolean) {
     }
     derr();
 }
-
+function dArr(b: InStream, option: boolean, fn: (b: InStream, option?: boolean) => any, vOption?: boolean) {
+    let len = dArrLen(b, option);
+    if (len >= 0) {
+        let rsp = new Array(len);
+        for (var i = 0; i < len; i++) {
+            rsp[i] = fn(b, vOption);
+        }
+        return rsp;
+    }
+    return undefined;
+}
 function wrapKvDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
-        let len = dObjLen(b, option);
-        if (len >= 0) {
-            var rsp: any = {};
-            for (var i = 0; i < len; i++) {
-                rsp[kFn(b)] = vFn(b);
-            }
-            return rsp;
-        }
-        return undefined;
+        return dObj(b, option, kFn, vFn);
     }
 }
 
 //kv类型的数组解码
 function wrapKvArrDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any) {
+    let fn = (b: InStream, option?: boolean) => {
+        return dObj(b, option, kFn, vFn, true);
+    };
     return function (b: InStream, option?: boolean) {
-        let len = dArrLen(b, option);
-        if (len >= 0) {
-            let rsp = new Array(len);
-            for (var i = 0; i < len; i++) {
-                var slen = dObjLen(b, option);
-                if (slen >= 0) {
-                    var srsp: any = {};
-                    for (var j = 0; j < slen; j++) {
-                        srsp[kFn(b)] = vFn(b, true);
-                    }
-                    rsp[i] = srsp;
-                }
-            }
-            return rsp;
-        }
-        return undefined;
+        return dArr(b, option, fn);
     }
 }
 
 //解码一维数组
 function wrapArrDec(fn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
-        let len = dArrLen(b, option);
-        if (len >= 0) {
-            let rsp = new Array(len);
-            for (var i = 0; i < len; i++) {
-                rsp[i] = fn(b, true);
-            }
-            return rsp;
-        }
-        return undefined;
+        return dArr(b, option, fn, true);
     }
 }
 
 //解码二维数组
 function wrapArr2Dec(fn: (b: InStream, option?: boolean) => any) {
+    let fn2 = (b: InStream, option?: boolean) => {
+        return dArr(b, option, fn, true);
+    }
     return function (b: InStream, option?: boolean) {
-        let len = dArrLen(b, option);
-        if (len >= 0) {
-            let rsp = new Array(len);
-            for (var i = 0; i < len; i++) {
-                var slen = dArrLen(b, option);
-                if (slen >= 0) {
-                    var srsp: any = new Array(slen);
-                    for (var j = 0; j < slen; j++) {
-                        srsp = fn(b, true);
-                    }
-                    rsp[i] = srsp;
-                }
-            }
-            return rsp;
-        }
-        return undefined;
+        return dArr(b, option, fn2, true);
     }
 }
 
 function anysDec(b: InStream, option?: boolean) {
-    let len = dArrLen(b, option);
-    if (len >= 0) {
-        let rsp = new Array(len);
-        for (var i = 0; i < len; i++) {
-            rsp[i] = unpack(b);
-        }
-        return rsp;
-    }
-    return undefined;
+    return dArr(b, option, unpack);
 }
 
 //解码-扩展类型
@@ -807,20 +583,20 @@ function dext(b: InStream, option?: boolean) {
 
 //支持的解码字典
 const decodeFnDict: { [index: string]: (input: InStream, option?: boolean) => any } = {
-    "int8": di8,
-    "int16": di16,
-    "int32": di32,
-    "uint8": du8,
-    "uint16": du16,
-    "uint32": du32,
-    "int": dint,
-    "uint": dint,
-    "float32": df32,
-    "float64": df64,
-    "number": dnumber,
-    "byte": di8,
-    "short": di16,
-    "long": dint,
+    "int8": decodeInt,
+    "int16": decodeInt,
+    "int32": decodeInt,
+    "uint8": decodeInt,
+    "uint16": decodeInt,
+    "uint32": decodeInt,
+    "int": decodeInt,
+    "uint": decodeInt,
+    "float32": decodeNumber,
+    "float64": decodeNumber,
+    "number": decodeNumber,
+    "byte": decodeInt,
+    "short": decodeInt,
+    "long": decodeLong,
     "bool": dbool,
     "boolean": dbool,
     "string": dstr,
@@ -831,9 +607,9 @@ for (var k in decodeFnDict) {//构建【一维数组、二维数组、intKv数�
     decodeFnDict[k + "[]"] = wrapArrDec(decodeFnDict[k]);
     decodeFnDict[k + "[][]"] = wrapArr2Dec(decodeFnDict[k]);
     decodeFnDict[`{[index:string]:${k}}[]`] = wrapKvArrDec(dstr, decodeFnDict[k]);
-    decodeFnDict[`{[index:number]:${k}}[]`] = wrapKvArrDec(dint, decodeFnDict[k]);
+    decodeFnDict[`{[index:number]:${k}}[]`] = wrapKvArrDec(decodeInt, decodeFnDict[k]);
     decodeFnDict[`{[index:string]:${k}}`] = wrapKvDec(dstr, decodeFnDict[k]);
-    decodeFnDict[`{[index:number]:${k}}`] = wrapKvDec(dint, decodeFnDict[k]);
+    decodeFnDict[`{[index:number]:${k}}`] = wrapKvDec(decodeInt, decodeFnDict[k]);
 }
 gTypeArr.forEach(type => {//扩展类型 & ArrayBuffer
     decodeFnDict[type] = dext;
@@ -841,13 +617,20 @@ gTypeArr.forEach(type => {//扩展类型 & ArrayBuffer
 });
 
 function link_x_codec(k: string, encs: any, decs: any) {
+    let iks = ["number", "uint", "int", "ushort", "short", "uint32", "int32", "uint16", "int16", "uint8", "int8"];
     encs[`${k}[]`] = wrapArrEnc(encs[k]);
     encs[`{[index:string]:${k}}`] = wrapKvEnc(ekv_key_str, encs[k]);
     encs[`{[index:string]:${k}}[]`] = wrapKvArrEnc(ekv_key_str, encs[k]);
-    encs[`{[index:string]:${k}}[]`] = wrapKvArrEnc(ekv_key_int, encs[k]);
+    for (var ik of iks) {
+        encs[`{[index:${ik}]:${k}}`] = wrapKvEnc(ekv_key_int, encs[k]);
+        encs[`{[index:${ik}]:${k}}[]`] = wrapKvArrEnc(ekv_key_int, encs[k]);
+    }
 
     decs[`${k}[]`] = wrapArrDec(decs[k]);
     decs[`{[index:string]:${k}}`] = wrapKvDec(dstr, decs[k]);
     decs[`{[index:string]:${k}}[]`] = wrapKvArrDec(dstr, decs[k]);
-    decs[`{[index:number]:${k}}[]`] = wrapKvArrDec(dint, decs[k]);
+    for (var ik of iks) {
+        decs[`{[index:${ik}]:${k}}`] = wrapKvDec(decodeInt, decs[k]);
+        decs[`{[index:${ik}]:${k}}[]`] = wrapKvArrDec(decodeInt, decs[k]);
+    }
 }
