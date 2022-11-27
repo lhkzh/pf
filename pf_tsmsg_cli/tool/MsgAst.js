@@ -134,10 +134,21 @@ class MsgAst {
                             // fieldType = fieldType.substr(fieldType.indexOf('<'))
                             //     .replace('>','')+"[]";
                         }
+                        if (fieldType.includes("Set<")) {
+                            fieldType = member.type.typeArguments[0].getText().replace(/\s/g, "") + "[]!";
+                        }
+                    }else if(member.type.typeArguments.length == 2){//Map<number,string>
+                        let argK = member.type.typeArguments[0];
+                        let argV = member.type.typeArguments[1];
+                        fieldType=[
+                            argK.getText(),
+                            argV.getText(),
+                            3
+                        ];
                     }
                 }
             }
-            else if (ts.isTypeLiteralNode(member.type)) {
+            else if (ts.isTypeLiteralNode(member.type)) {//{[index:number]:string}
                 // console.warn("++",member.type.members.length,member.type.members[0].kind);
                 fieldType = this.parseFields(srcType, member.type);
             }

@@ -44,7 +44,7 @@ export class MsgCodec {
                 this.ids[v.id] = k;
                 this.sdi[k] = v.id;
                 this.encs[k] = this.buildEncFn(k, v);
-                this.decs[k] = this.buildDecFn(k, v);
+                this.decs[k] = this.buildDecFn(k, "", v);
                 this.enci.set(v.id, this.encs[k]);
                 this.deci.set(v.id, this.decs[k]);
                 link_x_codec(k, this.encs, this.decs);
@@ -74,23 +74,22 @@ export class MsgCodec {
         return this.deci.get(id)(val instanceof InStream ? val : new InStream(val.buffer), false);
     }
 
-    private buildDecFn(clazz: string, info: any) {
-        let members = info.members;
+    private buildDecFn(clazz: string, field: string, info: any) {
+        let members = info.members;//[0=key,1=type|subMembers,2=option]
 
-        if (members.length == 1 && members[0][2] == 2) {//index_kv
-            let vType = this.getLinkType(members[0][1]);
-            const keyFn: any = members[0][0] == "string" ? dstr : decodeInt;
-            const valFn = decodeFnDict.hasOwnProperty(vType) ? decodeFnDict[vType] : this.getStructLinkDecFn(vType);
-            return function (input: InStream, option: boolean) {
-                decode_at(clazz, "");
-                let rsp: any = dObj(input, option, keyFn, valFn, true);
-                return rsp;
-            }
+        if (members.length == 1 && Array.isArray(members[0]) && members[0][2] == 2) {//type=index_kv
+            return this.buildDecFn_obj(clazz, "", members[0][0], members[0][1]);
+        } else if (members.length == 1 && Array.isArray(members[0]) && members[0][2] == 3) {//type=map_kv
+            return this.buildDecFn_map(clazz, "", members[0][0], members[0][1]);
+        } else if (members.length == 3 && typeof (members[1]) == "string" && members[2] == 2) {//class:key=index_kv
+            return this.buildDecFn_obj(clazz, members[0], members[0], members[1]);
+        } else if (members.length == 3 && typeof (members[1]) == "string" && members[2] == 3) {//class:key=map_kv
+            return this.buildDecFn_map(clazz, members[0], members[0], members[1]);
         } else {
             let fns: Array<(input: InStream, option?: boolean) => any> = [], fnn: number = 0;
             for (var node of members) {
                 //key = node[0], val=node[1], option=node[2]
-                fns.push(this.getStructFieldDecFn(node[0], node[1]));
+                fns.push(this.buildStructFieldDecFn(clazz, node[0], node[1]));
                 if (node[2] == 0) {
                     fnn++;
                 }
@@ -134,25 +133,45 @@ export class MsgCodec {
             }
         }
     }
+    private buildDecFn_obj(clazz: string, field: string, keyType: string, valType: string) {
+        const keyFn: any = keyType == "string" ? dstr : decodeInt;
+        let vType = this.getLinkType(valType);
+        const valFn = decodeFnDict.hasOwnProperty(vType) ? decodeFnDict[vType] : this.getStructLinkDecFn(clazz, field, vType);
+        return function (input: InStream, option: boolean) {
+            decode_at(clazz, field);
+            let rsp: any = dObj(input, option, keyFn, valFn, true);
+            return rsp;
+        }
+    }
+    private buildDecFn_map(clazz: string, field: string, keyType: string, valType: string) {
+        const keyFn: any = decodeFnDict[keyType];
+        let vType = this.getLinkType(valType);
+        const valFn = decodeFnDict.hasOwnProperty(vType) ? decodeFnDict[vType] : this.getStructLinkDecFn(clazz, field, vType);
+        return function (input: InStream, option: boolean) {
+            decode_at(clazz, field);
+            let rsp: any = dMap(input, option, keyFn, valFn, true);
+            return rsp;
+        }
+    }
 
     private buildEncFn(clazz: string, info: any) {
         let members = info.members;
-        if (members.length == 1 && members[0][2] == 2) {//index_kv
-            let vType = this.getLinkType(members[0][1]);
-            const keyFn: any = members[0][0] == "string" ? estr : ekv_key_int;
-            const valFn = encodeFnDict.hasOwnProperty(vType) ? encodeFnDict[vType] : this.getStructLinkEncFn(vType);
-            return function (v: any, out: OutStream) {
-                eObj(v, out, keyFn, valFn);
-                return out;
-            }
+        if (members.length == 1 && Array.isArray(members[0]) && members[0][2] == 2) {//type=index_kv
+            return this.buildEncFn_obj(clazz, members[0][0], members[0][1]);
+        } else if (members.length == 1 && Array.isArray(members[0]) && members[0][2] == 3) {//type=map_kv
+            return this.buildEncFn_map(clazz, members[0][0], members[0][1]);
+        } else if (members.length == 3 && typeof (members[1]) == "string" && members[2] == 2) {//class:key=index_kv
+            return this.buildEncFn_obj(clazz, members[0], members[1]);
+        } else if (members.length == 3 && typeof (members[1]) == "string" && members[2] == 3) {//class:key=map_kv
+            return this.buildEncFn_map(clazz, members[0], members[1]);
         } else {
             let fns: Array<(v: any, out: OutStream) => OutStream> = [];
             for (var node of members) {
                 //key = node[0], val=node[1], option=node[2]
-                fns.push(this.getStructFieldEncFn(node[0], node[1]));
+                fns.push(this.buildStructFieldEncFn(clazz, node[0], node[1]));
             }
             return function (v: any, out: OutStream) {
-                if (isNilOrUndefiend(v)) {
+                if (isNilOrUndefined(v)) {
                     packNil(out);
                 } else {
                     packArrHeader(members.length, out);
@@ -164,35 +183,53 @@ export class MsgCodec {
             }
         }
     }
-
-    private getStructFieldEncFn(p: string, t: string | any[]): (v: any, out: OutStream) => OutStream {
+    private buildEncFn_obj(clazz: string, keyType: string, valType: string) {
+        const keyFn: any = keyType == "string" ? estr : ekv_key_int;
+        let vType = this.getLinkType(valType);
+        const valFn = encodeFnDict.hasOwnProperty(vType) ? encodeFnDict[vType] : this.getStructLinkEncFn(clazz, vType);
+        return function (v: any, out: OutStream) {
+            eObj(v, out, keyFn, valFn);
+            return out;
+        }
+    }
+    private buildEncFn_map(clazz: string, keyType: string, valType: string) {
+        const keyFn: any = encodeFnDict[keyType];
+        let vType = this.getLinkType(valType);
+        const valFn = encodeFnDict.hasOwnProperty(vType) ? encodeFnDict[vType] : this.getStructLinkEncFn(clazz, vType);
+        return function (v: any, out: OutStream) {
+            eMap(v, out, keyFn, valFn);
+            return out;
+        }
+    }
+    private buildStructFieldEncFn(clazz: string, property: string, type: string | any[]): (v: any, out: OutStream) => OutStream {
         let self = this;
         let fn: (v: any, out: OutStream) => OutStream;
-        if (encodeFnDict.hasOwnProperty(t.toString())) {
-            fn = encodeFnDict[t.toString()];
-        } else if (self.encs.hasOwnProperty(t.toString())) {
-            fn = self.encs[t.toString()];
-        } else if (self.protocols.hasOwnProperty(t.toString())) {
-            return self.getStructFieldEncFn(p, self.protocols[t.toString()]);
+        if (encodeFnDict.hasOwnProperty(type.toString())) {
+            fn = encodeFnDict[type.toString()];
+        } else if (self.encs.hasOwnProperty(type.toString())) {
+            fn = self.encs[type.toString()];
+        } else if (self.protocols.hasOwnProperty(type.toString())) {
+            return self.buildStructFieldEncFn(clazz, property, self.protocols[type.toString()]);
         } else {
-            fn = self.getStructLinkEncFn(t);
+            fn = self.getStructLinkEncFn(clazz, type);
         }
         return function (v: any, out: OutStream) {
-            return fn(v[p], out);
+            return fn(v[property], out);
         }
     }
 
-    private getStructLinkEncFn(t: string | any[]) {
+    private getStructLinkEncFn(clazz: string, type: string | any[]) {
         let self = this;
-        if (Array.isArray(t)) {
-            return this.buildEncFn("", { members: t });
+        if (Array.isArray(type)) {
+            return this.buildEncFn(clazz, { members: type });
         }
+        let eFn = self.encs[type.toString()];
         return function (v: any, out: OutStream) {
-            return self.encs[t.toString()](v, out);
+            return eFn(v, out);
         }
     }
 
-    private getStructFieldDecFn(p: string, t: string | any): (input: InStream, option?: boolean) => InStream {
+    private buildStructFieldDecFn(clazz: string, p: string, t: string | any): (input: InStream, option?: boolean) => InStream {
         let self = this;
         let fn: (input: InStream, option?: boolean) => any;
         if (decodeFnDict.hasOwnProperty(t.toString())) {
@@ -200,19 +237,19 @@ export class MsgCodec {
         } else if (self.decs.hasOwnProperty(t.toString())) {
             fn = self.decs[t.toString()];
         } else if (self.protocols.hasOwnProperty(t.toString())) {
-            return self.getStructFieldDecFn(p, self.protocols[t.toString()]);
+            return self.buildStructFieldDecFn(clazz, p, self.protocols[t.toString()]);
         } else {
-            fn = self.getStructLinkDecFn(t);
+            fn = self.getStructLinkDecFn(clazz, p, t);
         }
         return function (input: InStream, option?: boolean) {
             return fn(input, option);
         }
     }
 
-    private getStructLinkDecFn(t: string) {
+    private getStructLinkDecFn(clazz: string, field: string, t: string) {
         let self = this;
         if (Array.isArray(t)) {
-            return this.buildDecFn("", { members: t });
+            return this.buildDecFn(clazz, field, { members: t });
         }
         return function (input: InStream, option?: boolean) {
             return self.decs[t](input, option);
@@ -231,6 +268,23 @@ export class MsgCodec {
             return s;
         }
         return s;
+    }
+
+    public static toJson(m: any) {
+        return JSON.stringify(m, (k, v) => {
+            if (v instanceof Map) {
+                let r: any = {};
+                for (var e of v.entries()) {
+                    r[e[0]] = e[1];
+                }
+                return this.toJson(r);
+            }
+            if (v instanceof Set) {
+                let r = new Array(v);
+                return this.toJson(r);
+            }
+            return v;
+        });
     }
 }
 
@@ -258,15 +312,25 @@ function enumber(v: number, out: OutStream) {
 }
 
 function estr(v: string, out: OutStream): OutStream {
-    return isNilOrUndefiend(v) ? packNil(out) : packString(v.toString(), out);
+    return isNilOrUndefined(v) ? packNil(out) : packString(v.toString(), out);
 }
 
 function edate(v: Date, out: OutStream): OutStream {
-    return isNilOrUndefiend(v) ? packNil(out) : packDate(v, out);
+    return isNilOrUndefined(v) ? packNil(out) : packDate(v, out);
 }
-
+function eMap(v: any, out: OutStream, kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream): OutStream {
+    if (isNilOrUndefined(v)) {
+        return packNil(out);
+    }
+    packObjHeader(v.size, out);
+    for (var e of v.entries()) {
+        kFn(e[0], out);
+        vFn(e[1], out);
+    }
+    return out;
+}
 function eObj(v: any, out: OutStream, kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream): OutStream {
-    if (isNilOrUndefiend(v)) {
+    if (isNilOrUndefined(v)) {
         return packNil(out);
     }
     let keys = Object.keys(v);
@@ -278,7 +342,7 @@ function eObj(v: any, out: OutStream, kFn: (v: any, out: OutStream) => OutStream
     return out;
 }
 function eArr(v: any, out: OutStream, fn: (v: any, out: OutStream) => OutStream): OutStream {
-    if (isNilOrUndefiend(v)) {
+    if (isNilOrUndefined(v)) {
         return packNil(out);
     }
     packArrHeader(v.length, out);
@@ -287,10 +351,24 @@ function eArr(v: any, out: OutStream, fn: (v: any, out: OutStream) => OutStream)
     }
     return out;
 }
-
+function eSet(v: any, out: OutStream, fn: (v: any, out: OutStream) => OutStream): OutStream {
+    if (isNilOrUndefined(v)) {
+        return packNil(out);
+    }
+    packArrHeader(v.size, out);
+    for (var e of v) {
+        fn(e, out);
+    }
+    return out;
+}
 function wrapKvEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream) {
         return eObj(v, out, kFn, vFn);
+    }
+}
+function wrapMapEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, out: OutStream) => OutStream) {
+    return function (v: any, out: OutStream) {
+        return eMap(v, out, kFn, vFn);
     }
 }
 
@@ -304,6 +382,11 @@ function wrapKvArrEnc(kFn: (v: any, out: OutStream) => OutStream, vFn: (v: any, 
     }
 }
 
+function wrapSetEnc(fn: (v: any, out: OutStream) => OutStream) {
+    return function (v: any, out: OutStream): OutStream {
+        return eSet(v, out, fn);
+    }
+}
 //包装一维数组编码
 function wrapArrEnc(fn: (v: any, out: OutStream) => OutStream) {
     return function (v: any, out: OutStream): OutStream {
@@ -321,8 +404,10 @@ function wrapArr2Enc(fn: (v: any, out: OutStream) => OutStream) {
 }
 
 function anysEnc(v: any, out: OutStream) {
-    return isNilOrUndefiend(v) ? packNil(out) : packArray(v, out);
+    return isNilOrUndefined(v) ? packNil(out) : packArray(v, out);
 }
+
+const SimpleTypeS = ["string", "number", "uint", "int", "ushort", "short", "uint32", "int32", "uint16", "int16", "uint8", "int8"];
 
 const ekv_key_int = (k: any, out: OutStream) => encodeInt(Number(k), out);
 const ekv_key_str = <(k: any, out: OutStream) => OutStream>packString;
@@ -352,10 +437,13 @@ const encodeFnDict: { [index: string]: (v: any, out: OutStream) => OutStream } =
 }
 
 for (var k in encodeFnDict) {//构建【一维数组、二维数组、intKv数组、strKv数组】
-    encodeFnDict[k + "[]"] = wrapArrEnc(encodeFnDict[k]);
-    encodeFnDict[k + "[][]"] = wrapArr2Enc(encodeFnDict[k]);
-    encodeFnDict[`{[index:string]:${k}}[]`] = wrapKvArrEnc(ekv_key_str, encodeFnDict[k]);
-    encodeFnDict[`{[index:number]:${k}}[]`] = wrapKvArrEnc(ekv_key_int, encodeFnDict[k]);
+    if (!k.includes("[]")) {
+        encodeFnDict[k + "[]!"] = wrapSetEnc(encodeFnDict[k]);
+        encodeFnDict[k + "[]"] = wrapArrEnc(encodeFnDict[k]);
+        encodeFnDict[k + "[][]"] = wrapArr2Enc(encodeFnDict[k]);
+        encodeFnDict[`{[index:string]:${k}}[]`] = wrapKvArrEnc(ekv_key_str, encodeFnDict[k]);
+        encodeFnDict[`{[index:number]:${k}}[]`] = wrapKvArrEnc(ekv_key_int, encodeFnDict[k]);
+    }
     encodeFnDict[`{[index:string]:${k}}`] = wrapKvEnc(ekv_key_str, encodeFnDict[k]);
     encodeFnDict[`{[index:number]:${k}}`] = wrapKvEnc(ekv_key_int, encodeFnDict[k]);
 }
@@ -364,7 +452,7 @@ gTypeArr.forEach(type => {//扩展类型 & ArrayBuffer
     encodeFnDict["ArrayBuffer"] = packNative;
 });
 
-function isNilOrUndefiend(v: any) {
+function isNilOrUndefined(v: any) {
     return v === undefined || v === null;
 }
 
@@ -377,7 +465,7 @@ function decode_at(type: string, field: string) {
 
 //抛出解码错误
 function derr() {
-    throw new Error(`decode_fail @${decode_in.type}.${decode_in.field}`);
+    throw new Error("decode_fail @" + decode_in.type + "." + decode_in.field);
 }
 
 function decodeInt(b: InStream, option?: boolean) {
@@ -453,9 +541,8 @@ function dstr(b: InStream, option?: boolean) {
 //解码 ArrayBuffer
 function dbuffer(b: InStream, option?: boolean): ArrayBuffer {
     let d = unpack(b);
-    if (isNilOrUndefiend(d)) {
+    if (isNilOrUndefined(d)) {
         if (!option) derr();
-
         return d;
     }
     if (d instanceof ArrayBuffer) {
@@ -479,12 +566,23 @@ function dObjLen(b: InStream, option?: boolean) {
     }
     derr();
 }
-function dObj(b: InStream, option: boolean, kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any, vOption?: boolean) {
+function dObj(b: InStream, option: boolean, kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any, vOption: boolean = true) {
     let len = dObjLen(b, option);
     if (len >= 0) {
         var rsp: any = {};
         for (var i = 0; i < len; i++) {
-            rsp[kFn(b)] = vFn(b, vOption);
+            rsp[kFn(b, false)] = vFn(b, vOption);
+        }
+        return rsp;
+    }
+    return undefined;
+}
+function dMap(b: InStream, option: boolean, kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any, vOption: boolean = true) {
+    let len = dObjLen(b, option);
+    if (len >= 0) {
+        var rsp = new Map();
+        for (var i = 0; i < len; i++) {
+            rsp.set(kFn(b, false), vFn(b, vOption));
         }
         return rsp;
     }
@@ -517,6 +615,17 @@ function dArr(b: InStream, option: boolean, fn: (b: InStream, option?: boolean) 
     }
     return undefined;
 }
+function dSet(b: InStream, option: boolean, fn: (b: InStream, option?: boolean) => any, vOption?: boolean) {
+    let len = dArrLen(b, option);
+    if (len >= 0) {
+        let rsp = new Set();
+        for (var i = 0; i < len; i++) {
+            rsp.add(fn(b, vOption));
+        }
+        return rsp;
+    }
+    return undefined;
+}
 function wrapKvDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
         return dObj(b, option, kFn, vFn);
@@ -533,6 +642,11 @@ function wrapKvArrDec(kFn: (b: InStream, option?: boolean) => any, vFn: (b: InSt
     }
 }
 
+function wrapSetDec(fn: (b: InStream, option?: boolean) => any) {
+    return function (b: InStream, option?: boolean) {
+        return dSet(b, option, fn, true);
+    }
+}
 //解码一维数组
 function wrapArrDec(fn: (b: InStream, option?: boolean) => any) {
     return function (b: InStream, option?: boolean) {
@@ -604,8 +718,11 @@ const decodeFnDict: { [index: string]: (input: InStream, option?: boolean) => an
     "any[]": anysDec,
 }
 for (var k in decodeFnDict) {//构建【一维数组、二维数组、intKv数组、strKv数组】
-    decodeFnDict[k + "[]"] = wrapArrDec(decodeFnDict[k]);
-    decodeFnDict[k + "[][]"] = wrapArr2Dec(decodeFnDict[k]);
+    if (!k.includes("[]")) {
+        decodeFnDict[k + "[]!"] = wrapSetDec(decodeFnDict[k]);
+        decodeFnDict[k + "[]"] = wrapArrDec(decodeFnDict[k]);
+        decodeFnDict[k + "[][]"] = wrapArr2Dec(decodeFnDict[k]);
+    }
     decodeFnDict[`{[index:string]:${k}}[]`] = wrapKvArrDec(dstr, decodeFnDict[k]);
     decodeFnDict[`{[index:number]:${k}}[]`] = wrapKvArrDec(decodeInt, decodeFnDict[k]);
     decodeFnDict[`{[index:string]:${k}}`] = wrapKvDec(dstr, decodeFnDict[k]);
@@ -617,20 +734,25 @@ gTypeArr.forEach(type => {//扩展类型 & ArrayBuffer
 });
 
 function link_x_codec(k: string, encs: any, decs: any) {
-    let iks = ["number", "uint", "int", "ushort", "short", "uint32", "int32", "uint16", "int16", "uint8", "int8"];
+    encs[`${k}[]!`] = wrapSetEnc(encs[k]);
     encs[`${k}[]`] = wrapArrEnc(encs[k]);
     encs[`{[index:string]:${k}}`] = wrapKvEnc(ekv_key_str, encs[k]);
     encs[`{[index:string]:${k}}[]`] = wrapKvArrEnc(ekv_key_str, encs[k]);
-    for (var ik of iks) {
-        encs[`{[index:${ik}]:${k}}`] = wrapKvEnc(ekv_key_int, encs[k]);
-        encs[`{[index:${ik}]:${k}}[]`] = wrapKvArrEnc(ekv_key_int, encs[k]);
-    }
+    encs[`{[index:number]:${k}}`] = wrapKvEnc(ekv_key_int, encs[k]);
+    encs[`{[index:number]:${k}}[]`] = wrapKvArrEnc(ekv_key_int, encs[k]);
+    // for (var ik of iks) {
+    //     encs[`{[index:${ik}]:${k}}`] = wrapKvEnc(ekv_key_int, encs[k]);
+    //     encs[`{[index:${ik}]:${k}}[]`] = wrapKvArrEnc(ekv_key_int, encs[k]);
+    // }
 
+    decs[`${k}[]!`] = wrapSetDec(decs[k]);
     decs[`${k}[]`] = wrapArrDec(decs[k]);
     decs[`{[index:string]:${k}}`] = wrapKvDec(dstr, decs[k]);
     decs[`{[index:string]:${k}}[]`] = wrapKvArrDec(dstr, decs[k]);
-    for (var ik of iks) {
-        decs[`{[index:${ik}]:${k}}`] = wrapKvDec(decodeInt, decs[k]);
-        decs[`{[index:${ik}]:${k}}[]`] = wrapKvArrDec(decodeInt, decs[k]);
-    }
+    decs[`{[index:number]:${k}}`] = wrapKvDec(decodeInt, decs[k]);
+    decs[`{[index:number]:${k}}[]`] = wrapKvArrDec(decodeInt, decs[k]);
+    // for (var ik of iks) {
+    //     decs[`{[index:${ik}]:${k}}`] = wrapKvDec(decodeInt, decs[k]);
+    //     decs[`{[index:${ik}]:${k}}[]`] = wrapKvArrDec(decodeInt, decs[k]);
+    // }
 }
