@@ -4,20 +4,20 @@ import { OutStream } from "./OutStream";
 
 
 export class CodecLong implements CodecLongApi {
-    public isImp(v) {
+    public isImp(v: any) {
         return typeof (v) == "bigint";
     }
     // public isVal(v) {
     //     return typeof (v) == "bigint" || (Number.isInteger(v) && !Number.isSafeInteger(v));
     // }
-    public toAuto(v) {
+    public toAuto(v: any) {
         let n = Number(v);
         if (Number.isSafeInteger(v)) {
             return n;
         }
         return v;
     }
-    public encode(v, out: OutStream) {
+    public encode(v: any, out: OutStream) {
         v = BigInt(v);
         if (v < 0) {
             out.u8(0xd3).i64(v);

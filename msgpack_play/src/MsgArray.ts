@@ -41,20 +41,20 @@ const _idS: Map<number, MetaInfoObj> = new Map();
 const _typeS: Map<NewableAny, MetaInfoObj> = new Map();
 
 let Meta_ID = 1;
-let Cast_Int64: (v) => any = (v) => {
+let Cast_Int64: (v: any) => any = (v: any) => {
     return BigInt(v);
 };
 
 export abstract class MsgArray {
 
     public toArray(): any[] {
-        return this.constructor["ToArray"](this);
+        return (<any>this.constructor)["ToArray"](this);
     }
     public static FromArray<T extends MsgArray>(a: any[]): T {
-        return null;
+        return <T><unknown>null;
     }
     public static ToArray<T extends MsgArray>(v: T): any[] {
-        return v.constructor["ToArray"](v);
+        return (<any>v.constructor)["ToArray"](v);
     }
 
     public static Meta(info: { id?: number, name?: string, fields: Array<MetaInfoField> }): ClassDecorator {
@@ -71,20 +71,20 @@ export abstract class MsgArray {
         _nameS.set(name, obj);
         _typeS.set(T, obj);
         T.prototype.toArray = function () {
-            return T["ToArray"](this);
-        }
-        T["ToArray"] = function (a): any[] {
-            if (a == null) return null;
+            return (<any>T)["ToArray"](this);
+        };
+        (<any>T)["ToArray"] = function (a: any): any[] {
+            if (a == null) return <any[]><unknown>null;
             let r = new Array(fields.length);
             for (var i = 0; i < r.length; i++) {
-                let v = a[fields[i][0]], t = fields[i][1];
+                let v = a[fields[i][0]], t: any = fields[i][1];
                 if (v) {
                     if (t["ToArray"]) {
                         v = t["ToArray"](v);
                     } else if (Array.isArray(t)) {
                         if (t[0] == "Arr") {
                             if (t[1]["ToArray"]) {
-                                v = v.map(e => t[1]["ToArray"](e));
+                                v = v.map((e: any) => t[1]["ToArray"](e));
                             }
                         } else if (t[0] == "Set") {
                             let rarr = [];
@@ -130,8 +130,8 @@ export abstract class MsgArray {
                 r[i] = v;
             }
             return r;
-        }
-        T["FromArray"] = function (a: any[]) {
+        };
+        (<any>T)["FromArray"] = function (a: any[]) {
             if (a == null) return null;
             if (!Array.isArray(a)) throw new TypeError(`Decode Fail-0:${name}`);
             let r = new T();
@@ -142,28 +142,38 @@ export abstract class MsgArray {
         }
     }
 
-    public static ClassByName(name: string): NewableAny {
+    public static ClassByName(name: string): NewableAny | undefined {
         return _nameS.get(name)?.clazz;
     }
-    public static ClassById(id: number): NewableAny {
+    public static ClassById(id: number): NewableAny | undefined {
         return _idS.get(id)?.clazz;
     }
-    public static MetaByName(name: string): MetaInfoObj {
+    public static MetaByName(name: string): MetaInfoObj | undefined {
         return _nameS.get(name);
     }
-    public static MetaById(id: number): MetaInfoObj {
+    public static MetaById(id: number): MetaInfoObj | undefined {
         return _idS.get(id);
     }
-    public static MetaByClass(T: NewableAny): MetaInfoObj {
+    public static MetaByClass(T: NewableAny): MetaInfoObj | undefined {
         return _typeS.get(T);
     }
     public static MetaIdList(): number[] {
-        return new Array<number>(..._idS.keys());
+        let arr: number[] = [];
+        _idS.forEach((v, k) => {
+            arr.push(k);
+        });
+        return arr;
+        // return [..._idS.keys()];
     }
     public static MetaNameList(): string[] {
-        return new Array<string>(..._nameS.keys());
+        let arr: string[] = [];
+        _nameS.forEach((v, k) => {
+            arr.push(k);
+        });
+        return arr;
+        // return [..._nameS.keys()];
     }
-    public static SetCastInt64(fn: (v) => any) {
+    public static SetCastInt64(fn: (v: any) => any) {
         Cast_Int64 = fn || Cast_Int64;
     }
 }
@@ -175,6 +185,9 @@ function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
             throw new TypeError(`Decode Fail-1:${typeName}.${typeField}`);
         if (Number.isInteger(type)) {
             if (type >= MType.I8 && type <= MType.F64) {
+                if (type == MType.I64) {
+                    return Cast_Int64(0);
+                }
                 return 0;
             } else if (type == MType.STR) {
                 return "";
@@ -190,7 +203,7 @@ function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
             } else if (a[0] == "Map") {
                 return new Map();
             }
-        } else if (type["BYTES_PER_ELEMENT"] > 0) {//TypeArray
+        } else if ((<any>type)["BYTES_PER_ELEMENT"] > 0) {//TypeArray
             return new (<any>type)();
         }
         return v;
@@ -202,15 +215,15 @@ function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
         }
         let a = <any[]>type;
         if (a[0] == "Arr") {
-            return v.map(e => cast_or_msg(e, a[1], typeName, typeField));
+            return v.map((e: any) => cast_or_msg(e, a[1], typeName, typeField));
         } else if (a[0] == "Obj") {
-            let rObj = {};
+            let rObj: any = {};
             for (let i = 0; i < v.length; i += 2) {
                 rObj[cast_primitive(v[i], a[1], typeName, typeField)] = cast_or_msg(v[i + 1], a[2], typeName, typeField);
             }
             return rObj;
         } else if (a[0] == "Set") {
-            return new Set(v.map(e => cast_or_msg(e, a[1], typeName, typeField)));
+            return new Set(v.map((e: any) => cast_or_msg(e, a[1], typeName, typeField)));
         } else if (a[0] == "Map") {
             let rMap = new Map();
             for (let i = 0; i < v.length; i += 2) {
@@ -218,7 +231,7 @@ function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
             }
             return rMap;
         }
-    } else if (type["BYTES_PER_ELEMENT"] > 0) {//TypeArray
+    } else if ((<any>type)["BYTES_PER_ELEMENT"] > 0) {//TypeArray
         if (ArrayBuffer.isView(v)) {
             return new (<any>type)(v.buffer);
         } else if (Array.isArray(v)) {

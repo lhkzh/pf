@@ -24,11 +24,11 @@ export class Encoder {
                 decode: (ins: InStream, len: number) => null,
                 isImp: (v) => v.constructor == Map,
                 encode: (v, out: OutStream, encoder: Encoder) => {
-                    encoder.encodeMapSize(v.size, out);
-                    for (let [ik, iv] of (<Map<any, any>>v).entries()) {
+                    encoder.encodeMapSize((<Map<any, any>>v).size, out);
+                    (<Map<any, any>>v).forEach((iv, ik) => {
                         encoder.encode(ik, out);
                         encoder.encode(iv, out);
-                    }
+                    });
                     return out;
                 }
             });
@@ -40,9 +40,9 @@ export class Encoder {
                 isImp: (v) => v.constructor == Set,
                 encode: (v, out: OutStream, encoder: Encoder) => {
                     encoder.encodeArraySize(v.size, out);
-                    for (let iv of v) {
+                    (<Set<any>>v).forEach(iv => {
                         encoder.encode(iv, out);
-                    }
+                    });
                     return out;
                 }
             });
@@ -76,14 +76,14 @@ export class Encoder {
             return out;
         } else if (ArrayBuffer.isView(v)) {
             return this.encodeBin(new Uint8Array(v.buffer), out);
-        } else if (globalThis.Buffer && globalThis.Buffer.isBuffer(v)) {//fibjs
+        } else if (typeof (Buffer) != "undefined" && Buffer.isBuffer(v)) {//fibjs
             return this.encodeBin(new Uint8Array(v.buffer), out);
         } else {
             let ext = this.extends.find(e => e.isImp(v));
             if (ext) {
                 return ext.encode(v, out, this);
             }
-            throw new Error('Msgpack encode not imp:' + ext.constructor?.name + "-" + ext);
+            throw new Error('Msgpack encode not imp:' + v.constructor?.name + "-" + ext);
         }
     }
     public encodeArraySize(length: number, out: OutStream) {

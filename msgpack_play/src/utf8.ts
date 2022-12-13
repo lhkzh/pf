@@ -11,13 +11,13 @@ if (typeof (TextEncoder) != "undefined") {
             return tD.decode(buf);
         }
     }
-} else if (globalThis.Buffer) {
+} else if (typeof (Buffer) != "undefined") {
     StrCoder = {
         encode: function (str: string) {
-            return new Uint8Array(globalThis.Buffer.from(str, "utf8").buffer);
+            return new Uint8Array(Buffer.from(str, "utf8").buffer);
         },
         decode: function (buf: Uint8Array) {
-            return globalThis.Buffer.from(buf).toString("utf8");
+            return Buffer.from(buf).toString("utf8");
         }
     }
 } else {

@@ -44,8 +44,9 @@ console.log(User.FromArray(<any[]>unpack(pack(arr))))
 
 ** if you use "jsbi" for bigint **
 <pre>
-import { Encoder, CodecLongApi, OutStream, InStream } from "msgpack_play";
+import { Encoder, CodecLongApi, OutStream, InStream, MsgArray } from "msgpack_play";
 const JSBI = require("jsbi");
+MsgArray.SetCastInt64((v:any)=>{ return JSBI.BigInt(v); });
 const jsbi_ext: CodecLongApi = {
     isImp(v: any): boolean {
         return v instanceof JSBI;

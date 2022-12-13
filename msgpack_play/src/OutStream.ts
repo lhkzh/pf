@@ -6,7 +6,7 @@ export class OutStream {
     private s: DataView;
     private i: number;
 
-    public constructor(private initCaplity: number = 512, private incrCaplity: number = 1024) {
+    public constructor(initCaplity: number = 512, private incrFactor: number = 0.5) {
         this.b = new Uint8Array(initCaplity);
         this.s = new DataView(this.b.buffer);
         this.i = 0;
@@ -136,7 +136,7 @@ export class OutStream {
     private c(n: number) {
         let T = this;
         if (T.i + n >= T.s.byteLength) {
-            var tmp: Uint8Array = new Uint8Array(T.b.length + Math.max(this.incrCaplity, n));
+            var tmp: Uint8Array = new Uint8Array(T.b.length + Math.max(Math.ceil(T.incrFactor * T.b.length), n));
             tmp.set(T.b);
             T.s = new DataView(tmp.buffer);
             T.b = tmp;
