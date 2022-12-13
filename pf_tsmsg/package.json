@@ -37,8 +37,5 @@
   "bugs": {
     "url": ""
   },
-  "homepage": "",
-  "dependencies": {
-    "hash-wasm": "^4.9.0"
-  }
+  "homepage": ""
 }

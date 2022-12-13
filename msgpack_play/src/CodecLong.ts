@@ -12,7 +12,7 @@ export class CodecLong implements CodecLongApi {
     // }
     public toAuto(v: any) {
         let n = Number(v);
-        if (Number.isSafeInteger(v)) {
+        if (Number.isSafeInteger(n)) {
             return n;
         }
         return v;
