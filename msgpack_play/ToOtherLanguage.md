@@ -14,18 +14,35 @@ class MsgArrayToCsharp {
         [MType.STR]: { type: "string", default: "\"\"" },
         [MType.DATE]: { type: "DateTime" },
     }
-    public static generateTo(dir: string) {
-        MsgArray.MetaIdList().forEach(id => {
-            this.generateById(id, dir);
-        });
-    }
-    public static generateById(id: number, toDir: string) {
-        let cmeta = MsgArray.MetaById(id);
-        let cs_str = `using System;
+    public static generateToSplit(dir: string) {
+        let cs_head = `using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using MessagePack;
+using MessagePack;\n`;
+        MsgArray.MetaIdList().forEach(id => {
+            let cmeta = MsgArray.MetaById(id);
+            let cs_str = cs_head + this.generateById(id);
+            require("fs").writeFile(dir + cmeta.name + ".cs", cs_str, "utf-8", function (err) { });
+        });
+        require("fs").writeFile(dir + "_ID_Map.cs", cs_head + this.generate_id_type(), "utf-8", function (err) { });
+
+    }
+    public static generateToOne(file: string) {
+        let cs_str = `using System;
+        using System.Collections;
+        using System.Collections.Generic;
+        using UnityEngine;
+        using MessagePack;\n\n`;
+        MsgArray.MetaIdList().forEach(id => {
+            cs_str += this.generateById(id) + "\n";
+        });
+        cs_str += "\n" + this.generate_id_type();
+        require("fs").writeFile(file, cs_str, "utf-8", function (err) { });
+    }
+    public static generateById(id: number) {
+        let cmeta = MsgArray.MetaById(id);
+        let cs_str = `
         
 [MessagePackObject]
 public class ${cmeta.name}{
@@ -74,8 +91,26 @@ public class ${cmeta.name}{
                 cs_str += `    [Key(${i})] public ${xType} ${field};\n`;
             }
         });
-        cs_str += "}";
-        require("fs").writeFile(toDir + cmeta.name + ".cs", cs_str, "utf-8", function (err) { });
+        cs_str += "}\n";
+        return cs_str;
+        // require("fs").writeFile(toDir + cmeta.name + ".cs", cs_str, "utf-8", function (err) { });
+    }
+    private static generate_id_type() {
+        let mstr = "";
+        MsgArray.MetaIdList().forEach(id => {
+            let cmeta = MsgArray.MetaById(id);
+            mstr += `        _ID_Map.Type2Id[typeof(${cmeta.name})] = ${cmeta.id};
+        _ID_Map.Id2Type[${cmeta.id}] = typeof(${cmeta.name});\n`
+        })
+        return `public class _ID_Map
+{
+    public static Dictionary<System.Type, int> Type2Id = new Dictionary<System.Type, int>();
+    public static Dictionary<int, System.Type> Id2Type = new Dictionary<int, System.Type>();
+    public static void Init()
+    {
+${mstr}
+    }
+}\n`;
     }
 }
 <pre>
