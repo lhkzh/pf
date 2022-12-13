@@ -1,0 +1,29 @@
+{
+    "name": "msgpack_play",
+    "version": "0.0.1",
+    "description": "msgpack",
+    "main": "./dist/index.js",
+    "types": "./@types/index.d.ts",
+    "private": false,
+    "author": "zhh",
+    "homepage": "https://github.com/lhkzh/pf/msgpack_play",
+    "license": "MIT",
+    "keywords": [
+      "msgpack"
+    ],
+    "engines": {
+      "node": ">14.0.0"
+    },
+    "dependencies": {
+    },
+    "devDependencies": {
+    },
+    "files": [
+      "@types",
+      "dist",
+      "package.json",
+      "README.md"
+    ]
+  }
+  
+  
