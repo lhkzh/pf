@@ -1,6 +1,6 @@
 {
   "name": "fibjs_qcloud",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "腾讯云部分接口fibjs版本封装",
   "main": "./dist/index.js",
   "types": "./@types/index.d.ts",

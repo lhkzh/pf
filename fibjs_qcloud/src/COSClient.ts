@@ -2,31 +2,31 @@ import * as url from "url";
 import * as http from "http";
 import * as hash from "hash";
 import * as fs from "fs";
-import {parseXML, sigHmacSha1} from "./helper";
+import { parseXML, sigHmacSha1 } from "./helper";
 
 /**
  * 腾讯云cos简易使用client
  */
 export class COSClient {
-    constructor(protected conf: { secretId: string, secretKey: string, endpoint:string, bucket: string }) {
+    constructor(protected conf: { secretId: string, secretKey: string, endpoint: string, bucket: string }) {
     }
 }
-export class COSBucket extends COSClient{
-    private reqUri:string;
-    constructor(protected conf: { secretId: string, secretKey: string, endpoint:string, bucket: string, outUri?:string }) {
+export class COSBucket extends COSClient {
+    private reqUri: string;
+    constructor(protected conf: { secretId: string, secretKey: string, endpoint: string, bucket: string, outUri?: string }) {
         super(conf);
         this.reqUri = buildEndpoint(conf.endpoint, conf.bucket);
     }
-    public listObjects(opt:{prefix?:string, delimiter?:string, "encoding-type"?:string, marker?:string, "max-keys"?:number}){
-        let uri = this.reqUri+'/';
+    public listObjects(opt: { prefix?: string, delimiter?: string, "encoding-type"?: string, marker?: string, "max-keys"?: number }) {
+        let uri = this.reqUri + '/';
         let query = opt;
         let headers: any = _signatureFixAuthorization(this.conf, query, "GET", uri);
         try {
-            let rsp = http.request('GET', uri, {headers: headers, query:query});
+            let rsp = http.request('GET', uri, { headers: headers, query: query });
             if (rsp.statusCode == 200) {
                 return parseXML(rsp.data.toString(), ["Contents"]);
             }
-            console.error("list_object_fail:%s", uri, (rsp.data||"").toString());
+            console.error("list_object_fail:%s", uri, (rsp.data || "").toString());
             return null;
         } catch (e) {
             console.error("list_object_fail:%s", uri, e);
@@ -34,17 +34,17 @@ export class COSBucket extends COSClient{
         }
     }
 }
-export class COSObject extends COSClient{
-    private reqUri:string;
-    private outUri:string;
-    constructor(protected conf: { secretId: string, secretKey: string, endpoint:string, bucket: string, outUri?:string }) {
+export class COSObject extends COSClient {
+    private reqUri: string;
+    private outUri: string;
+    constructor(protected conf: { secretId: string, secretKey: string, endpoint: string, bucket: string, outUri?: string }) {
         super(conf);
         this.reqUri = buildEndpoint(conf.endpoint, conf.bucket);
-        this.outUri = conf.outUri ? conf.outUri:buildCdnEndPoint(this.reqUri);
+        this.outUri = conf.outUri ? conf.outUri : buildCdnEndPoint(this.reqUri);
     }
 
     // 用于 PostObject 签名保护
-    public getPostParam(key:string, timeOut:number=900){
+    public getPostParam(key: string, timeOut: number = 900) {
         var now = Math.round(Date.now() / 1000);
         var exp = now + timeOut;
         var qKeyTime = now + ';' + exp;
@@ -56,11 +56,11 @@ export class COSObject extends COSClient{
                 // ['starts-with', '$Content-Type', 'image/'],
                 // ['starts-with', '$success_action_redirect', redirectUrl],
                 // ['eq', '$x-cos-server-side-encryption', 'AES256'],
-                {'q-sign-algorithm': qSignAlgorithm},
-                {'q-ak': this.conf.secretId},
-                {'q-sign-time': qKeyTime},
-                {'bucket': this.conf.bucket},
-                {'key': key},
+                { 'q-sign-algorithm': qSignAlgorithm },
+                { 'q-ak': this.conf.secretId },
+                { 'q-sign-time': qKeyTime },
+                { 'bucket': this.conf.bucket },
+                { 'key': key },
             ]
         });
 
@@ -87,10 +87,10 @@ export class COSObject extends COSClient{
      * @param key
      */
     public headObject(key: string): { [index: string]: string } {
-        let uri = this.reqUri+'/'+key;
+        let uri = this.reqUri + '/' + key;
         let headers: any = _signatureFixAuthorization(this.conf, {}, "HEAD", uri);
         try {
-            let rsp = http.request('HEAD', uri, {headers: headers});
+            let rsp = http.request('HEAD', uri, { headers: headers });
             if (rsp.statusCode == 200) {
                 return rsp.headers.toJSON();
             }
@@ -107,10 +107,10 @@ export class COSObject extends COSClient{
      * @param key
      */
     public deleteObject(key: string): boolean {
-        let uri = this.reqUri+'/'+key;
+        let uri = this.reqUri + '/' + key;
         let headers = _signatureFixAuthorization(this.conf, {}, "DELETE", uri);
         try {
-            let rsp = http.del(uri, {headers: headers});
+            let rsp = http.del(uri, { headers: headers });
             return rsp.statusCode == 200 || rsp.statusCode == 204 || rsp.statusCode == 404;
         } catch (e) {
             console.error(key, e);
@@ -123,22 +123,22 @@ export class COSObject extends COSClient{
      * @param keys
      */
     public deleteMultObject(keys: string[]): boolean {
-        let xml = `<?xml version="1.0" encoding="UTF-8"?><Delete><Quiet>true</Quiet><Object>${keys.reduce((p, k) => {
-            p.push(`<Key>${k}</Key>`);
+        let xml = `<?xml version="1.0" encoding="UTF-8"?><Delete><Quiet>true</Quiet>${keys.reduce((p, k) => {
+            p.push(`<Object><Key>${k}</Key></Object>`);
             return p;
-        }, []).join("")}</Object></Delete>`;
+        }, []).join("")}</Delete>`;
         let buffer = Buffer.from(xml);
-        let uri = this.reqUri+'?delete';
+        let uri = this.reqUri + '?delete';
         let headers = _signatureFixAuthorization(this.conf, {
             "Content-Type": "text/xml",
             "Content-MD5": hash.md5(buffer).digest("base64")
         }, "POST", uri);
         try {
-            let rsp = http.post(uri, {headers: headers, body: buffer});
+            let rsp = http.post(uri, { headers: headers, body: buffer });
             // console.log(rsp.statusCode, rsp.headers.toJSON(), rsp.data)
             return rsp.statusCode == 200;
         } catch (e) {
-            console.error(uri+":"+keys.join(","), e);
+            console.error(uri + ":" + keys.join(","), e);
             return false;
         }
     }
@@ -148,11 +148,11 @@ export class COSObject extends COSClient{
      * @param key
      * @returns
      */
-    public getObject(key:string):any{
-        let uri = this.reqUri+'/'+key;
+    public getObject(key: string): any {
+        let uri = this.reqUri + '/' + key;
         let headers: any = _signatureFixAuthorization(this.conf, {}, "GET", uri);
         try {
-            let rsp = http.request('GET', uri, {headers: headers});
+            let rsp = http.request('GET', uri, { headers: headers });
             if (rsp.statusCode == 200) {
                 return rsp.data;
             }
@@ -169,13 +169,13 @@ export class COSObject extends COSClient{
      * @param source_obj_url
      * @param metaHeaders
      */
-    public copyObject(path: string, source_obj_url: string, extHeaders: { [index: string]: string }={}) {
-        let uri = this.reqUri+ '/' + path;
+    public copyObject(path: string, source_obj_url: string, extHeaders: { [index: string]: string } = {}) {
+        let uri = this.reqUri + '/' + path;
         if (source_obj_url.indexOf("://") > 0) {
             source_obj_url = source_obj_url.substr(source_obj_url.indexOf("://") + 3);
         }
-        let headers = _signatureFixAuthorization(this.conf, {"x-cos-copy-source": source_obj_url, ...extHeaders}, "PUT", uri);
-        let rsp = http.put(uri, {headers:headers});
+        let headers = _signatureFixAuthorization(this.conf, { "x-cos-copy-source": source_obj_url, ...extHeaders }, "PUT", uri);
+        let rsp = http.put(uri, { headers: headers });
         if (rsp.statusCode == 200) {
             return true;
         }
@@ -189,7 +189,7 @@ export class COSObject extends COSClient{
      * @param contentType
      */
     public putData(key: string, buffer: Class_Buffer, contentType: string = "application/octet-stream", extHeaders: any = {}) {
-        let uri = this.reqUri+'/'+key;
+        let uri = this.reqUri + '/' + key;
         let headers: any = {
             ...extHeaders,
             "Content-Type": contentType
@@ -199,7 +199,7 @@ export class COSObject extends COSClient{
         }
         headers = _signatureFixAuthorization(this.conf, headers, "PUT", uri);
         try {
-            let rsp = http.put(uri, {headers: headers, body: buffer});
+            let rsp = http.put(uri, { headers: headers, body: buffer });
             return rsp.statusCode == 200;
         } catch (e) {
             console.error(key, e);
@@ -214,7 +214,7 @@ export class COSObject extends COSClient{
      * @param fileName
      */
     public putFile(key: string, fileName: string, extHeaders: any = {}) {
-        let uri = this.reqUri+'/'+key;
+        let uri = this.reqUri + '/' + key;
         let buffer = fs.readFile(fileName);
         let headers: any = {
             "Content-Type": getMimeType(fileName),
@@ -222,7 +222,7 @@ export class COSObject extends COSClient{
         };
         headers = _signatureFixAuthorization(this.conf, headers, "PUT", uri);
         try {
-            let rsp = http.put(uri, {headers: headers, body: buffer});
+            let rsp = http.put(uri, { headers: headers, body: buffer });
             return rsp.statusCode == 200;
         } catch (e) {
             console.error(key, e);
@@ -236,11 +236,11 @@ export class COSObject extends COSClient{
      * @param key
      * @param acl
      */
-    public putObjectACL(key: string, acl: string, otherAclHeaders:any={}) {
-        let uri = this.reqUri+'/'+key+'?acl';
-        let headers = _signatureFixAuthorization(this.conf, {"x-cos-acl":acl, ...otherAclHeaders, "Content-Length":0}, "PUT", uri);
+    public putObjectACL(key: string, acl: string, otherAclHeaders: any = {}) {
+        let uri = this.reqUri + '/' + key + '?acl';
+        let headers = _signatureFixAuthorization(this.conf, { "x-cos-acl": acl, ...otherAclHeaders, "Content-Length": 0 }, "PUT", uri);
         try {
-            let rsp = http.put(uri, {headers: headers});
+            let rsp = http.put(uri, { headers: headers });
             return rsp.statusCode == 200;
         } catch (e) {
             console.error(key, e);
@@ -251,12 +251,12 @@ export class COSObject extends COSClient{
      * 获取存储空间（Bucket）下某个文件（Object）的访问权限（ACL）
      * @param key
      */
-    public getObjectACL(key: string){
-        let uri = this.reqUri+'/'+key+'?acl';
+    public getObjectACL(key: string) {
+        let uri = this.reqUri + '/' + key + '?acl';
         let headers = _signatureFixAuthorization(this.conf, {}, "GET", uri);
         try {
-            let rsp = http.get(uri, {headers: headers});
-            if(rsp.statusCode == 200){
+            let rsp = http.get(uri, { headers: headers });
+            if (rsp.statusCode == 200) {
                 return parseXML(rsp.data.toString());
             }
             return undefined;
@@ -266,8 +266,8 @@ export class COSObject extends COSClient{
         }
     }
 
-    public fullOutUrl(key: string){
-        return this.outUri+'/'+key;
+    public fullOutUrl(key: string) {
+        return this.outUri + '/' + key;
     }
 
     /**
@@ -276,27 +276,27 @@ export class COSObject extends COSClient{
      * @param opt
      * @param conf
      */
-    public auditing_text(opt:{Object?:string, Content?:string, Url?:string}, conf:{DetectType?:string,BizType?:string,Callback?:string,CallbackVersion?:string}={DetectType:"Porn,Illegal,Abuse"}){
-        let inputs:string;
-        for(var k in opt){
-            if(opt[k]){
+    public auditing_text(opt: { Object?: string, Content?: string, Url?: string }, conf: { DetectType?: string, BizType?: string, Callback?: string, CallbackVersion?: string } = { DetectType: "Porn,Illegal,Abuse" }) {
+        let inputs: string;
+        for (var k in opt) {
+            if (opt[k]) {
                 inputs = `<${k}>${opt[k]}</k>`;
                 break;
             }
         }
         let confs = [];
-        for(var k in conf){
+        for (var k in conf) {
             confs.push(`<${k}>${conf[k]}</${k}>`)
         }
         let body = `<Request><Input>${inputs}</Input><Conf>${confs.join("")}</Conf></Request>`;
-        let uri = this.reqUri.replace(".cos.",".ci.") + '/text/auditing';
+        let uri = this.reqUri.replace(".cos.", ".ci.") + '/text/auditing';
         let headers = { "Content-Type": "application/xml", "Content-Length": body.length };
         headers = _signatureFixAuthorization(this.conf, headers, 'POST', uri);
         delete headers["Content-Length"];
         try {
-            let rsp = http.post(uri, {headers: headers, body:body});
+            let rsp = http.post(uri, { headers: headers, body: body });
             // console.log(rsp.data.toString())
-            if(rsp.statusCode == 200){
+            if (rsp.statusCode == 200) {
                 return parseXML(rsp.data.toString());
             }
             return undefined;
@@ -307,12 +307,12 @@ export class COSObject extends COSClient{
     }
 }
 
-function _signatureFixAuthorization(cfg:{secretId:string, secretKey:string}, headers:any, httpMethod: string, uri: string, expireSecond: number = 3600){
-    headers = headers||{};
+function _signatureFixAuthorization(cfg: { secretId: string, secretKey: string }, headers: any, httpMethod: string, uri: string, expireSecond: number = 3600) {
+    headers = headers || {};
     headers["Authorization"] = auth_sign(cfg, httpMethod, uri, expireSecond);
     return headers;
 }
-function auth_sign(cfg:{secretId:string, secretKey:string}, requestMethod: string, uri: string, expireSecond: number = 3600) {
+function auth_sign(cfg: { secretId: string, secretKey: string }, requestMethod: string, uri: string, expireSecond: number = 3600) {
     let urlInfo = url.parse(uri);
     let nowSecond = Math.floor(Date.now() / 1000)
     let signTime = (nowSecond - 90) + ';' + (nowSecond + expireSecond);
@@ -328,23 +328,23 @@ function auth_sign(cfg:{secretId:string, secretKey:string}, requestMethod: strin
 }
 
 function buildEndpoint(endpoint: string, bucket: string) {
-    if(!bucket){
+    if (!bucket) {
         return endpoint;
     }
     let info = url.parse(endpoint);
     let host = info.host;
-    if(host.startsWith(bucket)==false){
-        host = bucket+"."+host;
+    if (host.startsWith(bucket) == false) {
+        host = bucket + "." + host;
     }
-    let str:string = `${info.protocol}//${host}`;
+    let str: string = `${info.protocol}//${host}`;
     if (info.port) {
         str = `${str}:${info.port}`;
     }
     return str;
 }
-function buildCdnEndPoint(reqUri:string){
+function buildCdnEndPoint(reqUri: string) {
     let a = reqUri.split(".");
-    return [a[0],"file",...a.slice(3)].join(".");
+    return [a[0], "file", ...a.slice(3)].join(".");
 }
 
 function getMimeType(fileName: string, defaultMt = "application/octet-stream") {
