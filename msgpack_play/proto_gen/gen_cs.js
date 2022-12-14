@@ -54,7 +54,26 @@ ${fields.join("\n")}
     return str;
  }
 
+ function build_cs_idmap(list){
+    let mstr = list.map(e=>{
+        return `        _ID_Map.Type2Id[typeof(${e.name})] = ${e.id};\n        _ID_Map.Id2Type[${e.id}] = typeof(${e.name});`;
+    }).join('\n');
+return `public class _ID_Map
+{
+    public static Dictionary<System.Type, int> Type2Id = new Dictionary<System.Type, int>();
+    public static Dictionary<int, System.Type> Id2Type = new Dictionary<int, System.Type>();
+    public static void Init()
+    {
+${mstr}
+    }
+}`;
+ }
 
  const src = fs.readFileSync("t_proto.js",{encoding:"utf-8"});
-let typeSrc = "using System;\nusing System.Collections;\nusing System.Collections.Generic;\nusing UnityEngine;\nusing MessagePack;\n\n"+parseSrc(src).map(e=>build_cs_class(e)).join("\n");
+ const typeList = parseSrc(src);
+let typeSrc = "//Dependent library  https://github.com/neuecc/MessagePack-CSharp\n"
+typeSrc+="using System;\nusing System.Collections;\nusing System.Collections.Generic;\nusing MessagePack;\n\n";
+typeSrc+=typeList.map(e=>build_cs_class(e)).join("\n");
+typeSrc+=build_cs_idmap(typeList);
+
 fs.writeFileSync("t_proto.cs",typeSrc,{encoding:"utf-8"});
