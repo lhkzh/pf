@@ -39,9 +39,9 @@ function parseSrc(src){
             }else{
                 let name = tmp[0];
                 let type = tmp[1];
-                let option = 0;
+                let option = 1;
                 if(type.indexOf("?")>0){
-                    option = 1;
+                    option = 0;
                     type = type.replace("?", "");
                 }
                 type=type.replace(/"/g,"");

@@ -50,13 +50,16 @@ export abstract class MsgArray {
     public toArray(): any[] {
         return (<any>this.constructor)["ToArray"](this);
     }
-    public static FromArray<T extends MsgArray>(a: any[]): T {
-        return <T><unknown>null;
-    }
+
     public static ToArray<T extends MsgArray>(v: T): any[] {
         return (<any>v.constructor)["ToArray"](v);
     }
-
+    public static FromArray<T extends MsgArray>(a: any[]): T {
+        return <T><unknown>null;
+    }
+    public static CastByArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T {
+        return (<any>type)["FromArray"](arr);
+    }
     public static Meta(info: { id?: number, name?: string, fields: Array<MetaInfoField> }): ClassDecorator {
         return function (T: any) {
             MsgArray.MetaBind(T, info.id || Meta_ID++, info.name || T.name, info.fields);
@@ -182,7 +185,7 @@ function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
     const typeField = fieldInfo[0], type = fieldInfo[1];
     if (v === undefined || v === null) {
         if (fieldInfo[2] == 1)
-            throw new TypeError(`Decode Fail-1:${typeName}.${typeField}`);
+            throw new TypeError(`Decode Fail-(need require):${typeName}.${typeField}`);
         if (Number.isInteger(type)) {
             if (type >= MType.I8 && type <= MType.F64) {
                 if (type == MType.I64) {

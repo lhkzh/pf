@@ -18,7 +18,7 @@ public class UserInfo {
     //年纪
     [Key(4)] public byte age;
     //声音设置
-    [Key(5)] public boolean sound;
+    [Key(5)] public bool sound;
 }
 
 //登录请求
@@ -46,7 +46,7 @@ public class LoginRsp {
 public class Room {
     [Key(0)] public long rid;
     [Key(1)] public string desc;
-    [Key(2)] public boolean playing;
+    [Key(2)] public bool playing;
     [Key(3)] public DateTime create;
     [Key(4)] public HashSet<UserInfo> players;
     [Key(5)] public Dictionary<int, UserInfo> map1;

@@ -103,7 +103,7 @@ function build_ts_class(info, longTo="bigint"){
         }
         let str = `    public ${e.name}: ${type};`;
         if(e.note&&e.note.length){
-            str = `    public ${cstNote(e.note)}\n${str}`;
+            str = `    ${cstNote(e.note)}\n${str}`;
         }
         return str;
     });

@@ -40,7 +40,7 @@ const Room={
     playing:"bool",
     create:"date",
     players:"set_UserInfo",
-    map1:"obj_i32_UserInfo",
-    map2:"map_i32_UserInfo",
-    log:"Int8Array"
+    map1:"obj_i32_UserInfo?",
+    map2:"map_i32_UserInfo?",
+    log:"Int8Array?"
 }

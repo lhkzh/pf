@@ -38,8 +38,8 @@ u.tags = new Set([1, 9, 173]);
 
 var arr = u.toArray();
 console.log(JSON.stringify(arr, null, 2));
-console.log(User.FromArray(arr));
-console.log(User.FromArray(<any[]>unpack(pack(arr))))
+console.log(MsgArray.CastByArray.FromArray(User,arr));
+console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))))
 </pre>
 
 ** if you use "jsbi" for bigint **

@@ -5,26 +5,26 @@ import {  MsgArray, MType } from "msgpack_play";
     id: 1,
     name: "UserInfo",
     fields: [
-        ["uid", MType.I32, 0],
-        ["nick", MType.STR, 0],
-        ["tags", ["Arr", MType.STR], 1],
-        ["sex", MType.I8, 1],
-        ["age", MType.I8, 1],
-        ["sound", MType.BOOL, 1]
+        ["uid", MType.I32, 1],
+        ["nick", MType.STR, 1],
+        ["tags", ["Arr", MType.STR], 0],
+        ["sex", MType.I8, 0],
+        ["age", MType.I8, 0],
+        ["sound", MType.BOOL, 0]
     ]
 })
 export class UserInfo {
-    public /**账号ID*/
+    /**账号ID*/
     public uid: number;
-    public /**账号名称*/
+    /**账号名称*/
     public nick: string;
-    public /**标签*/
+    /**标签*/
     public tags: Array<string>;
-    public /**性别*/
+    /**性别*/
     public sex: number;
-    public /**年纪*/
+    /**年纪*/
     public age: number;
-    public /**声音设置*/
+    /**声音设置*/
     public sound: boolean;
 }
 
@@ -33,14 +33,14 @@ export class UserInfo {
     id: 2,
     name: "LoginReq",
     fields: [
-        ["userName", MType.STR, 0],
-        ["code", MType.STR, 0]
+        ["userName", MType.STR, 1],
+        ["code", MType.STR, 1]
     ]
 })
 export class LoginReq {
-    public /**账号*/
+    /**账号*/
     public userName: string;
-    public /**校验码*/
+    /**校验码*/
     public code: string;
 }
 
@@ -49,17 +49,17 @@ export class LoginReq {
     id: 3,
     name: "LoginRsp",
     fields: [
-        ["code", MType.I16, 0],
-        ["msg", MType.STR, 1],
-        ["data", UserInfo, 1]
+        ["code", MType.I16, 1],
+        ["msg", MType.STR, 0],
+        ["data", UserInfo, 0]
     ]
 })
 export class LoginRsp {
-    public /**状态码*/
+    /**状态码*/
     public code: number;
-    public /**状态信息*/
+    /**状态信息*/
     public msg: string;
-    public /**用户信息*/
+    /**用户信息*/
     public data: UserInfo;
 }
 
@@ -68,11 +68,11 @@ export class LoginRsp {
     id: 4,
     name: "Room",
     fields: [
-        ["rid", MType.I64, 0],
-        ["desc", MType.STR, 0],
-        ["playing", MType.BOOL, 0],
-        ["create", MType.DATE, 0],
-        ["players", ["Set", UserInfo], 0],
+        ["rid", MType.I64, 1],
+        ["desc", MType.STR, 1],
+        ["playing", MType.BOOL, 1],
+        ["create", MType.DATE, 1],
+        ["players", ["Set", UserInfo], 1],
         ["map1", ["Obj", MType.I32, UserInfo], 0],
         ["map2", ["Map", MType.I32, UserInfo], 0],
         ["log", Int8Array, 0]

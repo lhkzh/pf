@@ -7,7 +7,7 @@ export class CodecDate implements CodecExtApi {
         return v instanceof Date;
     }
     public isType(v: number) {
-        return v == -1;
+        return v == 255;
     }
     public encode(d: Date, out: OutStream, encoder: any) {
         var millis = d.getTime(),//d * 1
