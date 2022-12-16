@@ -210,7 +210,7 @@ export class MsgPacker {
     public static get JsNative(): MsgPacker {
         if (!this._jsNative) {
             this._jsNative = new MsgPacker({
-                extends: [...jsNativeExtList]
+                extends: jsNativeExtList.map(e => e)
             });
         }
         return this._jsNative;
