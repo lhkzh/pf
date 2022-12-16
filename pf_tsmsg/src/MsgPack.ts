@@ -266,7 +266,7 @@ export module MsgPack {
                 packString(v, out);
             } else if (t == "bigint") {
                 packBigInt(v, out);
-            } else if (v.constructor.name == "Object") {
+            } else if (v.constructor == Object) {
                 packObject(v, out);
             } else if (Ext.encode) {
                 Ext.encode(v, out);
