@@ -1,13 +1,6 @@
-// # i8 i16 i32 i64 i53 f32 f64
-// # bool str date
-// # obj_i8_i32 map_i32_i32 arr_i32 set_i32
-// User = {_ID=1, uid='i53', nick='str',head='str',sex="i8", bag="map_i16_i32"}
-// Room = {_ID=2, rid="i53", master="i53", players="arr_User"}
-// ChatReq = {_ID=3, }
 
 export type NewableAny = { new(...params: any[]): any }
 export type Newable<T> = { new(...params: any[]): T }
-// export type NewableNoArgs<T> = { new(): T }
 
 export enum MType {
     BOOL,
@@ -50,7 +43,6 @@ export abstract class MsgArray {
     public toArray(): any[] {
         return (<any>this.constructor)["ToArray"](this);
     }
-
     public static ToArray<T extends MsgArray>(v: T): any[] {
         return (<any>v.constructor)["ToArray"](v);
     }
@@ -75,6 +67,9 @@ export abstract class MsgArray {
         _typeS.set(T, obj);
         T.prototype.toArray = function () {
             return (<any>T)["ToArray"](this);
+        };
+        T.prototype.toString = function () {
+            return `[Class:${name}]=>${JSON.stringify(this, JsonReviverEncode)}`;
         };
         (<any>T)["ToArray"] = function (a: any): any[] {
             if (a == null) return <any[]><unknown>null;
@@ -179,6 +174,7 @@ export abstract class MsgArray {
     public static SetCastInt64(fn: (v: any) => any) {
         Cast_Int64 = fn || Cast_Int64;
     }
+
 }
 
 function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
@@ -272,4 +268,29 @@ function cast_primitive(v: any, type: MType, typeName: string, typeField: string
 }
 function cast_fail_type(typeName: string, typeField: string) {
     throw new TypeError(`Decode Fail-2:${typeName}.${typeField}`);
+}
+
+function JsonReviverEncode(key: string, value: any): any {
+    if (typeof (value) == "bigint") {
+        return {
+            type: "bigint",
+            data: value.toString(),
+        };
+    } else if (value instanceof Map) {
+        return {
+            type: "Map",
+            data: Array.from(value.entries()),
+        };
+    } else if (value instanceof Set) {
+        return {
+            type: "Set",
+            data: Array.from(value.entries()),
+        };
+    } else if (value && value.buffer instanceof ArrayBuffer) {
+        return {
+            type: value.constructor.name,
+            data: Array.from(value),
+        };
+    }
+    return value;
 }

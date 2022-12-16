@@ -1,19 +1,21 @@
-import { CodecExtApi, CodecLongApi } from "./codec_ext_api";
-import { CodecDate } from "./CodecDate";
-import { CodecLong } from "./CodecLong";
+import { CodecExtApi, CodecLongApi } from "./codec_api";
+import { CodecExtDate, CodecLong } from "./codec_imp";
 import { InStream } from "./InStream";
 
 export class Decoder {
     private mapAsReal: boolean;
     private long: CodecLongApi;
-    private extends: Array<CodecExtApi>;
+    private extends: Map<number, CodecExtApi>;
 
-    constructor(config?: { mapAsReal?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi> }) {
+    constructor(public config?: { mapAsReal?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi> }) {
         this.long = config && config.long || new CodecLong();
         this.mapAsReal = config && config.mapAsReal || false;
-        this.extends = config && config.extends || [];
-        if (this.extends.find(e => e.isImp(new Date())) == null) {
-            this.extends.push(new CodecDate());
+        this.extends = new Map();
+        this.extends.set(CodecExtDate.INSTANCE.TYPE, CodecExtDate.INSTANCE);
+        if (config && config.extends && config.extends.length) {
+            config.extends.forEach(e => {
+                this.extends.set(e.TYPE, e);
+            });
         }
     }
 
@@ -98,6 +100,28 @@ export class Decoder {
                 throw new Error("bad format:" + k);
         }
     }
+    public decodeArraySize(b: InStream) {
+        let k = b.u8();
+        if ((k & 0xf0) == 0x90) {//fixedArray
+            return k & 0x0F;
+        } else if (k == 0xdc) {
+            return b.u16();
+        } else if (k == 0xdd) {
+            return b.u32();
+        }
+        throw new Error("bad arr header:" + k);
+    }
+    public decodeMapSize(b: InStream) {
+        let k = b.u8();
+        if ((k & 0xe0) == 0x80) {//fixedMap
+            return k & 0x0F;
+        } else if (k == 0xde) {
+            return b.u16();
+        } else if (k == 0xdf) {
+            return b.u32();
+        }
+        throw new Error("bad map header:" + k);
+    }
     public decodeArray(b: InStream, count: number) {
         let a = new Array(count);
         for (let i = 0; i < count; i++) {
@@ -122,9 +146,9 @@ export class Decoder {
     }
     public decodeExt(b: InStream, len: number, type: number) {
         let ebs = new InStream(b.bin(len).buffer);
-        let ext = this.extends.find(e => e.isType(type));
+        let ext = this.extends.get(type);
         if (ext) {
-            return ext.decode(ebs, len);
+            return ext.decode(ebs, this);
         }
         return { msg: "unknow", type: type, data: ebs.bin() };
     }

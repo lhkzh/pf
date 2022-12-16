@@ -1,14 +1,14 @@
 <pre>
-npm install msgpack_play
+npm install play_msgpack
 </pre>
 
 <pre>
-import {pack,unpack} from "msgpack_play";
+import {pack,unpack} from "play_msgpack";
 console.log(unpack(pack({uid:321,score:88.5,name:"Tom",tags:[22,33,55]})));
 </pre>
 
 <pre>
-import { pack, unpack, MsgArray, MType } from "msgpack_play";
+import { pack, unpack, MsgArray, MType } from "play_msgpack";
 
 @MsgArray.Meta({
     fields: [
@@ -44,7 +44,7 @@ console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))))
 
 ** if you use "jsbi" for bigint **
 <pre>
-import { Encoder, CodecLongApi, OutStream, InStream, MsgArray } from "msgpack_play";
+import { Encoder, CodecLongApi, OutStream, InStream, MsgArray } from "play_msgpack";
 const JSBI = require("jsbi");
 MsgArray.SetCastInt64((v:any)=>{ return JSBI.BigInt(v); });
 const jsbi_ext: CodecLongApi = {

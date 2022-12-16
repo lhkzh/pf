@@ -1,6 +1,6 @@
 **MsgArrayToCsharp**
 <pre>
-import { MsgArray, MType } from "msgpack_play";
+import { MsgArray, MType } from "play_msgpack";
 class MsgArrayToCsharp {
     private static SimpleDict = {
         [MType.BOOL]: { type: "bool", default: "false" },
@@ -18,7 +18,6 @@ class MsgArrayToCsharp {
         let cs_head = `using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using MessagePack;\n`;
         MsgArray.MetaIdList().forEach(id => {
             let cmeta = MsgArray.MetaById(id);
