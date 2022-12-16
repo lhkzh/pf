@@ -192,11 +192,17 @@ export class MsgPacker {
         this._encoder = new Encoder(config);
         this._decoder = new Decoder(config);
     }
-    public encode(v: any): Uint8Array {
+    public pack(v: any): Uint8Array {
         return this._encoder.encode(v).bin();
     }
-    public decode(v: Uint8Array): any {
+    public unpack(v: Uint8Array): any {
         return this._decoder.decode(new InStream(v, 0, v.length));
+    }
+    public encode(v: any, out: OutStream): OutStream {
+        return this._encoder.encode(v, out);
+    }
+    public decode(v: InStream): any {
+        return this._decoder.decode(v);
     }
 
     private static _def: MsgPacker;
@@ -218,14 +224,14 @@ export class MsgPacker {
 }
 
 export function pack(v: any): Uint8Array {
-    return MsgPacker.Default.encode(v);
+    return MsgPacker.Default.pack(v);
 }
 export function unpack(v: Uint8Array): any {
-    return MsgPacker.Default.decode(v);
+    return MsgPacker.Default.unpack(v);
 }
 export function packJs(v: any): Uint8Array {
-    return MsgPacker.JsNative.encode(v);
+    return MsgPacker.JsNative.pack(v);
 }
 export function unpackJs(v: Uint8Array): any {
-    return MsgPacker.JsNative.decode(v);
+    return MsgPacker.JsNative.unpack(v);
 }
