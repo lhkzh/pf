@@ -3,7 +3,6 @@ import { Decoder } from "./Decoder";
 import { InStream } from "./InStream";
 import { OutStream } from "./OutStream";
 import { CodecExtApi, CodecLongApi } from "./codec_api";
-import { MType, MsgArray } from "./MsgArray";
 import { MsgPacker, jsNativeExtList, pack, unpack, packJs, unpackJs } from "./codec_imp";
 
 
@@ -23,7 +22,4 @@ export {
     unpack,
     packJs,
     unpackJs,
-
-    MType,
-    MsgArray,
 }

@@ -117,5 +117,5 @@ ${fields.join("\n")}
     return str;
 }
 const src = fs.readFileSync("t_proto.js",{encoding:"utf-8"});
-let typeSrc = `import {  MsgArray, MType } from "play_msgpack";\n\n`+parseSrc(src).map(e=>build_ts_class(e)).join("\n");
+let typeSrc = `import {  MsgArray, MType } from "play_msg";\n\n`+parseSrc(src).map(e=>build_ts_class(e)).join("\n");
 fs.writeFileSync("t_proto.ts",typeSrc,{encoding:"utf-8"});
