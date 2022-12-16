@@ -69,7 +69,7 @@ export abstract class MsgArray {
             return (<any>T)["ToArray"](this);
         };
         T.prototype.toString = function () {
-            return `[Class:${name}]=>${JSON.stringify(this, JsonReviverEncode)}`;
+            return `[Class:${name}]=>${MsgArray.Stringify(this)}`;
         };
         (<any>T)["ToArray"] = function (a: any): any[] {
             if (a == null) return <any[]><unknown>null;
@@ -174,7 +174,9 @@ export abstract class MsgArray {
     public static SetCastInt64(fn: (v: any) => any) {
         Cast_Int64 = fn || Cast_Int64;
     }
-
+    public static Stringify(val: any, space?: number | string) {
+        return JSON.stringify(val, JsonReviverEncode, space);
+    }
 }
 
 function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
