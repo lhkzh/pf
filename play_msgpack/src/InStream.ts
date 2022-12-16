@@ -6,10 +6,10 @@ export class InStream {
     private v: DataView;
     private b: Uint8Array;
 
-    public constructor(d: ArrayBuffer) {
+    public constructor(d: Uint8Array, byteOffset?: number, byteLength?: number) {
         this.i = 0;
-        this.b = new Uint8Array(d);
-        this.v = new DataView(d);
+        this.b = d;
+        this.v = new DataView(d.buffer, byteOffset, byteLength);
     }
     public get size() {
         return this.b.length;
@@ -95,20 +95,29 @@ export class InStream {
     }
 
     public str(n: number): string {
-        return Str.decode(this.bin(n));
+        return Str.decode(this.sub(n));
     }
 
     public utf8(): string {
-        return Str.decode(this.bin(this.u16()));
+        return Str.decode(this.sub(this.u16()));
     }
 
-    public bin(size: number = 0): Uint8Array {
+    public bin(size: number): Uint8Array {
         let T = this, i = T.i;
-        if (size < 1) {
-            size = T.b.length - T.i;
-        }
         T.i += size;
-        return new Uint8Array(T.b.buffer.slice(i, T.i));
+        return T.b.slice(i, T.i);
     }
-
+    public sub(size: number) {
+        let T = this, i = T.i;
+        T.i += size;
+        return T.b.subarray(i, T.i);
+    }
+    public child(size: number): InStream {
+        let T = this, i = T.i;
+        T.i += size;
+        return new InStream(T.b.subarray(i, T.i), i, size);
+    }
+    public src(): Uint8Array {
+        return this.b;
+    }
 }

@@ -75,11 +75,11 @@ export class Decoder {
             case 0xdb:
                 return b.str(b.u32());
             case 0xc4:
-                return b.bin(b.u8());
+                return b.sub(b.u8());
             case 0xc5:
-                return b.bin(b.u16());
+                return b.sub(b.u16());
             case 0xc6:
-                return b.bin(b.u32());
+                return b.sub(b.u32());
             case 0xd4:
                 return this.decodeExt(b, 1, b.u8());
             case 0xd5:
@@ -145,12 +145,12 @@ export class Decoder {
         }
     }
     public decodeExt(b: InStream, len: number, type: number) {
-        let ebs = new InStream(b.bin(len).buffer);
+        let ebs = b.child(len);//new InStream(b.bin(len));
         let ext = this.extends.get(type);
         if (ext) {
             return ext.decode(ebs, this);
         }
-        return { msg: "unknow", type: type, data: ebs.bin() };
+        return { msg: "unknow", type: type, data: ebs.src() };
     }
 }
 

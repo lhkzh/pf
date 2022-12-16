@@ -127,7 +127,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             v.forEach(e => {
                 encoder.encode(e, tmpO)
             });
-            encoder.encodeExt(this.TYPE, tmpO.bin(), out);
+            encoder.encodeExt(this.TYPE, tmpO.sub(), out);
             return out;
         },
     }
@@ -152,7 +152,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
                 encoder.encode(ik, tmpO);
                 encoder.encode(iv, tmpO);
             });
-            return encoder.encodeExt(this.TYPE, tmpO.bin(), out);
+            return encoder.encodeExt(this.TYPE, tmpO.sub(), out);
         }
     }
     arr.push(JsCodecExtSet, JsCodecExtMap);
@@ -170,7 +170,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             },
             decode(ins: InStream, decoder) {
                 let T: any = Clazz;
-                return new T(ins.bin().buffer);
+                return new T(ins.src());
             }
         }
     }
@@ -196,7 +196,7 @@ export class MsgPacker {
         return this._encoder.encode(v).bin();
     }
     public decode(v: Uint8Array): any {
-        return this._decoder.decode(new InStream(v.buffer));
+        return this._decoder.decode(new InStream(v, 0, v.length));
     }
 
     private static _def: MsgPacker;

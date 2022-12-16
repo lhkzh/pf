@@ -148,6 +148,9 @@ export class OutStream {
     }
 
     public bin(): Uint8Array {
+        return this.b.slice(0, this.i);
+    }
+    public sub(): Uint8Array {
         return this.b.subarray(0, this.i);
     }
 }
