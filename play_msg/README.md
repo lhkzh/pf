@@ -1,14 +1,10 @@
 <pre>
-npm install play_msgarr
+npm install play_msg
 </pre>
 
 <pre>
-import {pack,unpack} from "play_msgpack";
-console.log(unpack(pack({uid:321,score:88.5,name:"Tom",tags:[22,33,55]})));
-</pre>
-
-<pre>
-import { pack, unpack, MsgArray, MType } from "play_msgpack";
+import { MsgArray, MType } from "play_msg";
+import { pack, unpack } from "play_msgpack";
 
 @MsgArray.Meta({
     fields: [
@@ -40,40 +36,4 @@ var arr = u.toArray();
 console.log(JSON.stringify(arr, null, 2));
 console.log(MsgArray.CastByArray.FromArray(User,arr));
 console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))))
-</pre>
-
-** if you use "jsbi" for bigint **
-<pre>
-import { Encoder, CodecLongApi, OutStream, InStream, MsgArray } from "play_msgpack";
-const JSBI = require("jsbi");
-MsgArray.SetCastInt64((v:any)=>{ return JSBI.BigInt(v); });
-const jsbi_ext: CodecLongApi = {
-    isImp(v: any): boolean {
-        return v instanceof JSBI;
-    },
-    toAuto(v: any): any {
-        let x = JSBI.BigInt(v);
-        let n = JSBI.toNumber(x);
-        return Number.isSafeInteger(n) ? n : JSBI;
-    },
-    encode(v: any, out: OutStream): OutStream {
-        let x = JSBI.BigInt(v);
-        out.process(8, (dv: DataView, offset: number) => {
-            if (JSBI.lessThan(x, JSBI.BigInt('0'))) {
-                JSBI.DataViewSetBigInt64(dv, offset, x);
-            } else {
-                JSBI.DataViewSetBigUint64(dv, offset, x);
-            }
-        });
-        return out;
-    },
-    decodeNegative(b: InStream) {
-        return JSBI.DataViewGetBigInt64(b.process(8), 0);
-    },
-    decodePositive(b: InStream) {
-        return JSBI.DataViewGetBigUint64(b.process(8), 0);
-    }
-};
-let jsbi_encoder = new Encoder({ long: jsbi_ext });
-console.log(jsbi_encoder.encode(JSBI.BigInt("2345678979")).bin());
 </pre>
