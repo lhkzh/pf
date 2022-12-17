@@ -1,5 +1,5 @@
 import { CodecExtApi, CodecLongApi } from "./codec_api";
-import { CodecExtDate, CodecLong } from "./codec_imp";
+import { CodecExtDate, CodecLongImp } from "./codec_imp";
 import { InStream } from "./InStream";
 
 export class Decoder {
@@ -8,7 +8,7 @@ export class Decoder {
     private extends: Map<number, CodecExtApi>;
 
     constructor(public config?: { mapAsReal?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi> }) {
-        this.long = config && config.long || new CodecLong();
+        this.long = config && config.long || CodecLongImp;
         this.mapAsReal = config && config.mapAsReal || false;
         this.extends = new Map();
         this.extends.set(CodecExtDate.INSTANCE.TYPE, CodecExtDate.INSTANCE);

@@ -237,6 +237,8 @@ function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
     } else if ((<any>type)["BYTES_PER_ELEMENT"] > 0) {//TypeArray
         if (ArrayBuffer.isView(v) || Array.isArray(v) || v instanceof ArrayBuffer) {
             return new (<any>type)(v);
+        } else if (typeof (Buffer) != "undefined" && Buffer.isBuffer(v)) {
+            return new (<any>type)(v);
         } else {
             cast_fail_type(typeName, typeField);
         }

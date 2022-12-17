@@ -5,36 +5,76 @@ import { InStream } from "./InStream";
 import { OutStream } from "./OutStream";
 
 //bigint(or not safe Integer)
-export class CodecLong implements CodecLongApi {
-    public isImp(v: any) {
+export const CodecLongImp: CodecLongApi = typeof (BigInt) != undefined ? {
+    isImp(v: any) {
         return typeof (v) == "bigint";
-    }
-    // public isVal(v) {
-    //     return typeof (v) == "bigint" || (Number.isInteger(v) && !Number.isSafeInteger(v));
-    // }
-    public toAuto(v: any) {
+    },
+    toAuto(v: any) {
         let n = Number(v);
         if (Number.isSafeInteger(n)) {
             return n;
         }
         return v;
-    }
-    public encode(v: any, out: OutStream): OutStream {
+    },
+    encode(v: any, out: OutStream) {
         v = BigInt(v);
         if (v < 0) {
             out.u8(0xd3).i64(v);
         } else {
             out.u8(0xcf).u64(v);
         }
-        return out;
-    }
-    public decodeNegative(ins: InStream): any {
+    },
+    decodeNegative(ins: InStream): any {
         return ins.i64();
-    }
-    public decodePositive(ins: InStream): any {
+    },
+    decodePositive(ins: InStream): any {
         return ins.u64();
+    },
+} : {
+    isImp(v: any) {
+        return Number.isInteger(v) && Number.isSafeInteger(v);
+    },
+    toAuto(v: any) {
+        return Number(v);
+    },
+    encode(v: any, out: OutStream) {
+        let neg = v < 0;
+        if (neg) {
+            v = -v;
+        }
+        let high = (v / 4294967296) | 0, low = v % 4294967296;
+        if (neg) {
+            high = ~high; low = ~low;
+            var a48 = high >>> 16,
+                a32 = high & 0xFFFF,
+                a16 = low >>> 16,
+                a00 = low & 0xFFFF;
+            var c48 = 0, c32 = 0, c16 = 0, c00 = 0;
+            c00 += a00 + 1;
+            c16 += c00 >>> 16;
+            c00 &= 0xFFFF;
+            c16 += a16;
+            c32 += c16 >>> 16;
+            c16 &= 0xFFFF;
+            c32 += a32;
+            c48 += c32 >>> 16;
+            c32 &= 0xFFFF;
+            c48 += a48;
+            c48 &= 0xFFFF;
+            low = (c16 << 16) | c00;
+            high = (c48 << 16) | c32
+        }
+        out.u32(high).u32(low);
+    },
+    decodeNegative(ins: InStream): any {
+        const high = ins.i32(), low = ins.i32();
+        return high * 4294967296 + low;
+    },
+    decodePositive(ins: InStream): any {
+        const high = ins.u32(), low = ins.u32();
+        return high * 4294967296 + low;
     }
-}
+};
 
 //date codec
 export class CodecExtDate implements CodecExtApi {
@@ -55,9 +95,9 @@ export class CodecExtDate implements CodecExtApi {
                 upperSeconds = seconds / Math.pow(2, 32),
                 upper = (upperNanos + upperSeconds) & 0xffffffff,
                 lower = seconds & 0xffffffff;
-            return out.bu(0xd7, 255).i32(upper).i32(lower);
+            out.bu(0xd7, 255).i32(upper).i32(lower);
         } else {// Timestamp32
-            return out.bu(0xd6, 255).i32(Math.floor(millis / 1000));
+            out.bu(0xd6, 255).i32(Math.floor(millis / 1000));
         }
     }
     public decode(ins: InStream, decoder: any) {
@@ -91,7 +131,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             get CLASS(): NewableType {
                 return <any>BigInt;
             },
-            encode(v: bigint, out: OutStream, encoder: Encoder): OutStream {
+            encode(v: bigint, out: OutStream, encoder: Encoder) {
                 let uarr = new Uint8Array(9), udv = new DataView(uarr.buffer);
                 if (v >= 0) {
                     udv.setUint8(0, 0);
@@ -100,7 +140,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
                     udv.setUint8(0, 1);
                     udv.setBigUint64(1, v);
                 }
-                return encoder.encodeExt(254, uarr, out);
+                encoder.encodeExt(254, uarr, out);
             },
             decode(ins: InStream, decoder) {
                 return ins.u8() == 1 ? ins.i64() : ins.u64();
@@ -121,15 +161,14 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             }
             return r;
         },
-        encode(v: Set<any>, out: OutStream, encoder: Encoder): OutStream {
+        encode(v: Set<any>, out: OutStream, encoder: Encoder) {
             let tmpO = new OutStream();
             encoder.encodeArraySize(v.size, tmpO);
             v.forEach(e => {
                 encoder.encode(e, tmpO)
             });
             encoder.encodeExt(this.TYPE, tmpO.sub(), out);
-            return out;
-        },
+        }
     }
     const JsCodecExtMap: CodecExtApi = {
         get TYPE(): number {
@@ -145,14 +184,14 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             }
             return r;
         },
-        encode(v: Map<any, any>, out: OutStream, encoder: Encoder): OutStream {
+        encode(v: Map<any, any>, out: OutStream, encoder: Encoder) {
             let tmpO = new OutStream();
             encoder.encodeMapSize(v.size, tmpO);
             v.forEach((iv, ik) => {
                 encoder.encode(ik, tmpO);
                 encoder.encode(iv, tmpO);
             });
-            return encoder.encodeExt(this.TYPE, tmpO.sub(), out);
+            encoder.encodeExt(this.TYPE, tmpO.sub(), out);
         }
     }
     arr.push(JsCodecExtSet, JsCodecExtMap);
@@ -164,9 +203,8 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             get CLASS(): NewableType {
                 return Clazz;
             },
-            encode(v, out: OutStream, encoder: Encoder): OutStream {
-                let buf = v.buffer;
-                return encoder.encodeExt(Type, new Uint8Array(buf), out);
+            encode(v, out: OutStream, encoder: Encoder) {
+                encoder.encodeExt(Type, new Uint8Array(v.buffer), out);
             },
             decode(ins: InStream, decoder) {
                 let T: any = Clazz;
@@ -192,12 +230,20 @@ export class MsgPacker {
         this._encoder = new Encoder(config);
         this._decoder = new Decoder(config);
     }
-    public pack(v: any): Uint8Array {
-        return this._encoder.encode(v).bin();
+    public get encoder() {
+        return this._encoder;
+    }
+    public get decoder() {
+        return this._decoder;
+    }
+
+    public pack(v: any, out?: OutStream): Uint8Array {
+        return this._encoder.encode(v, out).bin();
     }
     public unpack(v: Uint8Array): any {
         return this._decoder.decode(new InStream(v, 0, v.length));
     }
+
     public encode(v: any, out: OutStream): OutStream {
         return this._encoder.encode(v, out);
     }

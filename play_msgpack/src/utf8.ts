@@ -1,6 +1,15 @@
 
 let StrCoder: { encode: (str: string) => Uint8Array, decode: (buf: Uint8Array) => string };
-if (typeof (TextEncoder) != "undefined") {
+if (typeof (Buffer) != "undefined") {
+    StrCoder = {
+        encode: function (str: string) {
+            return new Uint8Array(Buffer.from(str, "utf8"));
+        },
+        decode: function (buf: Uint8Array) {
+            return Buffer.from(buf).toString("utf8");
+        }
+    }
+} else if (typeof (TextEncoder) != "undefined") {
     const tE = new TextEncoder();
     const tD = new TextDecoder("utf-8");
     StrCoder = {
@@ -9,15 +18,6 @@ if (typeof (TextEncoder) != "undefined") {
         },
         decode: function (buf: Uint8Array) {
             return tD.decode(buf);
-        }
-    }
-} else if (typeof (Buffer) != "undefined") {
-    StrCoder = {
-        encode: function (str: string) {
-            return new Uint8Array(Buffer.from(str, "utf8").buffer);
-        },
-        decode: function (buf: Uint8Array) {
-            return Buffer.from(buf).toString("utf8");
         }
     }
 } else {
