@@ -122,14 +122,14 @@ export class Decoder {
         }
         throw new Error("bad map header:" + k);
     }
-    public decodeArray(b: InStream, count: number) {
-        let a = new Array(count);
+    public decodeArray(b: InStream, count: number): any[] {
+        let a = [];
         for (let i = 0; i < count; i++) {
             a[i] = this.decode(b);
         }
         return a;
     }
-    public decodeMap(b: InStream, count: number) {
+    public decodeMap(b: InStream, count: number): any {
         if (this.mapAsReal) {
             let m = new Map();
             for (let i = 0; i < count; i++) {

@@ -101,20 +101,31 @@ export class InStream {
     public utf8(): string {
         return Str.decode(this.sub(this.u16()));
     }
-
+    private terr() {
+        throw new RangeError("Offset is outside");
+    }
     public bin(size: number): Uint8Array {
         let T = this, i = T.i;
         T.i += size;
+        if (T.i > T.b.length) {
+            T.terr();
+        }
         return T.b.slice(i, T.i);
     }
     public sub(size: number) {
         let T = this, i = T.i;
         T.i += size;
+        if (T.i > T.b.length) {
+            T.terr();
+        }
         return T.b.subarray(i, T.i);
     }
     public child(size: number): InStream {
         let T = this, i = T.i;
         T.i += size;
+        if (T.i > T.b.length) {
+            T.terr();
+        }
         return new InStream(T.b.subarray(i, T.i), i, size);
     }
     public src(): Uint8Array {
