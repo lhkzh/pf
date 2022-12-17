@@ -69,11 +69,11 @@ ${mstr}
 }`;
  }
 
- const src = fs.readFileSync("t_proto.js",{encoding:"utf-8"});
+ const src = fs.readFileSync(__dirname+"/t_proto.js",{encoding:"utf-8"});
  const typeList = parseSrc(src);
 let typeSrc = "//Dependent library  https://github.com/neuecc/MessagePack-CSharp\n"
 typeSrc+="using System;\nusing System.Collections;\nusing System.Collections.Generic;\nusing MessagePack;\n\n";
 typeSrc+=typeList.map(e=>build_cs_class(e)).join("\n");
 typeSrc+=build_cs_idmap(typeList);
 
-fs.writeFileSync("t_proto.cs",typeSrc,{encoding:"utf-8"});
+fs.writeFileSync(__dirname+"/t_proto.cs",typeSrc,{encoding:"utf-8"});

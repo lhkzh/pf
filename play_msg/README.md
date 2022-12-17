@@ -4,7 +4,8 @@ npm install play_msg
 
 <pre>
 import { MsgArray, MType } from "play_msg";
-import { pack, unpack } from "play_msgpack";
+//import { pack, unpack } from "play_msgpack";
+import { pack, unpack } from "msgpackr";
 
 @MsgArray.Meta({
     fields: [
@@ -34,6 +35,6 @@ u.tags = new Set([1, 9, 173]);
 
 var arr = u.toArray();
 console.log(JSON.stringify(arr, null, 2));
-console.log(MsgArray.CastByArray.FromArray(User,arr));
-console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))))
+console.log(MsgArray.CastByArray(User,arr));
+console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))));
 </pre>

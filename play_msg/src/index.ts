@@ -1,4 +1,3 @@
-
 export type NewableAny = { new(...params: any[]): any }
 export type Newable<T> = { new(...params: any[]): T }
 
@@ -27,7 +26,7 @@ export type MetaType = MType |
 
 
 type MetaInfoFieldOption = 0 | 1;
-type MetaInfoField = [string, MetaType, MetaInfoFieldOption];// | [string, MsgType];
+export type MetaInfoField = [string, MetaType, MetaInfoFieldOption];// | [string, MsgType];
 export type MetaInfoObj = { id: number, name: string, fields: Array<MetaInfoField>, clazz: NewableAny };
 const _nameS: Map<string, MetaInfoObj> = new Map();
 const _idS: Map<number, MetaInfoObj> = new Map();
@@ -43,7 +42,8 @@ export abstract class MsgArray {
     public toArray(): any[] {
         return (<any>this.constructor)["ToArray"](this);
     }
-    public static ToArray<T extends MsgArray>(v: T): any[] {
+    public static ToArray<T extends MsgArray>(v: T): any[] | null {
+        if (v == null) return null;
         return (<any>v.constructor)["ToArray"](v);
     }
     public static FromArray<T extends MsgArray>(a: any[]): T {
@@ -51,93 +51,6 @@ export abstract class MsgArray {
     }
     public static CastByArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T {
         return (<any>type)["FromArray"](arr);
-    }
-    public static Meta(info: { id?: number, name?: string, fields: Array<MetaInfoField> }): ClassDecorator {
-        return function (T: any) {
-            MsgArray.MetaBind(T, info.id || Meta_ID++, info.name || T.name, info.fields);
-        }
-    }
-    public static MetaBind(T: NewableAny, id: number, name: string, fields: Array<MetaInfoField>) {
-        if (_idS.has(id) || _nameS.has(name)) {
-            throw new TypeError("MsgInfo.(id or name).conflict:" + id + "_" + name);
-        }
-        const obj = Object.freeze({ id, name, fields, clazz: T });
-        _idS.set(id, obj);
-        _nameS.set(name, obj);
-        _typeS.set(T, obj);
-        T.prototype.toArray = function () {
-            return (<any>T)["ToArray"](this);
-        };
-        T.prototype.toString = function () {
-            return `[Class:${name}]=>${MsgArray.Stringify(this)}`;
-        };
-        (<any>T)["ToArray"] = function (a: any): any[] {
-            if (a == null) return <any[]><unknown>null;
-            let r = new Array(fields.length);
-            for (var i = 0; i < r.length; i++) {
-                let v = a[fields[i][0]], t: any = fields[i][1];
-                if (v) {
-                    if (t["ToArray"]) {
-                        v = t["ToArray"](v);
-                    } else if (Array.isArray(t)) {
-                        if (t[0] == "Arr") {
-                            if (t[1]["ToArray"]) {
-                                v = v.map((e: any) => t[1]["ToArray"](e));
-                            }
-                        } else if (t[0] == "Set") {
-                            let rarr = [];
-                            if (t[1]["ToArray"]) {
-                                for (let e of v) {
-                                    rarr.push(t[1]["ToArray"](e));
-                                }
-                            } else {
-                                for (let e of v) {
-                                    rarr.push(e);
-                                }
-                            }
-                            v = rarr;
-                        } else if (t[0] == "Obj") {
-                            let rarr = [];
-                            if (t[2]["ToArray"]) {
-                                for (let k in v) {
-                                    rarr.push(t[1] != MType.STR ? Number(k) : k, t[2]["ToArray"](v[k]));
-                                }
-                            } else {
-                                for (let k in v) {
-                                    rarr.push(t[1] != MType.STR ? Number(k) : k, v[k]);
-                                }
-                            }
-                            v = rarr;
-                        } else if (t[0] == "Map") {
-                            let rarr = [];
-                            if (t[2]["ToArray"]) {
-                                for (let e of v) {
-                                    rarr.push(e[0], t[2]["ToArray"](e[1]));
-                                }
-                            } else {
-                                for (let e of v) {
-                                    rarr.push(e[0], e[1]);
-                                }
-                            }
-                            v = rarr;
-                        } else {
-                            throw new TypeError("NOT implemented:" + t[0]);
-                        }
-                    }
-                }
-                r[i] = v;
-            }
-            return r;
-        };
-        (<any>T)["FromArray"] = function (a: any[]) {
-            if (a == null) return null;
-            if (!Array.isArray(a)) throw new TypeError(`Decode Fail-0:${name}`);
-            let r = new T();
-            for (var i = 0; i < fields.length; i++) {
-                r[fields[i][0]] = cast_val_field(a[i], name, fields[i]);
-            }
-            return r;
-        }
     }
 
     public static ClassByName(name: string): NewableAny | undefined {
@@ -176,6 +89,95 @@ export abstract class MsgArray {
     }
     public static Stringify(val: any, space?: number | string) {
         return JSON.stringify(val, JsonReviverEncode, space);
+    }
+
+
+    public static Meta(info: { id?: number, name?: string, fields: Array<MetaInfoField> }): ClassDecorator {
+        return function (T: any) {
+            MsgArray.MetaBind(T, info.id || Meta_ID++, info.name || T.name, info.fields);
+        }
+    }
+    public static MetaBind(T: NewableAny, id: number, name: string, fields: Array<MetaInfoField>) {
+        if (_idS.has(id) || _nameS.has(name)) {
+            throw new TypeError("MsgInfo.(id or name).conflict:" + id + "_" + name);
+        }
+        const obj = Object.freeze({ id, name, fields, clazz: T });
+        _idS.set(id, obj);
+        _nameS.set(name, obj);
+        _typeS.set(T, obj);
+        T.prototype.toArray = function () {
+            return (<any>T)["ToArray"](this);
+        };
+        T.prototype.toString = function () {
+            return `[Class:${name}]=>${MsgArray.Stringify(this)}`;
+        };
+        (<any>T)["ToArray"] = function (a: any): any[] {
+            if (a == null) return <any[]><unknown>null;
+            let r = new Array(fields.length);
+            for (var i = 0; i < r.length; i++) {
+                let v = a[fields[i][0]], t: any = fields[i][1];
+                if (v) {
+                    if (t["ToArray"]) {
+                        v = t["ToArray"](v);
+                    } else if (Array.isArray(t)) {
+                        if (t[0] == "Arr") {
+                            if (t[1]["ToArray"]) {
+                                v = v.map((e: any) => t[1]["ToArray"](e));
+                            }
+                        } else if (t[0] == "Set") {
+                            let rarr: any[] = [];
+                            if (t[1]["ToArray"]) {
+                                v.forEach((e: any) => {
+                                    rarr.push(t[1]["ToArray"](e));
+                                });
+                            } else {
+                                v.forEach((e: any) => {
+                                    rarr.push(e);
+                                });
+                            }
+                            v = rarr;
+                        } else if (t[0] == "Obj") {
+                            let rarr: any[] = [], keys = Object.keys(v);
+                            if (t[2]["ToArray"]) {
+                                keys.forEach(k => {
+                                    rarr.push(t[1] != MType.STR ? Number(k) : k, t[2]["ToArray"](v[k]));
+                                });
+                            } else {
+                                keys.forEach(k => {
+                                    rarr.push(t[1] != MType.STR ? Number(k) : k, v[k]);
+                                });
+                            }
+                            v = rarr;
+                        } else if (t[0] == "Map") {
+                            let rarr: any[] = [];
+                            if (t[2]["ToArray"]) {
+                                v.forEach((iv: any, ik: any) => {
+                                    rarr.push(ik, t[2]["ToArray"](iv));
+                                });
+                            } else {
+                                v.forEach((iv: any, ik: any) => {
+                                    rarr.push(ik, iv);
+                                });
+                            }
+                            v = rarr;
+                        } else {
+                            throw new TypeError("NOT implemented:" + t[0]);
+                        }
+                    }
+                }
+                r[i] = v;
+            }
+            return r;
+        };
+        (<any>T)["FromArray"] = function (a: any[]): any {
+            if (a == null) return null;
+            if (!Array.isArray(a)) throw new TypeError(`Decode Fail-0:${name}`);
+            let r = new T();
+            for (var i = 0; i < fields.length; i++) {
+                r[fields[i][0]] = cast_val_field(a[i], name, fields[i]);
+            }
+            return r;
+        };
     }
 }
 
@@ -233,11 +235,7 @@ function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
             return rMap;
         }
     } else if ((<any>type)["BYTES_PER_ELEMENT"] > 0) {//TypeArray
-        if (ArrayBuffer.isView(v)) {
-            return new (<any>type)(v.buffer);
-        } else if (Array.isArray(v)) {
-            return new (<any>type)(v);
-        } else if (v instanceof ArrayBuffer) {
+        if (ArrayBuffer.isView(v) || Array.isArray(v) || v instanceof ArrayBuffer) {
             return new (<any>type)(v);
         } else {
             cast_fail_type(typeName, typeField);

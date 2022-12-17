@@ -1,40 +1,42 @@
 {
     "name": "play_msg",
-    "version": "0.0.2",
-    "description": "schema msgpack",
+    "version": "0.0.3",
+    "description": "class schema to Array, use for msgpack",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "exports": {
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+        "require": "./dist/index.js",
+        "import": "./dist/index.mjs"
     },
     "typings": "./dist/index.d.ts",
     "directories": {
-      "doc": "docs"
-    },
-    "dependencies": {
+        "doc": "docs"
     },
     "devDependencies": {
-      "@microsoft/api-extractor": "^7.31.2",
-      "@types/node": "latest",
-      "nyc": "^15.1.0",
-      "rollup": "^2.79.1",
-      "rollup-plugin-typescript2": "^0.34.0",
-      "ts-node": "latest",
-      "typescript": "latest"
+        "@microsoft/api-extractor": "^7.31.2",
+        "@types/node": "latest",
+        "nyc": "^15.1.0",
+        "rollup": "^2.79.1",
+        "rollup-plugin-typescript2": "^0.34.0",
+        "ts-node": "latest",
+        "typescript": "latest"
     },
     "scripts": {
-      "build": "npm run build:clear && npm run build:js && npm run build:dts",
-      "build:js": "npx rollup -c",
-      "build:dts": "npx tsc && npx api-extractor run --local --verbose && node removePrivate.js",
-      "build:clear": "node removeOut.js"
+        "build": "npm run build:clear && npm run build:js && npm run build:dts",
+        "build:js": "npx rollup -c",
+        "build:dts": "npx tsc && npx api-extractor run --local --verbose && node removePrivate.js",
+        "build:clear": "node removeOut.js"
     },
     "files": [
-      "package.json",
-      "dist/"
+        "package.json",
+        "dist/"
     ],
     "author": "",
     "license": "MIT",
     "homepage": "https://github.com/lhkzh/pf/play_msg",
-    "keywords": ["msgpack","ts","schema"]
-  }
+    "keywords": [
+        "msgpack",
+        "ts",
+        "schema"
+    ]
+}

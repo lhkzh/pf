@@ -108,7 +108,7 @@ function build_ts_class(info, longTo="bigint"){
         return str;
     });
     let str = header+
-`export class ${info.name} {
+`export class ${info.name} extends MsgArray {
 ${fields.join("\n")}
 }\n`;
     if(info.note&&info.note.length){
@@ -116,6 +116,6 @@ ${fields.join("\n")}
     }
     return str;
 }
-const src = fs.readFileSync("t_proto.js",{encoding:"utf-8"});
+const src = fs.readFileSync(__dirname+"/t_proto.js",{encoding:"utf-8"});
 let typeSrc = `import {  MsgArray, MType } from "play_msg";\n\n`+parseSrc(src).map(e=>build_ts_class(e)).join("\n");
-fs.writeFileSync("t_proto.ts",typeSrc,{encoding:"utf-8"});
+fs.writeFileSync(__dirname+"/t_proto.ts",typeSrc,{encoding:"utf-8"});
