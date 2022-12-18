@@ -208,7 +208,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             },
             decode(ins: InStream, decoder) {
                 let T: any = Clazz;
-                return new T(ins.src());
+                return new T(ins.bin(ins.less).buffer);
             }
         }
     }

@@ -21,8 +21,10 @@ export class Decoder {
 
     public decode(b: InStream) {
         let k = b.u8();
-        if (k <= 0x7f || k >= 0xe0) {//fixInt
+        if (k <= 0x7f) { //fixInt
             return k;
+        } else if (k >= 0xe0) {//fixInt
+            return k - 0x100;
         }
         if ((k & 0xf0) == 0x90) {//fixedArray
             return this.decodeArray(b, k & 0x0F);
