@@ -15,12 +15,19 @@ describe("base", function(){
     });
     it("number", function(){
         assert.equal(Number.isNaN(Index.unpack(Index.pack(NaN))), true);
-        let t_fn = (n)=>{
-            assert.strictEqual(Index.unpack(Index.pack(n)), n);
+        let t_fn = (n, notTypeEq)=>{
+            let v = Index.unpack(Index.pack(n));
+            if(notTypeEq){
+                assert.equal(v, n);
+            }else{
+                assert.strictEqual(v, n);
+            }
         };
         [0,-16,16, -36,36, -128,127,128, -0xffff,0xffff, 3.5,-3.5, Number.MAX_SAFE_INTEGER,Number.MIN_SAFE_INTEGER].forEach(t_fn);
         t_fn(BigInt(2**60));
         t_fn(-BigInt(2**60));
+        t_fn(-3n, true);
+        t_fn(3n, true);
     });
     it("string", function(){
         let t_fn = (n)=>{
@@ -143,10 +150,12 @@ describe('jsNative', () => {
         let t_fn = (n)=>{
             var vv = Index.unpackJs(Index.packJs(n));
             assert.strictEqual(vv,n);
+            assert.strictEqual(typeof(vv),typeof(n));
         };
         t_fn(BigInt(0));
         t_fn(BigInt(-1));
         t_fn(BigInt(1));
+        t_fn(BigInt(2**60));
     });
 });
 require.main === module && test.run(console.DEBUG);
