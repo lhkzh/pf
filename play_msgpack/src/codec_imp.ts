@@ -47,10 +47,8 @@ export const CodecLongImp: CodecLongApi = typeof (BigInt) != undefined ? {
             high = ~high; low = ~low;
             var a48 = high >>> 16,
                 a32 = high & 0xFFFF,
-                a16 = low >>> 16,
-                a00 = low & 0xFFFF;
-            var c48 = 0, c32 = 0, c16 = 0, c00 = 0;
-            c00 += a00 + 1;
+                a16 = low >>> 16;
+            var c48 = 0, c32 = 0, c16 = 0, c00 = (low & 0xFFFF) + 1;
             c16 += c00 >>> 16;
             c00 &= 0xFFFF;
             c16 += a16;
@@ -62,7 +60,7 @@ export const CodecLongImp: CodecLongApi = typeof (BigInt) != undefined ? {
             c48 += a48;
             c48 &= 0xFFFF;
             low = (c16 << 16) | c00;
-            high = (c48 << 16) | c32
+            high = (c48 << 16) | c32;
         }
         out.u32(high).u32(low);
     },
