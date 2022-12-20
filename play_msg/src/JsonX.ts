@@ -1,4 +1,3 @@
-import { MsgArray } from ".";
 
 export class JsonX {
     public static Stringify(val: any, space?: number | string): string {
@@ -57,3 +56,4 @@ function JsonReviverDecode(key: any, value: any) {
     }
     return value;
 }
+import { MsgArray } from "./index";
