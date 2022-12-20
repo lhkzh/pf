@@ -1,8 +1,8 @@
 //账号信息
 const UserInfo={
-    $ID:1,
+    $ID: 1,
     //账号ID
-    uid:"i32",
+    uid: "i32",
     //账号名称
     nick:"str",
     //标签

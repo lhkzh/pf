@@ -1,3 +1,5 @@
+
+
 export type NewableAny = { new(...params: any[]): any }
 export type Newable<T> = { new(...params: any[]): T }
 
@@ -25,8 +27,8 @@ export type MetaType = MType |
     ;
 
 
-type MetaInfoFieldOption = 0 | 1;
-export type MetaInfoField = [string, MetaType, MetaInfoFieldOption];// | [string, MsgType];
+export type MetaInfoFieldRequired = 0 | 1;
+export type MetaInfoField = [string, MetaType, MetaInfoFieldRequired];// | [string, MsgType, Required];
 export type MetaInfoObj = { id: number, name: string, fields: Array<MetaInfoField>, clazz: NewableAny };
 const _nameS: Map<string, MetaInfoObj> = new Map();
 const _idS: Map<number, MetaInfoObj> = new Map();
@@ -84,21 +86,30 @@ export abstract class MsgArray {
         return arr;
         // return [..._nameS.keys()];
     }
-    public static SetCastInt64(fn: (v: any) => any) {
+    public static set CastInt64(fn: (v: any) => any) {
         Cast_Int64 = fn || Cast_Int64;
     }
-    public static Stringify(val: any, space?: number | string): string {
-        return JSON.stringify(val, JsonReviverEncode, space);
-    }
-    public static Parse(jsonStr: string): any {
-        return JSON.parse(jsonStr, JsonReviverDecode);
+    public static get CastInt64(): (v: any) => any {
+        return Cast_Int64;
     }
 
+    /**
+     * 注解类属性信息的方法
+     * @param info 
+     * @returns 
+     */
     public static Meta(info: { id?: number, name?: string, fields: Array<MetaInfoField> }): ClassDecorator {
         return function (T: any) {
             MsgArray.MetaBind(T, info.id || Meta_ID++, info.name || T.name, info.fields);
         }
     }
+    /**
+     * 绑定类与属性关系
+     * @param T 
+     * @param id 
+     * @param name 
+     * @param fields 
+     */
     public static MetaBind(T: NewableAny, id: number, name: string, fields: Array<MetaInfoField>) {
         if (_idS.has(id) || _nameS.has(name)) {
             throw new TypeError("MsgInfo.(id or name).conflict:" + id + "_" + name);
@@ -111,7 +122,7 @@ export abstract class MsgArray {
             return (<any>T)["ToArray"](this);
         };
         T.prototype.toString = function () {
-            return `[Class:${name}]=>${MsgArray.Stringify(this)}`;
+            return `[Class:${name}]=>${JsonX.Stringify(this)}`;
         };
         (<any>T)["ToArray"] = function (a: any): any[] {
             if (a == null) return <any[]><unknown>null;
@@ -274,51 +285,34 @@ function cast_fail_type(typeName: string, typeField: string) {
     throw new TypeError(`Decode Fail-2:${typeName}.${typeField}`);
 }
 
-function JsonReviverEncode(key: string, value: any): any {
-    if (typeof (value) == "bigint") {
-        return {
-            type: "bigint",
-            data: value.toString(),
-        };
-    } else if (value instanceof Map) {
-        return {
-            type: "Map",
-            data: Array.from(value.entries()),
-        };
-    } else if (value instanceof Set) {
-        return {
-            type: "Set",
-            data: Array.from(value.entries()),
-        };
-    } else if (value && value.buffer instanceof ArrayBuffer) {
-        return {
-            type: value.constructor.name,
-            data: Array.from(value),
-        };
+const __MSG_FIELDS_PROPERTY_KEY = "__$FIELDS$__";
+/**
+ * 注解-数据类的方法
+ * @param id 类消息ID
+ * @param name 类消息NAME（在某些编译情况时有用）
+ * @returns 
+ */
+export function MsgClass(id?: number, name?: string): ClassDecorator {
+    return function (T: any) {
+        MsgArray.MetaBind(T, id || Meta_ID++, name || T.name, T.prototype[__MSG_FIELDS_PROPERTY_KEY] || []);
+        delete T.prototype[__MSG_FIELDS_PROPERTY_KEY];
     }
-    return value;
 }
-function JsonReviverDecode(key: any, value: any) {
-    if (typeof value === 'string') {
-        let a = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)Z$/.exec(value);
-        if (a) {
-            return new Date(Date.UTC(+a[1], +a[2] - 1, +a[3], +a[4],
-                +a[5], +a[6]));
+/**
+ * 注解-数据类成员属性的方法
+ * @param typed 成员的数据类型
+ * @param required 成员是否必须要有数据（在解析时会检测）
+ * @param name 成员的NAME（在某些编译情况时有用）
+ * @returns 
+ */
+export function MsgField(typed: MetaType, required: MetaInfoFieldRequired = 0, name?: string): PropertyDecorator {
+    return function (target: any, propKey: string | symbol) {
+        if (!target[__MSG_FIELDS_PROPERTY_KEY]) {
+            target[__MSG_FIELDS_PROPERTY_KEY] = [];
         }
-    } else if (typeof (value) == "object" && typeof (value.type) == "string" && value.data) {
-        if (value.type == "bigint") {
-            return Cast_Int64(value.data);
-        }
-        if (value.type == "Map") {
-            return new Map(value.data);
-        }
-        if (value.type == "Set") {
-            return new Set(value.data);
-        }
-        if (value.type.lastIndexOf("Array") > 0) {
-            let G: any = typeof (window) == "object" ? window : global;
-            return new G[value.type](value.data);
-        }
+        target[__MSG_FIELDS_PROPERTY_KEY].push([name ? name : propKey.toString(), typed, required]);
     }
-    return value;
 }
+
+import { JsonX } from "./JsonX";
+export { JsonX }

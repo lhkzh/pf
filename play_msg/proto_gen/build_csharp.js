@@ -1,5 +1,5 @@
 const fs=require("fs");
-const parseSrc=require("./gen_base").parseSrc;
+const parseSrc=require("./build_base").parseSrc;
 const bases = ["BOOL","I8","I16","I32","I64","I53","F32","F64","STR","DATE",
  "Int8Array","Uint8Array","Int16Array","Uint16Array","Int32Array","Uint32Array","Float32Array","Float64Array","BigInt64Array","BigUint64Array"].map(e=>e.toUpperCase());
 const basesTypes = ["bool","byte","short","int","long","long","float","double","string","DateTime",
@@ -71,7 +71,7 @@ ${mstr}
 
  const src = fs.readFileSync(__dirname+"/t_proto.js",{encoding:"utf-8"});
  const typeList = parseSrc(src);
-let typeSrc = "//Dependent library  https://github.com/neuecc/MessagePack-CSharp\n"
+let typeSrc = "//Dependent library  https://github.com/neuecc/MessagePack-CSharp \n"
 typeSrc+="using System;\nusing System.Collections;\nusing System.Collections.Generic;\nusing MessagePack;\n\n";
 typeSrc+=typeList.map(e=>build_cs_class(e)).join("\n");
 typeSrc+=build_cs_idmap(typeList);

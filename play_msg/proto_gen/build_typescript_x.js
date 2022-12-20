@@ -1,5 +1,5 @@
 const fs=require("fs");
-const parseSrc=require("./gen_base").parseSrc;
+const parseSrc=require("./build_base").parseSrc;
 const bases = ["BOOL","I8","I16","I32","I64","I53","F32","F64","STR","DATE"];
 const baseMapping = ["boolean","number","number","number","bigint","number","number","number","string","Date"];
 
