@@ -2,69 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var JsonX = /** @class */ (function () {
-    function JsonX() {
-    }
-    JsonX.Stringify = function (val, space) {
-        return JSON.stringify(val, JsonReviverEncode, space);
-    };
-    JsonX.Parse = function (jsonStr) {
-        return JSON.parse(jsonStr, JsonReviverDecode);
-    };
-    return JsonX;
-}());
-function JsonReviverEncode(key, value) {
-    if (typeof (value) == "bigint") {
-        return {
-            type: "bigint",
-            data: value.toString(),
-        };
-    }
-    else if (value instanceof Map) {
-        return {
-            type: "Map",
-            data: Array.from(value.entries()),
-        };
-    }
-    else if (value instanceof Set) {
-        return {
-            type: "Set",
-            data: Array.from(value.entries()),
-        };
-    }
-    else if (value && value.buffer instanceof ArrayBuffer) {
-        return {
-            type: value.constructor.name,
-            data: Array.from(value),
-        };
-    }
-    return value;
-}
-function JsonReviverDecode(key, value) {
-    if (typeof value === 'string') {
-        var a = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)Z$/.exec(value);
-        if (a) {
-            return new Date(Date.UTC(+a[1], +a[2] - 1, +a[3], +a[4], +a[5], +a[6]));
-        }
-    }
-    else if (typeof (value) == "object" && typeof (value.type) == "string" && value.data) {
-        if (value.type == "bigint") {
-            return MsgArray.CastInt64(value.data);
-        }
-        if (value.type == "Map") {
-            return new Map(value.data);
-        }
-        if (value.type == "Set") {
-            return new Set(value.data);
-        }
-        if (value.type.lastIndexOf("Array") > 0) {
-            var G = typeof (window) == "object" ? window : global;
-            return new G[value.type](value.data);
-        }
-    }
-    return value;
-}
-
 exports.MType = void 0;
 (function (MType) {
     MType[MType["BOOL"] = 0] = "BOOL";
@@ -395,6 +332,68 @@ function MsgField(typed, required, name) {
         }
         target[__MSG_FIELDS_PROPERTY_KEY].push([name ? name : propKey.toString(), typed, required]);
     };
+}
+var JsonX = /** @class */ (function () {
+    function JsonX() {
+    }
+    JsonX.Stringify = function (val, space) {
+        return JSON.stringify(val, JsonReviverEncode, space);
+    };
+    JsonX.Parse = function (jsonStr) {
+        return JSON.parse(jsonStr, JsonReviverDecode);
+    };
+    return JsonX;
+}());
+function JsonReviverEncode(key, value) {
+    if (typeof (value) == "bigint") {
+        return {
+            type: "bigint",
+            data: value.toString(),
+        };
+    }
+    else if (value instanceof Map) {
+        return {
+            type: "Map",
+            data: Array.from(value.entries()),
+        };
+    }
+    else if (value instanceof Set) {
+        return {
+            type: "Set",
+            data: Array.from(value.entries()),
+        };
+    }
+    else if (value && value.buffer instanceof ArrayBuffer) {
+        return {
+            type: value.constructor.name,
+            data: Array.from(value),
+        };
+    }
+    return value;
+}
+function JsonReviverDecode(key, value) {
+    if (typeof value === 'string') {
+        var a = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)Z$/.exec(value);
+        if (a) {
+            return new Date(Date.UTC(+a[1], +a[2] - 1, +a[3], +a[4], +a[5], +a[6]));
+        }
+    }
+    else if (typeof (value) == "object" && typeof (value.type) == "string" && value.data) {
+        if (value.type == "bigint") {
+            return MsgArray.CastInt64(value.data);
+        }
+        if (value.type == "Map") {
+            return new Map(value.data);
+        }
+        if (value.type == "Set") {
+            return new Set(value.data);
+        }
+        if (value.type.lastIndexOf("Array") > 0) {
+            var G = typeof (window) == "object" ? window : global;
+            return new G[value.type](value.data);
+        }
+    }
+    return value;
 }
 
 exports.JsonX = JsonX;

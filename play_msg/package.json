@@ -4,6 +4,7 @@
     "description": "class schema to Array, use for msgpack",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
+    "browser": "./dist/index.umd.js",
     "exports": {
         "require": "./dist/index.js",
         "import": "./dist/index.mjs"
