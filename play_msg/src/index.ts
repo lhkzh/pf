@@ -293,19 +293,21 @@ function cast_or_msg(v: any, type: MType | NewableAny, typeName: string, typeFie
     return (<any>type).FromArray(v);
 }
 function cast_primitive(v: any, type: MType, typeName: string, typeField: string) {
-    if ((type == MType.DATE && !(v instanceof Date)) ||
-        (type == MType.STR && typeof (v) != "string")
-    ) {
-        cast_fail_type(typeName, typeField);
-    } else if (type == MType.I64) {
+    if (type == MType.I64) {
         v = Cast_Int64(v);
-    } else if (type == MType.BOOL) {
-        v = Boolean(v);
-    } else if (v >= MType.I8 && type <= MType.F64) {
+    } else if (type >= MType.I8 && type <= MType.F64) {
         v = Number(v);
         if (!Number.isFinite(v)) {
             cast_fail_type(typeName, typeField);
         }
+    } else if (type == MType.BOOL) {
+        v = Boolean(v);
+    } else if (type == MType.DATE) {
+        if (v instanceof Date == false) {
+            cast_fail_type(typeName, typeField);
+        }
+    } else if (type == MType.STR && typeof (v) != "string") {
+        cast_fail_type(typeName, typeField);
     }
     return v;
 }

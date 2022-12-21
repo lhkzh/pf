@@ -14,9 +14,10 @@ describe("base", function(){
         MsgArray.MetaBind(Type,TypeId++,TypeId.toString(), [
             ["online", MType.BOOL, 1],
             ["name", MType.STR, 1],
-            ["id", MType.I53, 1]
+            ["id", MType.I53, 1],
+            ["tm", MType.DATE, 1]
         ]);
-        assert.equal(JsonX.Stringify(MsgArray.CastByArray(Type, [true,"Tom",10001])), '{"online":true,"name":"Tom","id":10001}')
+        assert.equal(JsonX.Stringify(MsgArray.CastByArray(Type, [true,"Tom",10001,new Date(2022,06,06)])), '{"online":true,"name":"Tom","id":10001,"tm":"2022-07-05T16:00:00.000Z"}');
     });
     it("required", function(){
         let Type=function(){};

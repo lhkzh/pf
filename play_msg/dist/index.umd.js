@@ -313,21 +313,25 @@
         return type.FromArray(v);
     }
     function cast_primitive(v, type, typeName, typeField) {
-        if ((type == exports.MType.DATE && !(v instanceof Date)) ||
-            (type == exports.MType.STR && typeof (v) != "string")) {
-            cast_fail_type(typeName, typeField);
-        }
-        else if (type == exports.MType.I64) {
+        if (type == exports.MType.I64) {
             v = Cast_Int64(v);
         }
-        else if (type == exports.MType.BOOL) {
-            v = Boolean(v);
-        }
-        else if (v >= exports.MType.I8 && type <= exports.MType.F64) {
+        else if (type >= exports.MType.I8 && type <= exports.MType.F64) {
             v = Number(v);
             if (!Number.isFinite(v)) {
                 cast_fail_type(typeName, typeField);
             }
+        }
+        else if (type == exports.MType.BOOL) {
+            v = Boolean(v);
+        }
+        else if (type == exports.MType.DATE) {
+            if (v instanceof Date == false) {
+                cast_fail_type(typeName, typeField);
+            }
+        }
+        else if (type == exports.MType.STR && typeof (v) != "string") {
+            cast_fail_type(typeName, typeField);
         }
         return v;
     }

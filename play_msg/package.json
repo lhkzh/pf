@@ -1,6 +1,6 @@
 {
     "name": "play_msg",
-    "version": "0.0.4",
+    "version": "0.0.6",
     "description": "class schema to Array, use for msgpack",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
