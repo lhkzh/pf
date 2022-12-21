@@ -18,6 +18,13 @@ export class InStream {
         return this.b.length - this.i;
     }
 
+    public see(): number {
+        return this.v.getUint8(this.i);
+    }
+    public skip(n = 1) {
+        this.i += n;
+    }
+
     public i8(): number {
         return this.v.getInt8(this.i++);
     }

@@ -102,7 +102,10 @@ export class Decoder {
                 throw new Error("bad format:" + k);
         }
     }
-    public decodeArraySize(b: InStream) {
+    public isNextNil(b: InStream) {
+        return b.see() == 0xc0;
+    }
+    public decodeArraySize(b: InStream): number {
         let k = b.u8();
         if ((k & 0xf0) == 0x90) {//fixedArray
             return k & 0x0F;
@@ -113,7 +116,7 @@ export class Decoder {
         }
         throw new Error("bad arr header:" + k);
     }
-    public decodeMapSize(b: InStream) {
+    public decodeMapSize(b: InStream): number {
         let k = b.u8();
         if ((k & 0xe0) == 0x80) {//fixedMap
             return k & 0x0F;
