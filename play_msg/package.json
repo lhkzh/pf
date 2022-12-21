@@ -26,7 +26,8 @@
         "build": "npm run build:clear && npm run build:js && npm run build:dts",
         "build:js": "npx rollup -c",
         "build:dts": "npx tsc && npx api-extractor run --local --verbose && node removePrivate.js",
-        "build:clear": "node removeOut.js"
+        "build:clear": "node removeOut.js",
+        "test":"fibjs test/index.js"
     },
     "files": [
         "package.json",

@@ -191,6 +191,33 @@ var MsgArray = /** @class */ (function () {
             return r;
         };
     };
+    /**
+     * 设置是否开启-TypedArray转array
+     * @param flag
+     */
+    MsgArray.ConfigTypedArray = function (flag) {
+        var arr = [Int8Array, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array];
+        if (typeof (BigInt) != "undefined") {
+            arr.push(BigInt64Array, BigUint64Array);
+        }
+        if (flag) {
+            arr.forEach(function (T) {
+                T["ToArray"] = function (iarr) {
+                    var rarr = new Array(iarr.length);
+                    for (var i = 0; i < iarr.length; i++) {
+                        rarr[i] = iarr[i];
+                    }
+                    return rarr;
+                };
+            });
+        }
+        else {
+            arr.forEach(function (T) {
+                T["ToArray"] = null;
+                delete T["ToArray"];
+            });
+        }
+    };
     return MsgArray;
 }());
 function cast_val_field(v, typeName, fieldInfo) {
@@ -259,10 +286,10 @@ function cast_val_field(v, typeName, fieldInfo) {
         }
     }
     else if (type["BYTES_PER_ELEMENT"] > 0) { //TypeArray
-        if (ArrayBuffer.isView(v) || Array.isArray(v) || v instanceof ArrayBuffer) {
+        if (Array.isArray(v) || ArrayBuffer.isView(v) || v instanceof ArrayBuffer) { // normal_array, TypeArray or ArrayBuffer
             return new type(v);
         }
-        else if (typeof (Buffer) != "undefined" && Buffer.isBuffer(v)) {
+        else if (typeof (Buffer) != "undefined" && Buffer.isBuffer(v)) { //nodejs or fibjs
             return new type(v);
         }
         else {
@@ -292,8 +319,9 @@ function cast_primitive(v, type, typeName, typeField) {
     }
     else if (v >= MType.I8 && type <= MType.F64) {
         v = Number(v);
-        if (!Number.isFinite(v))
+        if (!Number.isFinite(v)) {
             cast_fail_type(typeName, typeField);
+        }
     }
     return v;
 }

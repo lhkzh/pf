@@ -62,6 +62,11 @@ export declare abstract class MsgArray {
      * @param fields
      */
     static MetaBind(T: NewableAny, id: number, name: string, fields: Array<MetaInfoField>): void;
+    /**
+     * 设置是否开启-TypedArray转array
+     * @param flag
+     */
+    static ConfigTypedArray(flag: boolean): void;
 }
 
 /**

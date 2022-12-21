@@ -192,6 +192,33 @@ export abstract class MsgArray {
             return r;
         };
     }
+
+    /**
+     * 设置是否开启-TypedArray转array
+     * @param flag 
+     */
+    public static ConfigTypedArray(flag: boolean) {
+        let arr: any[] = [Int8Array, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array];
+        if (typeof (BigInt) != "undefined") {
+            arr.push(BigInt64Array, BigUint64Array);
+        }
+        if (flag) {
+            arr.forEach(T => {
+                T["ToArray"] = function (iarr: any) {
+                    let rarr = new Array(iarr.length);
+                    for (let i = 0; i < iarr.length; i++) {
+                        rarr[i] = iarr[i];
+                    }
+                    return rarr;
+                }
+            });
+        } else {
+            arr.forEach(T => {
+                T["ToArray"] = null;
+                delete T["ToArray"];
+            });
+        }
+    }
 }
 
 function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
@@ -248,9 +275,9 @@ function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
             return rMap;
         }
     } else if ((<any>type)["BYTES_PER_ELEMENT"] > 0) {//TypeArray
-        if (ArrayBuffer.isView(v) || Array.isArray(v) || v instanceof ArrayBuffer) {
+        if (Array.isArray(v) || ArrayBuffer.isView(v) || v instanceof ArrayBuffer) {// normal_array, TypeArray or ArrayBuffer
             return new (<any>type)(v);
-        } else if (typeof (Buffer) != "undefined" && Buffer.isBuffer(v)) {
+        } else if (typeof (Buffer) != "undefined" && Buffer.isBuffer(v)) {//nodejs or fibjs
             return new (<any>type)(v);
         } else {
             cast_fail_type(typeName, typeField);
@@ -276,8 +303,9 @@ function cast_primitive(v: any, type: MType, typeName: string, typeField: string
         v = Boolean(v);
     } else if (v >= MType.I8 && type <= MType.F64) {
         v = Number(v);
-        if (!Number.isFinite(v))
+        if (!Number.isFinite(v)) {
             cast_fail_type(typeName, typeField);
+        }
     }
     return v;
 }
@@ -351,8 +379,7 @@ function JsonReviverDecode(key: any, value: any) {
     if (typeof value === 'string') {
         let a = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)Z$/.exec(value);
         if (a) {
-            return new Date(Date.UTC(+a[1], +a[2] - 1, +a[3], +a[4],
-                +a[5], +a[6]));
+            return new Date(Date.parse(value));
         }
     } else if (typeof (value) == "object" && typeof (value.type) == "string" && value.data) {
         if (value.type == "bigint") {

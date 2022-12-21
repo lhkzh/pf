@@ -3,7 +3,7 @@ const parseSrc=require("./build_base").parseSrc;
 const bases = ["BOOL","I8","I16","I32","I64","I53","F32","F64","STR","DATE",
  "Int8Array","Uint8Array","Int16Array","Uint16Array","Int32Array","Uint32Array","Float32Array","Float64Array","BigInt64Array","BigUint64Array"].map(e=>e.toUpperCase());
 const basesTypes = ["bool","byte","short","int","long","long","float","double","string","DateTime",
- "byte[]","byte[]","byte[]","byte[]","byte[]","byte[]","byte[]","byte[]","byte[]","byte[]"];
+ "SByte[]","byte[]","Int16[]","UInt16[]","Int32[]","UInt32[]","Single[]","Double[]","Int64[]","UInt64[]"];
 
  function build_cs_class(info){
     let fields = info.fields.map((e,i)=>{

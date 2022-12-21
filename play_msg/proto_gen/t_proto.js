@@ -42,5 +42,11 @@ const Room={
     players:"set_UserInfo",
     map1:"obj_i32_UserInfo?",
     map2:"map_i32_UserInfo?",
-    log:"Int8Array?"
+    log:"Uint8Array?"
+}
+//位置数据
+const MoveAction={
+    $ID:5,
+    uid:"i32",
+    path:"Float32Array"
 }

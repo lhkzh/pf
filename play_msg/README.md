@@ -3,9 +3,9 @@ npm install play_msg
 </pre>
 
 <pre>
-import { MsgArray, MType } from "play_msg";
-//import { pack, unpack } from "play_msgpack";
-import { pack, unpack } from "msgpackr";
+import { MsgArray, MType, JsonX } from "play_msg";
+import { pack, unpack } from "play_msgpack";
+//import { pack, unpack } from "msgpackr";
 
 @MsgArray.Meta({
     fields: [
@@ -34,7 +34,7 @@ u.age = 18;
 u.tags = new Set([1, 9, 173]);
 
 var arr = u.toArray();
-console.log(JSON.stringify(arr, null, 2));
+console.log(JsonX.Stringify(arr));
 console.log(MsgArray.CastByArray(User,arr));
 console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))));
 </pre>
