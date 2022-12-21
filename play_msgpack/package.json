@@ -1,9 +1,10 @@
 {
     "name": "play_msgpack",
-    "version": "0.0.7",
+    "version": "0.0.9",
     "description": "msgpack",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
+    "browser": "./dist/index.umd.js",
     "exports": {
       "require": "./dist/index.js",
       "import": "./dist/index.mjs"

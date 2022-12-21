@@ -5,7 +5,7 @@ import { Str } from "./utf8";
 
 
 export class Encoder {
-    private long: CodecLongApi | null;
+    private long: CodecLongApi;
     private floatAs32: boolean;
     private extends: Map<NewableType, CodecExtApi>;
     private mapCheckIntKey: boolean;
@@ -112,10 +112,32 @@ export class Encoder {
             let ext = this.extends.get(ctor);
             if (ext) {
                 ext.encode(v, out, this);
-            } else if (this.long && this.long.isImp(v)) {
+            } else if (this.long.isImp(v)) {
                 this.long.encode(v, out);
             } else if (ArrayBuffer.isView(v)) {
-                this.encodeBin(new Uint8Array(v.buffer), out);
+                if (ctor == Uint8Array) {
+                    this.encodeBin(<Uint8Array>v, out);
+                } else {
+                    let iarr: Array<number | bigint> = <any>v;
+                    this.encodeArraySize(iarr.length, out);
+                    if (ctor == Float32Array) {
+                        for (let i = 0; i < iarr.length; i++) {
+                            out.u8(0xca).float(<number>iarr[i]);
+                        }
+                    } else if (ctor == Float64Array) {
+                        for (let i = 0; i < iarr.length; i++) {
+                            out.u8(0xcb).double(<number>iarr[i]);
+                        }
+                    } else if (ctor.name.substr(0, 3) == 'Big') {
+                        for (let i = 0; i < iarr.length; i++) {
+                            this.long.encode(iarr[i], out);
+                        }
+                    } else {
+                        for (let i = 0; i < iarr.length; i++) {
+                            this.encodeIntNumber(<number>iarr[i], out);
+                        }
+                    }
+                }
             } else {
                 throw new Error(`Msgpack encode not imp:${ctor.name}-${ext}`);
             }
@@ -177,10 +199,8 @@ export class Encoder {
                 out.u8(0xd1).i16(v);
             } else if (v >= -0x80000000) {
                 out.u8(0xd2).i32(v);
-            } else if (this.long) {
-                this.long.encode(v, out);
             } else {
-                out.u8(0xcb).double(v);
+                this.long.encode(v, out);
             }
         } else {
             if (v < 128) {
@@ -191,13 +211,10 @@ export class Encoder {
                 out.u8(0xcd).u16(v);
             } else if (v <= 0xffffffff) {
                 out.u8(0xce).u32(v);
-            } else if (this.long) {
-                this.long.encode(v, out);
             } else {
-                out.u8(0xcb).double(v);
+                this.long.encode(v, out);
             }
         }
-
     }
     public encodeBin(v: Uint8Array, out: OutStream) {
         if (v.length < 256) {

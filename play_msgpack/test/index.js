@@ -75,75 +75,95 @@ describe("base", function(){
         };
         t_fn(new Set([2,3,5]), [2,3,5]);
     });
+    it("Uint8Array", function(){
+        let t_fn = (n)=>{
+            let v = Index.unpack(Index.pack(n));
+            assert.strictEqual(v.constructor, n.constructor);
+            assert.deepEqual(v, n);
+        };
+        t_fn(new Uint8Array([]));
+        let arr=[];for(let i=0;i<256;i++) arr.push(i);
+        t_fn(new Uint8Array(arr));
+        t_fn(new Uint8Array([...arr,...arr,...arr]));
+    });
+    it("vInt8Array", function(){
+        let t_fn = (n)=>{
+            let v = Index.unpack(Index.pack(n));
+            assert.strictEqual(v.constructor, Array);
+            assert.deepEqual(v, n);
+        };
+        t_fn(new Int8Array([]));
+        let arr=[];for(let i=0;i<256;i++) arr.push(i);
+        t_fn(new Int8Array(arr));
+        t_fn(new Int8Array([...arr,...arr,...arr]));
+    });
+    it("vFloatArray", function(){
+        let t_fn = (n)=>{
+            let v = Index.unpack(Index.pack(n));
+            assert.strictEqual(v.constructor, Array);
+            assert.deepEqual(v, n);
+        };
+        t_fn(new Float32Array([]));
+        let arr=[];for(let i=0;i<128;i++) arr.push(i+0.5,0.5-i);
+        t_fn(new Float32Array(arr));
+        t_fn(new Float32Array([...arr,...arr,...arr]));
+    });
+    it('BigInt64Array/BigUint64Array', () => {
+        let t_fn = (n)=>{
+            let v = Index.unpack(Index.pack(n));
+            assert.strictEqual(v.constructor, Array);
+            assert.strictEqual(v.length, n.length);
+            for(var i=0;i<v.length;i++){
+                assert.strictEqual(v[i]==n[i], true);
+            }
+        };
+        t_fn(new BigInt64Array([2306n,123n,0n,-25515621n,2305843009213694039n,-2305843009213694039n]));
+        t_fn(new BigUint64Array([2306n,123n,0n,25515621n,2305843009213694039n,2905843009213694039n]));
+    });
 });
 
 describe('jsNative', () => {
     const Index=require("../dist/index");
+    let tt_fn = (n)=>{
+        let v = Index.unpackJs(Index.packJs(n));
+        assert.strictEqual(v.constructor, n.constructor);
+        assert.deepEqual(v,n);
+    };
     it('Map', () => {
-        let t_fn = (n)=>{
-            assert.deepEqual(Index.unpackJs(Index.packJs(n)),n);
-        };
-        t_fn(new Map([[23,"233"],["abc",456],[-213,true]]));
+        tt_fn(new Map([[23,"233"],["abc",456],[-213,true]]));
     });
     it('Set', () => {
-        let t_fn = (n)=>{
-            assert.deepEqual(Index.unpackJs(Index.packJs(n)),n);
-        };
-        t_fn(new Set([231,-21,3169,true,false]));
+        tt_fn(new Set([231,-21,3169,true,false]));
     });
     it('Int8Array', () => {
-        let t_fn = (n)=>{
-            assert.deepEqual(Index.unpackJs(Index.packJs(n)),n);
-        };
-        t_fn(new Int8Array([2,3,5,-123]));
+        tt_fn(new Int8Array([2,3,5,-123]));
     });
     it('Uint8Array', () => {
-        let t_fn = (n)=>{
-            assert.deepEqual(Index.unpackJs(Index.packJs(n)),n);
-        };
-        t_fn(new Uint8Array([2,3,5,123,0,255]));
+        tt_fn(new Uint8Array([2,3,5,123,0,255]));
     });
     it('Int16Array', () => {
-        let t_fn = (n)=>{
-            var vv = Index.unpackJs(Index.packJs(n));
-            assert.deepEqual(vv,n);
-        };
-        t_fn(new Int16Array([-125,2306,123,0,-255]));
+        tt_fn(new Int16Array([-125,2306,123,0,-255]));
     });
     it('Uint16Array', () => {
-        let t_fn = (n)=>{
-            var vv = Index.unpackJs(Index.packJs(n));
-            assert.deepEqual(vv,n);
-        };
-        t_fn(new Uint16Array([2306,123,0,255]));
+        tt_fn(new Uint16Array([2306,123,0,255]));
     });
     it('Int32Array', () => {
-        let t_fn = (n)=>{
-            var vv = Index.unpackJs(Index.packJs(n));
-            assert.deepEqual(vv,n);
-        };
-        t_fn(new Int32Array([-125,2306,123,0,-25515621]));
+        tt_fn(new Int32Array([-125,2306,123,0,-25515621]));
     });
     it('Uint32Array', () => {
-        let t_fn = (n)=>{
-            var vv = Index.unpackJs(Index.packJs(n));
-            assert.deepEqual(vv,n);
-        };
-        t_fn(new Uint32Array([2306,123,0,25515621]));
+        tt_fn(new Uint32Array([2306,123,0,25515621]));
     });
     it('Float32Array', () => {
-        let t_fn = (n)=>{
-            var vv = Index.unpackJs(Index.packJs(n));
-            assert.deepEqual(vv,n);
-        };
-        t_fn(new Float32Array([-125.5,2306.2]));
+        tt_fn(new Float32Array([-125.5,2306.2]));
     });
     it('Float64Array', () => {
-        let t_fn = (n)=>{
-            var vv = Index.unpackJs(Index.packJs(n));
-            assert.deepEqual(vv,n);
-        };
-        t_fn(new Float64Array([-125.5,2306.2]));
+        tt_fn(new Float64Array([-125.5,2306.2]));
+    });
+    it('BigInt64Array', () => {
+        tt_fn(new BigInt64Array([2306n,123n,0n,-25515621n,2305843009213694039n,-2305843009213694039n]));
+    });
+    it('BigUint64Array', () => {
+        tt_fn(new BigUint64Array([2306n,123n,0n,25515621n,2305843009213694039n,2905843009213694039n]));
     });
 
     it('BigInt', () => {
@@ -157,5 +177,6 @@ describe('jsNative', () => {
         t_fn(BigInt(1));
         t_fn(BigInt(2**60));
     });
+
 });
 require.main === module && test.run(console.DEBUG);
