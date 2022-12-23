@@ -75,6 +75,17 @@ describe("base", function(){
         };
         t_fn(new Set([2,3,5]), [2,3,5]);
     });
+    it("vBuffer", function(){
+        let t_fn = (n)=>{
+            let v = Index.unpack(Index.pack(n));
+            assert.strictEqual(v.constructor, Uint8Array);
+            assert.deepEqual(v, new Uint8Array(n));
+        };
+        t_fn(Buffer.from([]));
+        let arr=[];for(let i=0;i<256;i++) arr.push(i);
+        t_fn(Buffer.from(arr));
+        t_fn(Buffer.from([...arr,...arr,...arr,...arr]));
+    });
     it("Uint8Array", function(){
         let t_fn = (n)=>{
             let v = Index.unpack(Index.pack(n));
@@ -129,6 +140,10 @@ describe('jsNative', () => {
         assert.strictEqual(v.constructor, n.constructor);
         assert.deepEqual(v,n);
     };
+    it('Buffer', () => {
+        tt_fn(Buffer.from([2,3,5,123,0,255]));
+        tt_fn(Buffer.from("天气真好！..."));
+    });
     it('Map', () => {
         tt_fn(new Map([[23,"233"],["abc",456],[-213,true]]));
     });

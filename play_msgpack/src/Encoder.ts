@@ -23,48 +23,37 @@ export class Encoder {
                 this.extends.set(e.CLASS, e);
             });
         }
-        if (!this.extends.has(Map)) {
-            this.extends.set(Map, {
+        let vFactory = (t: NewableType, encode: (v: any, out: OutStream, encoder: Encoder) => void) => {
+            return {
                 get CLASS(): NewableType {
-                    return Map;
+                    return t;
                 },
                 get TYPE(): number { return 0; },
                 decode: (ins: any, decoder: any): any => null,
-                encode: (v: Map<any, any>, out: OutStream, encoder: Encoder) => {
-                    encoder.encodeMapSize(v.size, out);
-                    v.forEach((iv, ik) => {
-                        encoder.encode(ik, out);
-                        encoder.encode(iv, out);
-                    });
-                }
-            });
+                encode: encode
+            }
+        }
+        if (!this.extends.has(Map)) {
+            this.extends.set(Map, vFactory(Map, (v: Map<any, any>, out: OutStream, encoder: Encoder) => {
+                encoder.encodeMapSize(v.size, out);
+                v.forEach((iv, ik) => {
+                    encoder.encode(ik, out);
+                    encoder.encode(iv, out);
+                });
+            }));
         }
         if (!this.extends.has(Set)) {
-            this.extends.set(Set, {
-                get CLASS(): NewableType {
-                    return Set;
-                },
-                get TYPE(): number { return 0; },
-                decode: (ins: any, decoder: any): any => null,
-                encode: (v: Set<any>, out: OutStream, encoder: Encoder) => {
-                    encoder.encodeArraySize(v.size, out);
-                    v.forEach(iv => {
-                        encoder.encode(iv, out);
-                    });
-                }
-            });
+            this.extends.set(Set, vFactory(Set, (v: Set<any>, out: OutStream, encoder: Encoder) => {
+                encoder.encodeArraySize(v.size, out);
+                v.forEach(iv => {
+                    encoder.encode(iv, out);
+                });
+            }));
         }
         if (typeof (Buffer) != "undefined" && !this.extends.has(<any>Buffer)) {
-            this.extends.set(<any>Buffer, {
-                get CLASS(): NewableType {
-                    return <any>Buffer;
-                },
-                get TYPE(): number { return 0; },
-                decode: (ins: any, decoder: any): any => null,
-                encode: (v: Buffer, out: OutStream, encoder: Encoder) => {
-                    encoder.encodeBin(new Uint8Array(v), out);
-                }
-            });
+            this.extends.set(<any>Buffer, vFactory(<any>Buffer, (v: Buffer, out: OutStream, encoder: Encoder) => {
+                encoder.encodeBin(new Uint8Array(v), out);
+            }));
         }
     }
 

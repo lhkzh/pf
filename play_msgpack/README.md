@@ -6,25 +6,26 @@ npm install play_msgpack
 import {pack,unpack} from "play_msgpack";
 console.log(unpack(pack({uid:321,score:88.5,name:"Tom",tags:[22,33,55]})));
 </pre>
-** packJs/unpackJs : js_native_local_ext **
+
+packJs/unpackJs : js_native_local_ext  
 <pre>
 import {packJs,unpackJs} from "play_msgpack";
 console.log(unpackJs(packJs({uid:321,score:88.5,name:"Tom",tags:[22,33,55],msg:new Set([2,3,5]),lgx:new Int16Array([-2,3,5])})));
 </pre>
 
-** pack/unpack : default **
+pack/unpack : default  
 js:number(float/double) -> msgpack_double  
 js:number(int) -> msgpack_int(auto)  
 js:bigint -> msgpack_int(auto)  
 js:Uint8Array -> msgpack_raw  
 js:TypedArray -> msgpack_array  
-js:Set -> msgpack_array
-js:Map -> msgpack_map
-msgpack_map -> js:Object(kv)
-msgpack_array -> js:array
+js:Set -> msgpack_array  
+js:Map -> msgpack_map  
+msgpack_map -> js:Object(kv)  
+msgpack_array -> js:array  
 
 
-** if you use "jsbi" for bigint **
+if you use "jsbi" for bigint  
 <pre>
 import { Encoder, CodecLongApi, OutStream, InStream, MsgArray } from "play_msgpack";
 const JSBI = require("jsbi");
@@ -60,7 +61,7 @@ let jsbi_encoder = new Encoder({ long: jsbi_ext });
 console.log(jsbi_encoder.encode(JSBI.BigInt("2345678979")).bin());
 </pre>
 
-**with play_msg (schema)**
+**with play_msg (schema)**  
 <pre>
 import { pack, unpack } from "play_msgpack";
 import { MsgArray, MType } from "play_msg";
@@ -93,5 +94,5 @@ u.tags = new Set([1, 9, 173]);
 var arr = u.toArray();
 console.log(JSON.stringify(arr, null, 2));
 console.log(MsgArray.CastByArray.FromArray(User,arr));
-console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))))
+console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))));
 </pre>

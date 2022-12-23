@@ -138,16 +138,33 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
                     udv.setUint8(0, 1);
                     udv.setBigUint64(1, v);
                 }
-                encoder.encodeExt(254, uarr, out);
+                encoder.encodeExt(this.TYPE, uarr, out);
             },
             decode(ins: InStream, decoder) {
                 return ins.u8() == 1 ? ins.i64() : ins.u64();
             }
         });
     }
+    if (typeof (Buffer) != "undefined") {
+        arr.push({
+            get TYPE(): number {
+                return 253;
+            },
+            get CLASS(): NewableType {
+                return <any>Buffer;
+            },
+            encode(v: Buffer, out: OutStream, encoder: Encoder) {
+                encoder.encodeExt(this.TYPE, new Uint8Array(v), out);
+            },
+            decode(ins: InStream, decoder) {
+                return Buffer.from(ins.bin(ins.less));
+            }
+        });
+
+    }
     const JsCodecExtSet: CodecExtApi = {
         get TYPE(): number {
-            return 253;
+            return 252;
         },
         get CLASS(): NewableType {
             return Set;
@@ -170,7 +187,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
     }
     const JsCodecExtMap: CodecExtApi = {
         get TYPE(): number {
-            return 252;
+            return 251;
         },
         get CLASS(): NewableType {
             return Map;
@@ -215,7 +232,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
         TypeS.push(BigInt64Array, BigUint64Array);
     }
     TypeS.forEach((t, i) => {
-        arr.push(newJsTypeArrayCodecExt(t, 251 - i));
+        arr.push(newJsTypeArrayCodecExt(t, 250 - i));
     });
     return Object.freeze(arr);
 })();
