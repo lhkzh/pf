@@ -1,6 +1,6 @@
 const assert=require("assert");
-const test = require("test");
-test.setup();
+const test = require(process.versions.fibjs?"test":"node:test");
+const {describe,it} = test;
 
 describe("base", function(){
     const Index=require("../dist/index");
@@ -40,7 +40,7 @@ describe("base", function(){
     });
     it("date", function(){
         var n=new Date();
-        assert.deepEqual(Index.unpack(Index.pack(n)).getTime(), n.getTime());
+        assert.strictEqual(Index.unpack(Index.pack(n)).getTime(), n.getTime());
         n=new Date(2022,01,01);
         assert.strictEqual(Index.unpack(Index.pack(n)).getTime(), n.getTime());
     });
@@ -79,7 +79,7 @@ describe("base", function(){
         let t_fn = (n)=>{
             let v = Index.unpack(Index.pack(n));
             assert.strictEqual(v.constructor, Uint8Array);
-            assert.deepEqual(v, new Uint8Array(n));
+            for(let i=0;i<n.length;i++) assert.strictEqual(v[i], n[i]);
         };
         t_fn(Buffer.from([]));
         let arr=[];for(let i=0;i<256;i++) arr.push(i);
@@ -90,7 +90,7 @@ describe("base", function(){
         let t_fn = (n)=>{
             let v = Index.unpack(Index.pack(n));
             assert.strictEqual(v.constructor, n.constructor);
-            assert.deepEqual(v, n);
+            for(let i=0;i<n.length;i++) assert.strictEqual(v[i], n[i]);
         };
         t_fn(new Uint8Array([]));
         let arr=[];for(let i=0;i<256;i++) arr.push(i);
@@ -101,7 +101,7 @@ describe("base", function(){
         let t_fn = (n)=>{
             let v = Index.unpack(Index.pack(n));
             assert.strictEqual(v.constructor, Array);
-            assert.deepEqual(v, n);
+            for(let i=0;i<n.length;i++) assert.strictEqual(v[i], n[i]);
         };
         t_fn(new Int8Array([]));
         let arr=[];for(let i=0;i<256;i++) arr.push(i);
@@ -112,7 +112,7 @@ describe("base", function(){
         let t_fn = (n)=>{
             let v = Index.unpack(Index.pack(n));
             assert.strictEqual(v.constructor, Array);
-            assert.deepEqual(v, n);
+            for(let i=0;i<n.length;i++) assert.strictEqual(v[i], n[i]);
         };
         t_fn(new Float32Array([]));
         let arr=[];for(let i=0;i<128;i++) arr.push(i+0.5,0.5-i);
@@ -192,6 +192,9 @@ describe('jsNative', () => {
         t_fn(BigInt(1));
         t_fn(BigInt(2**60));
     });
-
 });
-require.main === module && test.run(console.DEBUG);
+if(process.versions.fibjs){//fibjs
+    test.run(console.DEBUG);
+}else{//nodejs
+    test();
+}
