@@ -124,7 +124,7 @@
                 return "[Class:".concat(name, "]=>").concat(JsonX.Stringify(this));
             };
             T["ToArray"] = function (a, $deep) {
-                if ($deep === void 0) { $deep = 16; }
+                if ($deep === void 0) { $deep = 8; }
                 if (a == null)
                     return null;
                 if ($deep < 0) {

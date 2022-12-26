@@ -130,7 +130,7 @@ export abstract class MsgArray {
         T.prototype.toString = function () {
             return `[Class:${name}]=>${JsonX.Stringify(this)}`;
         };
-        (<any>T)["ToArray"] = function (a: any, $deep: number = 16): any[] {
+        (<any>T)["ToArray"] = function (a: any, $deep: number = 8): any[] {
             if (a == null) return <any[]><unknown>null;
             if ($deep < 0) {
                 throw new Error("max stack limit: check circle reference");
