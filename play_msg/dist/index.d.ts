@@ -31,6 +31,7 @@ MType | NewableAny
 ] | ArrayBufferView | NewableAny;
 
 export declare abstract class MsgArray {
+    static MAX_DEEP: number;
     toArray(): any[];
     static ToArray<T extends MsgArray>(v: T): any[] | null;
     static FromArray<T extends MsgArray>(a: any[]): T;

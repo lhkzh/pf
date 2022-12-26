@@ -109,27 +109,31 @@ var MsgArray = /** @class */ (function () {
         T.prototype.toString = function () {
             return "[Class:".concat(name, "]=>").concat(JsonX.Stringify(this));
         };
-        T["ToArray"] = function (a) {
+        T["ToArray"] = function (a, $deep) {
+            if ($deep === void 0) { $deep = -1; }
             if (a == null)
                 return null;
+            if ($deep > MsgArray.MAX_DEEP) {
+                throw new Error("max stack limit: check circle reference");
+            }
             var r = new Array(fields.length);
             var _loop_1 = function () {
                 var v = a[fields[i][0]], t = fields[i][1];
                 if (v) {
-                    if (t["ToArray"]) {
-                        v = t["ToArray"](v);
+                    if (t.ToArray) {
+                        v = t.ToArray(v, $deep + 1);
                     }
                     else if (Array.isArray(t)) {
                         if (t[0] == "Arr") {
-                            if (t[1]["ToArray"]) {
-                                v = v.map(function (e) { return t[1]["ToArray"](e); });
+                            if (t[1].ToArray) {
+                                v = v.map(function (e) { return t[1].ToArray(e, $deep + 1); });
                             }
                         }
                         else if (t[0] == "Set") {
                             var rarr_1 = [];
-                            if (t[1]["ToArray"]) {
+                            if (t[1].ToArray) {
                                 v.forEach(function (e) {
-                                    rarr_1.push(t[1]["ToArray"](e));
+                                    rarr_1.push(t[1].ToArray(e, $deep + 1));
                                 });
                             }
                             else {
@@ -141,9 +145,9 @@ var MsgArray = /** @class */ (function () {
                         }
                         else if (t[0] == "Obj") {
                             var rarr_2 = [], keys = Object.keys(v);
-                            if (t[2]["ToArray"]) {
+                            if (t[2].ToArray) {
                                 keys.forEach(function (k) {
-                                    rarr_2.push(t[1] != MType.STR ? Number(k) : k, t[2]["ToArray"](v[k]));
+                                    rarr_2.push(t[1] != MType.STR ? Number(k) : k, t[2].ToArray(v[k], $deep + 1));
                                 });
                             }
                             else {
@@ -155,9 +159,9 @@ var MsgArray = /** @class */ (function () {
                         }
                         else if (t[0] == "Map") {
                             var rarr_3 = [];
-                            if (t[2]["ToArray"]) {
+                            if (t[2].ToArray) {
                                 v.forEach(function (iv, ik) {
-                                    rarr_3.push(ik, t[2]["ToArray"](iv));
+                                    rarr_3.push(ik, t[2].ToArray(iv, $deep + 1));
                                 });
                             }
                             else {
@@ -218,6 +222,7 @@ var MsgArray = /** @class */ (function () {
             });
         }
     };
+    MsgArray.MAX_DEEP = 32;
     return MsgArray;
 }());
 function cast_val_field(v, typeName, fieldInfo) {
@@ -388,7 +393,7 @@ function JsonReviverEncode(key, value) {
     else if (value instanceof Set) {
         return {
             type: "Set",
-            data: Array.from(value.entries()),
+            data: Array.from(value),
         };
     }
     else if (value && value.buffer instanceof ArrayBuffer) {
@@ -417,11 +422,11 @@ function JsonReviverDecode(key, value) {
             return new Set(value.data);
         }
         if (value.type.lastIndexOf("Array") > 0) {
-            var G = typeof (window) == "object" ? window : global;
-            return new G[value.type](value.data);
+            return new __GLOBAL[value.type](value.data);
         }
     }
     return value;
 }
+var __GLOBAL = typeof (window) == "object" ? window : global;
 
 export { JsonX, MType, MsgArray, MsgClass, MsgField };

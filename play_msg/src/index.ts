@@ -40,7 +40,7 @@ let Cast_Int64: (v: any) => any = (v: any) => {
 };
 
 export abstract class MsgArray {
-
+    public static MAX_DEEP = 32;
     public toArray(): any[] {
         return (<any>this.constructor)["ToArray"](this);
     }
@@ -124,24 +124,27 @@ export abstract class MsgArray {
         T.prototype.toString = function () {
             return `[Class:${name}]=>${JsonX.Stringify(this)}`;
         };
-        (<any>T)["ToArray"] = function (a: any): any[] {
+        (<any>T)["ToArray"] = function (a: any, $deep: number = -1): any[] {
             if (a == null) return <any[]><unknown>null;
+            if ($deep > MsgArray.MAX_DEEP) {
+                throw new Error("max stack limit: check circle reference");
+            }
             let r = new Array(fields.length);
             for (var i = 0; i < r.length; i++) {
                 let v = a[fields[i][0]], t: any = fields[i][1];
                 if (v) {
-                    if (t["ToArray"]) {
-                        v = t["ToArray"](v);
+                    if (t.ToArray) {
+                        v = t.ToArray(v, $deep + 1);
                     } else if (Array.isArray(t)) {
                         if (t[0] == "Arr") {
-                            if (t[1]["ToArray"]) {
-                                v = v.map((e: any) => t[1]["ToArray"](e));
+                            if (t[1].ToArray) {
+                                v = v.map((e: any) => t[1].ToArray(e, $deep + 1));
                             }
                         } else if (t[0] == "Set") {
                             let rarr: any[] = [];
-                            if (t[1]["ToArray"]) {
+                            if (t[1].ToArray) {
                                 v.forEach((e: any) => {
-                                    rarr.push(t[1]["ToArray"](e));
+                                    rarr.push(t[1].ToArray(e, $deep + 1));
                                 });
                             } else {
                                 v.forEach((e: any) => {
@@ -151,9 +154,9 @@ export abstract class MsgArray {
                             v = rarr;
                         } else if (t[0] == "Obj") {
                             let rarr: any[] = [], keys = Object.keys(v);
-                            if (t[2]["ToArray"]) {
+                            if (t[2].ToArray) {
                                 keys.forEach(k => {
-                                    rarr.push(t[1] != MType.STR ? Number(k) : k, t[2]["ToArray"](v[k]));
+                                    rarr.push(t[1] != MType.STR ? Number(k) : k, t[2].ToArray(v[k], $deep + 1));
                                 });
                             } else {
                                 keys.forEach(k => {
@@ -163,9 +166,9 @@ export abstract class MsgArray {
                             v = rarr;
                         } else if (t[0] == "Map") {
                             let rarr: any[] = [];
-                            if (t[2]["ToArray"]) {
+                            if (t[2].ToArray) {
                                 v.forEach((iv: any, ik: any) => {
-                                    rarr.push(ik, t[2]["ToArray"](iv));
+                                    rarr.push(ik, t[2].ToArray(iv, $deep + 1));
                                 });
                             } else {
                                 v.forEach((iv: any, ik: any) => {
@@ -367,7 +370,7 @@ function JsonReviverEncode(key: string, value: any): any {
     } else if (value instanceof Set) {
         return {
             type: "Set",
-            data: Array.from(value.entries()),
+            data: Array.from(value),
         };
     } else if (value && value.buffer instanceof ArrayBuffer) {
         return {
@@ -394,9 +397,9 @@ function JsonReviverDecode(key: any, value: any) {
             return new Set(value.data);
         }
         if (value.type.lastIndexOf("Array") > 0) {
-            let G: any = typeof (window) == "object" ? window : global;
-            return new G[value.type](value.data);
+            return new __GLOBAL[value.type](value.data);
         }
     }
     return value;
 }
+const __GLOBAL: any = typeof (window) == "object" ? window : global;

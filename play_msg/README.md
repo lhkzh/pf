@@ -36,5 +36,6 @@ u.tags = new Set([1, 9, 173]);
 var arr = u.toArray();
 console.log(JsonX.Stringify(arr));
 console.log(MsgArray.CastByArray(User,arr));
+console.log(MsgArray.CastByArray(User,JsonX.Parse(JsonX.Stringify(arr))));
 console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))));
 </pre>

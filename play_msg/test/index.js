@@ -1,6 +1,6 @@
 const assert=require("assert");
-const test = require("test");
-test.setup();
+const test = require(process.versions.fibjs?"test":"node:test");
+const {describe,it} = test;
 
 const Index=require("../dist/index");
 const MsgArray=Index.MsgArray;
@@ -44,6 +44,27 @@ describe("base", function(){
             MsgArray.CastByArray(Type, [null, "abc"]);
         });
     });
+    it("circle_reference", function(){
+        let TypeA=function(){};
+        let TypeB=function(){};
+        MsgArray.MetaBind(TypeA,TypeId++,TypeId.toString(), [
+            ["key", MType.STR, 1],
+            ["r", TypeB, 1],
+        ]);
+        MsgArray.MetaBind(TypeB,TypeId++,TypeId.toString(), [
+            ["key", MType.STR, 1],
+            ["r", TypeA, 1],
+        ]);
+        var a = new TypeA();
+        a.key = "aa";
+        var b = new TypeB();
+        b.key = "bb";
+        a.r = b;
+        b.r = a;
+        assert.throws(function(){
+            a.toArray();
+        });
+    });
     it("Int16Array", function(){
         let Type=function(){};
         MsgArray.MetaBind(Type,TypeId++,TypeId.toString(), [
@@ -51,7 +72,7 @@ describe("base", function(){
         ]);
         let tmp = MsgArray.CastByArray(Type, [[2,3,-112,123]]);
         assert.deepEqual(tmp.tags, new Int16Array([2,3,-112,123]));
-        assert.deepEqual(tmp.toArray(), [[2,3,-112,123]]);
+        assert.deepEqual(tmp.toArray(), [new Int16Array([2,3,-112,123])]);
         assert.strictEqual(tmp.toArray()[0].constructor, Int16Array);
         MsgArray.ConfigTypedArray(true);
         assert.strictEqual(tmp.toArray()[0].constructor, Array);
@@ -74,11 +95,17 @@ describe("base", function(){
         }
     };
     it("JsonX.Date", function(){
-        t_jsonx_fn(new Date());
+        let d = new Date();
+        let v = JsonX.Parse(JsonX.Stringify(d));
+        assert.deepEqual(v,d);
     });
     it("JsonX.Set", function(){
-        let m = new Set([2,-1,3,"22","3",true,false,[5]])
-        t_jsonx_fn(m);
+        let d = new Set([2,-1,3,"22","3",true,false,[5]]);
+        let v = JsonX.Parse(JsonX.Stringify(d));
+        assert.strictEqual(v.constructor,d.constructor);
+        assert.strictEqual(v.size,d.size);
+        assert.strictEqual(JsonX.Stringify(d),JsonX.Stringify(v));
+        t_jsonx_fn(d);
     });
     it("JsonX.Map", function(){
         let m = new Map();
@@ -95,4 +122,8 @@ describe("base", function(){
     });
 });
 
-require.main === module && test.run(console.DEBUG);
+if(process.versions.fibjs){//fibjs
+    test.run(console.DEBUG);
+}else{//nodejs
+    test();
+}

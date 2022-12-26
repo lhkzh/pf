@@ -1,6 +1,6 @@
 {
     "name": "play_msg",
-    "version": "0.0.6",
+    "version": "0.0.7",
     "description": "class schema to Array, use for msgpack",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
@@ -27,7 +27,8 @@
         "build:js": "npx rollup -c",
         "build:dts": "npx tsc && npx api-extractor run --local --verbose && node removePrivate.js",
         "build:clear": "node removeOut.js",
-        "test":"fibjs test/index.js"
+        "test":"node test/index.js",
+        "test_fibjs":"fibjs test/index.js"
     },
     "files": [
         "package.json",
