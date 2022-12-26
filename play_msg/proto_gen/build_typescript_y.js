@@ -99,7 +99,15 @@ function build_ts_class(info, longTo="bigint"){
         return str;
     });
     let str = header+
-`export class ${info.name} extends MsgArray {
+`export class ${info.name} {
+    static ToArray: (val: ${info.name}) => any[];
+    static FromArray: (arr: any[]) => Room;
+    static ToRefArray: (val: ${info.name}) => any[];
+    static FromRefArray: (arr: any[]) => Room;
+    toArray: () => any[];
+    toRefArray: () => any[];
+    toString: ()=> string;
+    
 ${fields.join("\n")}
 }\n`;
     if(info.note&&info.note.length){

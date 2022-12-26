@@ -33,7 +33,7 @@ u.head = "http://xxx.com/xxx.jpg";
 u.age = 18;
 u.tags = new Set([1, 9, 173]);
 
-var arr = u.toArray();
+var arr = MsgArray.ToArray(u);
 console.log(JsonX.Stringify(arr));
 console.log(MsgArray.CastByArray(User,arr));
 console.log(MsgArray.CastByArray(User,JsonX.Parse(JsonX.Stringify(arr))));

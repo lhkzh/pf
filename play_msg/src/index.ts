@@ -127,12 +127,17 @@ export abstract class MsgArray {
         _idS.set(id, obj);
         _nameS.set(name, obj);
         _typeS.set(T, obj);
-        T.prototype.toArray = function () {
-            return (<any>T)["ToArray"](this);
-        };
+
         T.prototype.toString = function () {
             return `[Class:${name}]=>${JsonX.Stringify(this)}`;
         };
+        T.prototype.toArray = function () {
+            return (<any>T).ToArray(this);
+        };
+        T.prototype.toRefArray = function () {
+            return (<any>T).ToRefArray(this);
+        };
+
         (<any>T)["ToArray"] = function (a: any, $deep: number = 8): any[] {
             if (a == null) return <any[]><unknown>null;
             if ($deep < 0) {
