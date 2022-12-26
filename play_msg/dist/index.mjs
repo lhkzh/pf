@@ -33,15 +33,15 @@ var MsgArray = /** @class */ (function () {
         return null;
     };
     MsgArray.CastByArray = function (type, arr) {
-        return type["FromArray"](arr);
+        return type.FromArray(arr);
     };
     MsgArray.CastByRefArray = function (type, arr) {
-        return type["FromRefArray"](arr);
+        return type.FromRefArray(arr);
     };
     MsgArray.ToRefArray = function (v) {
         if (v == null)
             return null;
-        return v.constructor["ToRefArray"](v);
+        return v.constructor.ToRefArray(v);
     };
     MsgArray.FromRefArray = function (a) {
         return null;

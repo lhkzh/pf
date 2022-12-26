@@ -51,14 +51,14 @@ export abstract class MsgArray {
         return <T><unknown>null;
     }
     public static CastByArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T {
-        return (<any>type)["FromArray"](arr);
+        return (<any>type).FromArray(arr);
     }
     public static CastByRefArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T {
-        return (<any>type)["FromRefArray"](arr);
+        return (<any>type).FromRefArray(arr);
     }
     public static ToRefArray<T extends MsgArray>(v: T): any[] | null {
         if (v == null) return null;
-        return (<any>v.constructor)["ToRefArray"](v);
+        return (<any>v.constructor).ToRefArray(v);
     }
     public static FromRefArray<T extends MsgArray>(a: any[]): T {
         return <T><unknown>null;

@@ -66,8 +66,9 @@ describe("base", function(){
         p1.next = p2;
         let p3 = new Player();
         p3.name = "Sanndy";
+        p3.next = null;
         assert.throws(function(){
-            p2.toArray();
+            MsgArray.ToArray(p2);
         });
 
         let room = new Room();
@@ -77,13 +78,14 @@ describe("base", function(){
         room.master = p1;
         room.map = {"p1":p1,"p2":p2};
         assert.throws(function(){
-            room.toArray();
+            MsgArray.ToArray(room);
         });
         let roomArr = Room.ToRefArray(room);
         let roomDecode = Room.FromRefArray(JsonX.Parse(JsonX.Stringify(roomArr)));
         assert.equal(roomDecode.map.p2.next.name, p1.name);
         assert.deepEqual(roomDecode.map.p2.next, p1);
-        assert.deepEqual(Room.ToRefArray(roomDecode), roomArr);
+        assert.deepEqual(roomDecode.players[2], p3);
+        assert.deepEqual(JSON.stringify(Room.ToRefArray(roomDecode)), JSON.stringify(roomArr));
 
         let roomD2 = MsgArray.CastByRefArray(Room, JsonX.Parse(JsonX.Stringify( MsgArray.ToRefArray(room) )));
         assert.deepEqual(Room.ToRefArray(roomD2), roomArr);
@@ -95,10 +97,10 @@ describe("base", function(){
         ]);
         let tmp = MsgArray.CastByArray(Type, [[2,3,-112,123]]);
         assert.deepEqual(tmp.tags, new Int16Array([2,3,-112,123]));
-        assert.deepEqual(tmp.toArray(), [new Int16Array([2,3,-112,123])]);
-        assert.strictEqual(tmp.toArray()[0].constructor, Int16Array);
+        assert.deepEqual(MsgArray.ToArray(tmp), [new Int16Array([2,3,-112,123])]);
+        assert.strictEqual(MsgArray.ToArray(tmp)[0].constructor, Int16Array);
         MsgArray.ConfigTypedArray(true);
-        assert.strictEqual(tmp.toArray()[0].constructor, Array);
+        assert.strictEqual(MsgArray.ToArray(tmp)[0].constructor, Array);
     });
     let t_jsonx_fn = function(d){
         let v = JsonX.Parse(JsonX.Stringify(d));
