@@ -25,19 +25,27 @@ var Cast_Int64 = function (v) {
 var MsgArray = /** @class */ (function () {
     function MsgArray() {
     }
-    MsgArray.prototype.toArray = function () {
-        return this.constructor["ToArray"](this);
+    MsgArray.prototype.toArray = function ($deep) {
+        return this.constructor["ToArray"](this, $deep);
     };
-    MsgArray.ToArray = function (v) {
+    MsgArray.ToArray = function (v, $deep) {
         if (v == null)
             return null;
-        return v.constructor["ToArray"](v);
+        return v.constructor["ToArray"](v, $deep);
     };
     MsgArray.FromArray = function (a) {
         return null;
     };
     MsgArray.CastByArray = function (type, arr) {
         return type["FromArray"](arr);
+    };
+    MsgArray.ToRefArray = function (v) {
+        if (v == null)
+            return null;
+        return v.constructor["ToRefArray"](v);
+    };
+    MsgArray.FromRefArray = function (a) {
+        return null;
     };
     MsgArray.ClassByName = function (name) {
         var _a;
@@ -114,10 +122,10 @@ var MsgArray = /** @class */ (function () {
             return "[Class:".concat(name, "]=>").concat(JsonX.Stringify(this));
         };
         T["ToArray"] = function (a, $deep) {
-            if ($deep === void 0) { $deep = -1; }
+            if ($deep === void 0) { $deep = 16; }
             if (a == null)
                 return null;
-            if ($deep > MsgArray.MAX_DEEP) {
+            if ($deep < 0) {
                 throw new Error("max stack limit: check circle reference");
             }
             var r = new Array(fields.length);
@@ -125,19 +133,19 @@ var MsgArray = /** @class */ (function () {
                 var v = a[fields[i][0]], t = fields[i][1];
                 if (v) {
                     if (t.ToArray) {
-                        v = t.ToArray(v, $deep + 1);
+                        v = t.ToArray(v, $deep - 1);
                     }
                     else if (Array.isArray(t)) {
                         if (t[0] == "Arr") {
                             if (t[1].ToArray) {
-                                v = v.map(function (e) { return t[1].ToArray(e, $deep + 1); });
+                                v = v.map(function (e) { return t[1].ToArray(e, $deep - 1); });
                             }
                         }
                         else if (t[0] == "Set") {
                             var rarr_1 = [];
                             if (t[1].ToArray) {
                                 v.forEach(function (e) {
-                                    rarr_1.push(t[1].ToArray(e, $deep + 1));
+                                    rarr_1.push(t[1].ToArray(e, $deep - 1));
                                 });
                             }
                             else {
@@ -151,7 +159,7 @@ var MsgArray = /** @class */ (function () {
                             var rarr_2 = [], keys = Object.keys(v);
                             if (t[2].ToArray) {
                                 keys.forEach(function (k) {
-                                    rarr_2.push(t[1] != exports.MType.STR ? Number(k) : k, t[2].ToArray(v[k], $deep + 1));
+                                    rarr_2.push(t[1] != exports.MType.STR ? Number(k) : k, t[2].ToArray(v[k], $deep - 1));
                                 });
                             }
                             else {
@@ -165,7 +173,7 @@ var MsgArray = /** @class */ (function () {
                             var rarr_3 = [];
                             if (t[2].ToArray) {
                                 v.forEach(function (iv, ik) {
-                                    rarr_3.push(ik, t[2].ToArray(iv, $deep + 1));
+                                    rarr_3.push(ik, t[2].ToArray(iv, $deep - 1));
                                 });
                             }
                             else {
@@ -198,6 +206,100 @@ var MsgArray = /** @class */ (function () {
             }
             return r;
         };
+        T["ToRefArray"] = function (a, $dict, $path) {
+            if ($dict === void 0) { $dict = new Map(); }
+            if ($path === void 0) { $path = ""; }
+            if (a == null)
+                return null;
+            if ($dict.has(a)) {
+                return $dict.get(a);
+            }
+            $dict.set(a, $path);
+            var r = new Array(fields.length);
+            var _loop_2 = function () {
+                var v = a[fields[i][0]], t = fields[i][1];
+                if (v) {
+                    if (t.ToArray) {
+                        v = t.ToRefArray(v, $dict, $path + "." + i);
+                    }
+                    else if (Array.isArray(t)) {
+                        if (t[0] == "Arr") {
+                            if (t[1].ToArray) {
+                                v = v.map(function (e, ii) { return t[1].ToRefArray(e, $dict, $path + "." + i + "." + ii); });
+                            }
+                        }
+                        else if (t[0] == "Set") {
+                            var rarr_4 = [];
+                            if (t[1].ToArray) {
+                                v.forEach(function (e, ii) {
+                                    rarr_4.push(t[1].ToRefArray(e, $dict, $path + "." + i + "." + ii));
+                                });
+                            }
+                            else {
+                                v.forEach(function (e) {
+                                    rarr_4.push(e);
+                                });
+                            }
+                            v = rarr_4;
+                        }
+                        else if (t[0] == "Obj") {
+                            var rarr_5 = [], keys = Object.keys(v);
+                            if (t[2].ToArray) {
+                                keys.forEach(function (k, ii) {
+                                    rarr_5.push(t[1] != exports.MType.STR ? Number(k) : k, t[2].ToRefArray(v[k], $dict, $path + "." + i + "." + ii));
+                                });
+                            }
+                            else {
+                                keys.forEach(function (k) {
+                                    rarr_5.push(t[1] != exports.MType.STR ? Number(k) : k, v[k]);
+                                });
+                            }
+                            v = rarr_5;
+                        }
+                        else if (t[0] == "Map") {
+                            var rarr_6 = [];
+                            if (t[2].ToArray) {
+                                v.forEach(function (iv, ik) {
+                                    rarr_6.push(ik, t[2].ToRefArray(iv, $dict, $path + "." + i + "." + rarr_6.length));
+                                });
+                            }
+                            else {
+                                v.forEach(function (iv, ik) {
+                                    rarr_6.push(ik, iv);
+                                });
+                            }
+                            v = rarr_6;
+                        }
+                        else {
+                            throw new TypeError("NOT implemented:" + t[0]);
+                        }
+                    }
+                }
+                r[i] = v;
+            };
+            for (var i = 0; i < r.length; i++) {
+                _loop_2();
+            }
+            return r;
+        };
+        T["FromRefArray"] = function (a, $dict, $path) {
+            if ($dict === void 0) { $dict = new Map(); }
+            if ($path === void 0) { $path = ""; }
+            if (a == null)
+                return null;
+            if (!Array.isArray(a)) {
+                if (typeof (a) == "string" && $dict.has(a)) {
+                    return $dict.get(a);
+                }
+                throw new TypeError("Decode Fail-0:".concat(name));
+            }
+            var r = new T();
+            $dict.set($path, r);
+            for (var i = 0; i < fields.length; i++) {
+                r[fields[i][0]] = cast_val_2(a[i], name, fields[i], $dict, $path + "." + i);
+            }
+            return r;
+        };
     };
     /**
      * 设置是否开启-TypedArray转array
@@ -226,7 +328,6 @@ var MsgArray = /** @class */ (function () {
             });
         }
     };
-    MsgArray.MAX_DEEP = 32;
     return MsgArray;
 }());
 function cast_val_field(v, typeName, fieldInfo) {
@@ -314,6 +415,93 @@ function cast_or_msg(v, type, typeName, typeField) {
         return cast_primitive(v, type, typeName, typeField);
     }
     return type.FromArray(v);
+}
+function cast_val_2(v, typeName, fieldInfo, $dict, $path) {
+    if ($path === void 0) { $path = ""; }
+    var typeField = fieldInfo[0], type = fieldInfo[1];
+    if (v === undefined || v === null) {
+        if (fieldInfo[2] == 1)
+            throw new TypeError("Decode Fail-(need require):".concat(typeName, ".").concat(typeField));
+        if (Number.isInteger(type)) {
+            if (type >= exports.MType.I8 && type <= exports.MType.F64) {
+                if (type == exports.MType.I64) {
+                    return Cast_Int64(0);
+                }
+                return 0;
+            }
+            else if (type == exports.MType.STR) {
+                return "";
+            }
+        }
+        else if (Array.isArray(type)) {
+            var a = type;
+            if (a[0] == "Arr") {
+                return [];
+            }
+            else if (a[0] == "Obj") {
+                return {};
+            }
+            else if (a[0] == "Set") {
+                return new Set();
+            }
+            else if (a[0] == "Map") {
+                return new Map();
+            }
+        }
+        else if (type["BYTES_PER_ELEMENT"] > 0) { //TypeArray
+            return new type();
+        }
+        return v;
+    }
+    else if (Number.isInteger(type)) {
+        return cast_primitive(v, type, typeName, typeField);
+    }
+    else if (Array.isArray(type)) {
+        if (!Array.isArray(v)) {
+            cast_fail_type(typeName, typeField);
+        }
+        var a_2 = type;
+        if (a_2[0] == "Arr") {
+            return v.map(function (e, i) { return cast_or_msg2(e, a_2[1], typeName, typeField, $dict, $path + "." + i); });
+        }
+        else if (a_2[0] == "Obj") {
+            var rObj = {};
+            for (var i = 0; i < v.length; i += 2) {
+                rObj[cast_primitive(v[i], a_2[1], typeName, typeField)] = cast_or_msg2(v[i + 1], a_2[2], typeName, typeField, $dict, $path + "." + i);
+            }
+            return rObj;
+        }
+        else if (a_2[0] == "Set") {
+            return new Set(v.map(function (e, i) { return cast_or_msg2(e, a_2[1], typeName, typeField, $dict, $path + "." + i); }));
+        }
+        else if (a_2[0] == "Map") {
+            var rMap = new Map();
+            for (var i = 0; i < v.length; i += 2) {
+                rMap.set(cast_primitive(v[i], a_2[1], typeName, typeField), cast_or_msg2(v[i + 1], a_2[2], typeName, typeField, $dict, $path + "." + i));
+            }
+            return rMap;
+        }
+    }
+    else if (type["BYTES_PER_ELEMENT"] > 0) { //TypeArray
+        if (Array.isArray(v) || ArrayBuffer.isView(v) || v instanceof ArrayBuffer) { // normal_array, TypeArray or ArrayBuffer
+            return new type(v);
+        }
+        else if (typeof (Buffer) != "undefined" && Buffer.isBuffer(v)) { //nodejs or fibjs
+            return new type(v);
+        }
+        else {
+            cast_fail_type(typeName, typeField);
+        }
+    }
+    else {
+        return type.FromRefArray(v, $dict, $path);
+    }
+}
+function cast_or_msg2(v, type, typeName, typeField, $dict, $path) {
+    if (exports.MType[type]) {
+        return cast_primitive(v, type, typeName, typeField);
+    }
+    return type.FromRefArray(v, $dict, $path);
 }
 function cast_primitive(v, type, typeName, typeField) {
     if (type == exports.MType.I64) {
@@ -415,7 +603,7 @@ function JsonReviverDecode(key, value) {
             return new Date(Date.parse(value));
         }
     }
-    else if (typeof (value) == "object" && typeof (value.type) == "string" && value.data) {
+    else if (value != null && typeof (value) == "object" && typeof (value.type) == "string" && value.data) {
         if (value.type == "bigint") {
             return MsgArray.CastInt64(value.data);
         }

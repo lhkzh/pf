@@ -31,11 +31,12 @@ MType | NewableAny
 ] | ArrayBufferView | NewableAny;
 
 export declare abstract class MsgArray {
-    static MAX_DEEP: number;
-    toArray(): any[];
-    static ToArray<T extends MsgArray>(v: T): any[] | null;
+    toArray($deep?: number): any[];
+    static ToArray<T extends MsgArray>(v: T, $deep?: number): any[] | null;
     static FromArray<T extends MsgArray>(a: any[]): T;
     static CastByArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T;
+    static ToRefArray<T extends MsgArray>(v: T): any[] | null;
+    static FromRefArray<T extends MsgArray>(a: any[]): T;
     static ClassByName(name: string): NewableAny | undefined;
     static ClassById(id: number): NewableAny | undefined;
     static MetaByName(name: string): MetaInfoObj | undefined;

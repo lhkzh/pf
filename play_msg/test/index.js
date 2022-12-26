@@ -45,25 +45,45 @@ describe("base", function(){
         });
     });
     it("circle_reference", function(){
-        let TypeA=function(){};
-        let TypeB=function(){};
-        MsgArray.MetaBind(TypeA,TypeId++,TypeId.toString(), [
-            ["key", MType.STR, 1],
-            ["r", TypeB, 1],
+        let Player=function(){};
+        let Room=function(){};
+        MsgArray.MetaBind(Room,TypeId++,"Room"+TypeId.toString(), [
+            ["rid", MType.I32, 1],
+            ["desc", MType.STR, 1],
+            ["players", ["Arr", Player], 1],
+            ["master", Player, 0],
+            ["map", ["Obj", MType.STR, Player], 0],
         ]);
-        MsgArray.MetaBind(TypeB,TypeId++,TypeId.toString(), [
-            ["key", MType.STR, 1],
-            ["r", TypeA, 1],
+        MsgArray.MetaBind(Player,TypeId++,"Player"+TypeId.toString(), [
+            ["name", MType.STR, 1],
+            ["next", Player, 0],
         ]);
-        var a = new TypeA();
-        a.key = "aa";
-        var b = new TypeB();
-        b.key = "bb";
-        a.r = b;
-        b.r = a;
+        let p1 = new Player();
+        p1.name = "Tom";
+        let p2 = new Player();
+        p2.name = "Jerry";
+        p2.next = p1;
+        p1.next = p2;
+        let p3 = new Player();
+        p3.name = "Sanndy";
         assert.throws(function(){
-            a.toArray();
+            p2.toArray();
         });
+
+        let room = new Room();
+        room.rid = 100;
+        room.desc = "test";
+        room.players = [p1,p2,p3];
+        room.master = p1;
+        room.map = {"p1":p1,"p2":p2};
+        assert.throws(function(){
+            room.toArray();
+        });
+        let roomArr = Room.ToRefArray(room);
+        let roomDecode = Room.FromRefArray(JsonX.Parse(JsonX.Stringify(roomArr)));
+        assert.equal(roomDecode.map.p2.next.name,p1.name);
+        assert.deepEqual(roomDecode.map.p2.next,p1);
+        assert.deepEqual(Room.ToRefArray(roomDecode), roomArr);
     });
     it("Int16Array", function(){
         let Type=function(){};
@@ -94,6 +114,11 @@ describe("base", function(){
             assert.deepEqual(varr, darr);
         }
     };
+    it("JsonX.Base", function(){
+        let d = {a:"aA.3",b:33.5,c:false,d:{nick:"lala",sex:1,age:18,f:null,tags:[2,3,5,11,null,true]}};
+        let v = JsonX.Parse(JsonX.Stringify(d));
+        assert.deepEqual(v,d);
+    });
     it("JsonX.Date", function(){
         let d = new Date();
         let v = JsonX.Parse(JsonX.Stringify(d));
