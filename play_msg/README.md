@@ -69,6 +69,6 @@ room.userList = [u01, u02];
 room.master = u02;
 room.link = room;
 
-console.log(Room.FromRefArray(JsonX.Parse(JsonX.Stringify( Room.ToRefArray(room) ))));
 console.log(MsgArray.CastByRefArray(Room,<any[]>unpack(pack( MsgArray.ToRefArray(room) ))));
+console.log(Room.FromRefArray(JsonX.Parse(JsonX.Stringify( Room.ToRefArray(room) ))));
 </pre>

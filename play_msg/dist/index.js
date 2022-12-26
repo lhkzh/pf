@@ -118,12 +118,6 @@ var MsgArray = /** @class */ (function () {
         _idS.set(id, obj);
         _nameS.set(name, obj);
         _typeS.set(T, obj);
-        T.prototype.toArray = function () {
-            return T["ToArray"](this);
-        };
-        T.prototype.toString = function () {
-            return "[Class:".concat(name, "]=>").concat(JsonX.Stringify(this));
-        };
         T["ToArray"] = function (a, $deep) {
             if ($deep === void 0) { $deep = 8; }
             if (a == null)
@@ -205,7 +199,7 @@ var MsgArray = /** @class */ (function () {
                 throw new TypeError("Decode Fail-0:".concat(name));
             var r = new T();
             for (var i = 0; i < fields.length; i++) {
-                r[fields[i][0]] = cast_val_field(a[i], name, fields[i]);
+                r[fields[i][0]] = cast_field_normal(a[i], name, fields[i]);
             }
             return r;
         };
@@ -299,7 +293,7 @@ var MsgArray = /** @class */ (function () {
             var r = new T();
             $dict.set($path, r);
             for (var i = 0; i < fields.length; i++) {
-                r[fields[i][0]] = cast_val_2(a[i], name, fields[i], $dict, $path + "." + i);
+                r[fields[i][0]] = cast_field_ref(a[i], name, fields[i], $dict, $path + "." + i);
             }
             return r;
         };
@@ -333,7 +327,7 @@ var MsgArray = /** @class */ (function () {
     };
     return MsgArray;
 }());
-function cast_val_field(v, typeName, fieldInfo) {
+function cast_field_normal(v, typeName, fieldInfo) {
     var typeField = fieldInfo[0], type = fieldInfo[1];
     if (v === undefined || v === null) {
         if (fieldInfo[2] == 1)
@@ -419,7 +413,7 @@ function cast_or_msg(v, type, typeName, typeField) {
     }
     return type.FromArray(v);
 }
-function cast_val_2(v, typeName, fieldInfo, $dict, $path) {
+function cast_field_ref(v, typeName, fieldInfo, $dict, $path) {
     if ($path === void 0) { $path = ""; }
     var typeField = fieldInfo[0], type = fieldInfo[1];
     if (v === undefined || v === null) {
@@ -465,22 +459,22 @@ function cast_val_2(v, typeName, fieldInfo, $dict, $path) {
         }
         var a_2 = type;
         if (a_2[0] == "Arr") {
-            return v.map(function (e, i) { return cast_or_msg2(e, a_2[1], typeName, typeField, $dict, $path + "." + i); });
+            return v.map(function (e, i) { return cast_or_ref(e, a_2[1], typeName, typeField, $dict, $path + "." + i); });
         }
         else if (a_2[0] == "Obj") {
             var rObj = {};
             for (var i = 0; i < v.length; i += 2) {
-                rObj[cast_primitive(v[i], a_2[1], typeName, typeField)] = cast_or_msg2(v[i + 1], a_2[2], typeName, typeField, $dict, $path + "." + i);
+                rObj[cast_primitive(v[i], a_2[1], typeName, typeField)] = cast_or_ref(v[i + 1], a_2[2], typeName, typeField, $dict, $path + "." + i);
             }
             return rObj;
         }
         else if (a_2[0] == "Set") {
-            return new Set(v.map(function (e, i) { return cast_or_msg2(e, a_2[1], typeName, typeField, $dict, $path + "." + i); }));
+            return new Set(v.map(function (e, i) { return cast_or_ref(e, a_2[1], typeName, typeField, $dict, $path + "." + i); }));
         }
         else if (a_2[0] == "Map") {
             var rMap = new Map();
             for (var i = 0; i < v.length; i += 2) {
-                rMap.set(cast_primitive(v[i], a_2[1], typeName, typeField), cast_or_msg2(v[i + 1], a_2[2], typeName, typeField, $dict, $path + "." + i));
+                rMap.set(cast_primitive(v[i], a_2[1], typeName, typeField), cast_or_ref(v[i + 1], a_2[2], typeName, typeField, $dict, $path + "." + i));
             }
             return rMap;
         }
@@ -500,7 +494,7 @@ function cast_val_2(v, typeName, fieldInfo, $dict, $path) {
         return type.FromRefArray(v, $dict, $path);
     }
 }
-function cast_or_msg2(v, type, typeName, typeField, $dict, $path) {
+function cast_or_ref(v, type, typeName, typeField, $dict, $path) {
     if (exports.MType[type]) {
         return cast_primitive(v, type, typeName, typeField);
     }

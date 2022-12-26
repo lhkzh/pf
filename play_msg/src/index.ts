@@ -128,16 +128,6 @@ export abstract class MsgArray {
         _nameS.set(name, obj);
         _typeS.set(T, obj);
 
-        T.prototype.toString = function () {
-            return `[Class:${name}]=>${JsonX.Stringify(this)}`;
-        };
-        T.prototype.toArray = function () {
-            return (<any>T).ToArray(this);
-        };
-        T.prototype.toRefArray = function () {
-            return (<any>T).ToRefArray(this);
-        };
-
         (<any>T)["ToArray"] = function (a: any, $deep: number = 8): any[] {
             if (a == null) return <any[]><unknown>null;
             if ($deep < 0) {
@@ -204,7 +194,7 @@ export abstract class MsgArray {
             if (!Array.isArray(a)) throw new TypeError(`Decode Fail-0:${name}`);
             let r = new T();
             for (var i = 0; i < fields.length; i++) {
-                r[fields[i][0]] = cast_val_field(a[i], name, fields[i]);
+                r[fields[i][0]] = cast_field_normal(a[i], name, fields[i]);
             }
             return r;
         };
@@ -282,7 +272,7 @@ export abstract class MsgArray {
             let r = new T();
             $dict.set($path, r);
             for (var i = 0; i < fields.length; i++) {
-                r[fields[i][0]] = cast_val_2(a[i], name, fields[i], $dict, $path + "." + i);
+                r[fields[i][0]] = cast_field_ref(a[i], name, fields[i], $dict, $path + "." + i);
             }
             return r;
         };
@@ -316,7 +306,7 @@ export abstract class MsgArray {
     }
 }
 
-function cast_val_field(v: any, typeName: string, fieldInfo: MetaInfoField) {
+function cast_field_normal(v: any, typeName: string, fieldInfo: MetaInfoField) {
     const typeField = fieldInfo[0], type = fieldInfo[1];
     if (v === undefined || v === null) {
         if (fieldInfo[2] == 1)
@@ -388,7 +378,7 @@ function cast_or_msg(v: any, type: MType | NewableAny, typeName: string, typeFie
     return (<any>type).FromArray(v);
 }
 
-function cast_val_2(v: any, typeName: string, fieldInfo: MetaInfoField, $dict: Map<string, any>, $path = "") {
+function cast_field_ref(v: any, typeName: string, fieldInfo: MetaInfoField, $dict: Map<string, any>, $path = "") {
     const typeField = fieldInfo[0], type = fieldInfo[1];
     if (v === undefined || v === null) {
         if (fieldInfo[2] == 1)
@@ -425,19 +415,19 @@ function cast_val_2(v: any, typeName: string, fieldInfo: MetaInfoField, $dict: M
         }
         let a = <any[]>type;
         if (a[0] == "Arr") {
-            return v.map((e: any, i: number) => cast_or_msg2(e, a[1], typeName, typeField, $dict, $path + "." + i));
+            return v.map((e: any, i: number) => cast_or_ref(e, a[1], typeName, typeField, $dict, $path + "." + i));
         } else if (a[0] == "Obj") {
             let rObj: any = {};
             for (let i = 0; i < v.length; i += 2) {
-                rObj[cast_primitive(v[i], a[1], typeName, typeField)] = cast_or_msg2(v[i + 1], a[2], typeName, typeField, $dict, $path + "." + i);
+                rObj[cast_primitive(v[i], a[1], typeName, typeField)] = cast_or_ref(v[i + 1], a[2], typeName, typeField, $dict, $path + "." + i);
             }
             return rObj;
         } else if (a[0] == "Set") {
-            return new Set(v.map((e: any, i: number) => cast_or_msg2(e, a[1], typeName, typeField, $dict, $path + "." + i)));
+            return new Set(v.map((e: any, i: number) => cast_or_ref(e, a[1], typeName, typeField, $dict, $path + "." + i)));
         } else if (a[0] == "Map") {
             let rMap = new Map();
             for (let i = 0; i < v.length; i += 2) {
-                rMap.set(cast_primitive(v[i], a[1], typeName, typeField), cast_or_msg2(v[i + 1], a[2], typeName, typeField, $dict, $path + "." + i));
+                rMap.set(cast_primitive(v[i], a[1], typeName, typeField), cast_or_ref(v[i + 1], a[2], typeName, typeField, $dict, $path + "." + i));
             }
             return rMap;
         }
@@ -453,7 +443,7 @@ function cast_val_2(v: any, typeName: string, fieldInfo: MetaInfoField, $dict: M
         return (<any>type).FromRefArray(v, $dict, $path);
     }
 }
-function cast_or_msg2(v: any, type: MType | NewableAny, typeName: string, typeField: string, $dict: Map<string, any>, $path: string) {
+function cast_or_ref(v: any, type: MType | NewableAny, typeName: string, typeField: string, $dict: Map<string, any>, $path: string) {
     if (MType[<MType>type]) {
         return cast_primitive(v, <MType>type, typeName, typeField);
     }

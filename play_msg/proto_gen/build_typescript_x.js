@@ -113,9 +113,6 @@ function build_ts_class(info, longTo="bigint"){
     static FromArray: (arr: any[]) => Room;
     static ToRefArray: (val: ${info.name}) => any[];
     static FromRefArray: (arr: any[]) => Room;
-    toArray: () => any[];
-    toRefArray: () => any[];
-    toString: ()=> string;
 
 ${fields.join("\n")}
 }\n`;
