@@ -41,6 +41,9 @@
         MsgArray.CastByArray = function (type, arr) {
             return type["FromArray"](arr);
         };
+        MsgArray.CastByRefArray = function (type, arr) {
+            return type["FromRefArray"](arr);
+        };
         MsgArray.ToRefArray = function (v) {
             if (v == null)
                 return null;

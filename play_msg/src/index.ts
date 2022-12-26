@@ -53,6 +53,9 @@ export abstract class MsgArray {
     public static CastByArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T {
         return (<any>type)["FromArray"](arr);
     }
+    public static CastByRefArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T {
+        return (<any>type)["FromRefArray"](arr);
+    }
     public static ToRefArray<T extends MsgArray>(v: T): any[] | null {
         if (v == null) return null;
         return (<any>v.constructor)["ToRefArray"](v);

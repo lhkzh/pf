@@ -38,4 +38,37 @@ console.log(JsonX.Stringify(arr));
 console.log(MsgArray.CastByArray(User,arr));
 console.log(MsgArray.CastByArray(User,JsonX.Parse(JsonX.Stringify(arr))));
 console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))));
+
+// circle reference use : CastByRefArray/FromRefArray/ToRefArray  
+
+@MsgArray.Meta({
+    fields: [
+        ["id", MType.I53, 1],
+        ["userList", ["Arr", User], 0],
+        ["master", User, 0],
+        ["master", Room, 0]
+    ]
+})
+class Room extends MsgArray {
+    id: number;
+    userList: User[];
+    master: User;
+    link: Room
+}
+
+let u01 = new User();
+u01.uid = 101;
+u01.nick = "Jim";
+let u02 = new User();
+u02.uid = 102;
+u02.nick = "Jack";
+
+let room = new Room();
+room.id = 99;
+room.userList = [u01, u02];
+room.master = u02;
+room.link = room;
+
+console.log(Room.FromRefArray(JsonX.Parse(JsonX.Stringify( Room.ToRefArray(room) ))));
+console.log(MsgArray.CastByRefArray(Room,<any[]>unpack(pack( MsgArray.ToRefArray(room) ))));
 </pre>

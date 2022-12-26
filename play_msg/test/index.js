@@ -81,9 +81,12 @@ describe("base", function(){
         });
         let roomArr = Room.ToRefArray(room);
         let roomDecode = Room.FromRefArray(JsonX.Parse(JsonX.Stringify(roomArr)));
-        assert.equal(roomDecode.map.p2.next.name,p1.name);
-        assert.deepEqual(roomDecode.map.p2.next,p1);
+        assert.equal(roomDecode.map.p2.next.name, p1.name);
+        assert.deepEqual(roomDecode.map.p2.next, p1);
         assert.deepEqual(Room.ToRefArray(roomDecode), roomArr);
+
+        let roomD2 = MsgArray.CastByRefArray(Room, JsonX.Parse(JsonX.Stringify( MsgArray.ToRefArray(room) )));
+        assert.deepEqual(Room.ToRefArray(roomD2), roomArr);
     });
     it("Int16Array", function(){
         let Type=function(){};
