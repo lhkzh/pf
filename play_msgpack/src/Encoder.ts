@@ -3,19 +3,23 @@ import { CodecExtDate, CodecLongImp } from "./codec_imp";
 import { OutStream } from "./OutStream";
 import { Str } from "./utf8";
 
-
+/**
+ * @public
+ */
 export class Encoder {
     private long: CodecLongApi;
     private floatAs32: boolean;
+    private throwIfUnknow: boolean;
     private extends: Map<NewableType, CodecExtApi>;
     private mapCheckIntKey: boolean;
     public mapKeepNilVal: boolean;
 
-    constructor(public config?: { mapCheckIntKey?: boolean, mapKeepNilVal?: boolean, floatAs32?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi> }) {
+    constructor(public config?: { mapCheckIntKey?: boolean, mapKeepNilVal?: boolean, floatAs32?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi>, throwIfUnknow?: boolean }) {
         this.long = config && config.long || CodecLongImp;
         this.floatAs32 = config && config.floatAs32 || false;
         this.mapCheckIntKey = config && config.mapCheckIntKey || false;
         this.mapKeepNilVal = config && config.mapKeepNilVal || false;
+        this.throwIfUnknow = config && config.throwIfUnknow || false;
         this.extends = new Map();
         this.extends.set(CodecExtDate.INSTANCE.CLASS, CodecExtDate.INSTANCE);
         if (config && config.extends && config.extends.length) {
@@ -128,7 +132,17 @@ export class Encoder {
                     }
                 }
             } else {
-                throw new Error(`Msgpack encode not imp:${ctor.name}-${ext}`);
+                if (this.throwIfUnknow) {
+                    throw new Error(`Msgpack encode not imp:${ctor.name}-${ext}`);
+                } else {
+                    let keys = Object.keys(v);
+                    this.encodeMapSize(keys.length, out);
+                    for (let k: string, i = 0; i < keys.length; i++) {
+                        k = keys[i];
+                        this.encodeStr(k, out);
+                        this.encode(v[k], out);
+                    }
+                }
             }
         }
         return out;
@@ -144,7 +158,6 @@ export class Encoder {
         } else {
             out.u8(0xdd).u32(length);
         }
-        return out;
     }
     public encodeMapSize(length: number, out: OutStream) {
         if (length < 16) {
@@ -154,7 +167,6 @@ export class Encoder {
         } else {
             out.u8(0xdf).u32(length);
         }
-        return out;
     }
     public encodeStr(v: string, out: OutStream) {
         let b = Str.encode(v), n = b.length;

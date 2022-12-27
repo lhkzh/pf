@@ -1,15 +1,19 @@
 import { CodecExtApi, CodecLongApi } from "./codec_api";
 import { CodecExtDate, CodecLongImp } from "./codec_imp";
 import { InStream } from "./InStream";
-
+/**
+ * @public
+ */
 export class Decoder {
     private mapAsReal: boolean;
     private long: CodecLongApi;
+    private throwIfUnknow: boolean;
     private extends: Map<number, CodecExtApi>;
 
-    constructor(public config?: { mapAsReal?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi> }) {
+    constructor(public config?: { mapAsReal?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi>, throwIfUnknow?: boolean }) {
         this.long = config && config.long || CodecLongImp;
         this.mapAsReal = config && config.mapAsReal || false;
+        this.throwIfUnknow = config && config.throwIfUnknow || false;
         this.extends = new Map();
         this.extends.set(CodecExtDate.INSTANCE.TYPE, CodecExtDate.INSTANCE);
         if (config && config.extends && config.extends.length) {
@@ -154,6 +158,9 @@ export class Decoder {
         let ext = this.extends.get(type);
         if (ext) {
             return ext.decode(ebs, this);
+        }
+        if (this.throwIfUnknow) {
+            throw new Error(`Msgpack decode not support ext:${type}`);
         }
         return { msg: "unknow", type: type, data: ebs.src() };
     }

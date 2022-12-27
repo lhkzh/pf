@@ -1,6 +1,9 @@
 import { Str } from "./utf8";
 
-//输入流
+/**
+ * 输入流
+ * @public
+ */
 export class InStream {
     private i: number;
     private v: DataView;

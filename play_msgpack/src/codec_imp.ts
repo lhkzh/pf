@@ -1,6 +1,4 @@
-import { CodecExtApi, CodecLongApi, NewableType } from "./codec_api";
-import { Decoder } from "./Decoder";
-import { Encoder } from "./Encoder";
+import { EncoderApi, DecoderApi, CodecExtApi, CodecLongApi, NewableType } from "./codec_api";
 import { InStream } from "./InStream";
 import { OutStream } from "./OutStream";
 
@@ -118,7 +116,10 @@ export class CodecExtDate implements CodecExtApi {
     }
 }
 
-//保留js类型的扩展（实现列表）
+/**
+ * 保留js类型的扩展（实现列表）
+ * @public
+ */
 export const jsNativeExtList: readonly CodecExtApi[] = (function () {
     const arr: Array<CodecExtApi> = [CodecExtDate.INSTANCE];
     if (typeof (BigInt) != "undefined") {
@@ -129,7 +130,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             get CLASS(): NewableType {
                 return <any>BigInt;
             },
-            encode(v: bigint, out: OutStream, encoder: Encoder) {
+            encode(v: bigint, out: OutStream, encoder: EncoderApi) {
                 let uarr = new Uint8Array(9), udv = new DataView(uarr.buffer);
                 if (v >= 0) {
                     udv.setUint8(0, 0);
@@ -153,7 +154,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             get CLASS(): NewableType {
                 return <any>Buffer;
             },
-            encode(v: Buffer, out: OutStream, encoder: Encoder) {
+            encode(v: Buffer, out: OutStream, encoder: EncoderApi) {
                 encoder.encodeExt(this.TYPE, new Uint8Array(v), out);
             },
             decode(ins: InStream, decoder) {
@@ -169,14 +170,14 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
         get CLASS(): NewableType {
             return Set;
         },
-        decode(ins: InStream, decoder: Decoder) {
+        decode(ins: InStream, decoder: DecoderApi) {
             let r = new Set<any>(), n = decoder.decodeArraySize(ins);
             for (let i = 0; i < n; i++) {
                 r.add(decoder.decode(ins));
             }
             return r;
         },
-        encode(v: Set<any>, out: OutStream, encoder: Encoder) {
+        encode(v: Set<any>, out: OutStream, encoder: EncoderApi) {
             let tmpO = new OutStream();
             encoder.encodeArraySize(v.size, tmpO);
             v.forEach(e => {
@@ -192,14 +193,14 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
         get CLASS(): NewableType {
             return Map;
         },
-        decode(ins: InStream, decoder: Decoder) {
+        decode(ins: InStream, decoder: DecoderApi) {
             let r = new Map<any, any>(), n = decoder.decodeMapSize(ins);
             for (let i = 0; i < n; i++) {
                 r.set(decoder.decode(ins), decoder.decode(ins));
             }
             return r;
         },
-        encode(v: Map<any, any>, out: OutStream, encoder: Encoder) {
+        encode(v: Map<any, any>, out: OutStream, encoder: EncoderApi) {
             let tmpO = new OutStream();
             encoder.encodeMapSize(v.size, tmpO);
             v.forEach((iv, ik) => {
@@ -218,7 +219,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             get CLASS(): NewableType {
                 return Clazz;
             },
-            encode(v, out: OutStream, encoder: Encoder) {
+            encode(v, out: OutStream, encoder: EncoderApi) {
                 encoder.encodeExt(Type, new Uint8Array(v.buffer), out);
             },
             decode(ins: InStream, decoder) {
@@ -236,63 +237,3 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
     });
     return Object.freeze(arr);
 })();
-
-
-export class MsgPacker {
-    private _encoder: Encoder;
-    private _decoder: Decoder;
-    constructor(config?: { long?: CodecLongApi, extends?: Array<CodecExtApi>, floatAs32?: boolean, mapAsReal?: boolean, mapCheckIntKey?: boolean, mapKeepNilVal?: boolean, }) {
-        this._encoder = new Encoder(config);
-        this._decoder = new Decoder(config);
-    }
-    public get encoder() {
-        return this._encoder;
-    }
-    public get decoder() {
-        return this._decoder;
-    }
-
-    public pack(v: any, out?: OutStream): Uint8Array {
-        return this._encoder.encode(v, out).bin();
-    }
-    public unpack(v: Uint8Array): any {
-        return this._decoder.decode(new InStream(v, 0, v.length));
-    }
-
-    public encode(v: any, out: OutStream): OutStream {
-        return this._encoder.encode(v, out);
-    }
-    public decode(v: InStream): any {
-        return this._decoder.decode(v);
-    }
-
-    private static _def: MsgPacker;
-    public static get Default(): MsgPacker {
-        if (!this._def) {
-            this._def = new MsgPacker();
-        }
-        return this._def;
-    }
-    private static _jsNative: MsgPacker;
-    public static get JsNative(): MsgPacker {
-        if (!this._jsNative) {
-            this._jsNative = new MsgPacker({
-                extends: jsNativeExtList.map(e => e)
-            });
-        }
-        return this._jsNative;
-    }
-}
-
-export function pack(v: any): Uint8Array {
-    return MsgPacker.Default.pack(v);
-}
-export function unpack(v: Uint8Array): any {
-    return MsgPacker.Default.unpack(v);
-}
-export function packJs(v: any): Uint8Array {
-    return MsgPacker.JsNative.pack(v);
-}
-export function unpackJs(v: Uint8Array): any {
-    return MsgPacker.JsNative.unpack(v);
-}

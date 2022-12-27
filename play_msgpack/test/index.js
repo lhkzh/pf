@@ -131,6 +131,19 @@ describe("base", function(){
         t_fn(new BigInt64Array([2306n,123n,0n,-25515621n,2305843009213694039n,-2305843009213694039n]));
         t_fn(new BigUint64Array([2306n,123n,0n,25515621n,2305843009213694039n,2905843009213694039n]));
     });
+    it("unknow", function(){
+        let MyMsgpack_throw = new Index.MsgPacker({throwIfUnknow:true});
+        let MyMsgpack_try = new Index.MsgPacker({throwIfUnknow:false});
+        let MyTmpObj = function(){};
+        let tmpVo = new MyTmpObj();
+        tmpVo.uid = 323;
+        tmpVo.flag = true;
+        tmpVo.desc = "balihp";
+        assert.throws(function(){
+            MyMsgpack_throw.pack(tmpVo);
+        });
+        assert.deepEqual(MyMsgpack_try.unpack(MyMsgpack_try.pack(tmpVo)), tmpVo);
+    });
 });
 
 describe('jsNative', () => {

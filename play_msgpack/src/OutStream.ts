@@ -1,6 +1,9 @@
 import { Str } from "./utf8";
 
-//输出流
+/**
+ * 输出流
+ * @public
+ */
 export class OutStream {
     private b: Uint8Array;
     private s: DataView;
