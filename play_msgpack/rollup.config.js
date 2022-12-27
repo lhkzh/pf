@@ -1,4 +1,5 @@
 import typescript from 'rollup-plugin-typescript2';
+import { terser } from "@chiogen/rollup-plugin-terser";
 import pkg from "./package.json";
 
 export default [
@@ -56,7 +57,8 @@ export default [
                         module: "esnext"
                     }
                 }
-            })
+            }), 
+            terser()
         ],
         external: ['tslib']
     }
