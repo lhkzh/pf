@@ -108,11 +108,11 @@ function build_ts_class(info, longTo="bigint"){
         return str;
     });
     let str = header+
-`export class ${info.name} {
+`export class ${info.name} extends MsgArray {
     static ToArray: (val: ${info.name}) => any[];
-    static FromArray: (arr: any[]) => Room;
+    static FromArray: (arr: any[]) => ${info.name};
     static ToRefArray: (val: ${info.name}) => any[];
-    static FromRefArray: (arr: any[]) => Room;
+    static FromRefArray: (arr: any[]) => ${info.name};
 
 ${fields.join("\n")}
 }\n`;

@@ -46,26 +46,42 @@ describe("base", function(){
     });
     it("circle_reference", function(){
         let Player=function(){};
-        let Room=function(){};
+        // let Room=function(){};
+        // let _player_uuid=0;
+        // class Player{
+        //     constructor(){
+        //         this._uuid = _player_uuid++;
+        //     }
+        // }
+        class Room extends MsgArray{}
         MsgArray.MetaBind(Room,TypeId++,"Room"+TypeId.toString(), [
             ["rid", MType.I32, 1],
             ["desc", MType.STR, 1],
             ["players", ["Arr", Player], 1],
             ["master", Player, 0],
             ["map", ["Obj", MType.STR, Player], 0],
+            ["other", ["Obj", MType.STR, Player], 0],
+            ["set1", ["Set", MType.I32], 0],
+            ["set2", ["Set", MType.I32], 0],
         ]);
         MsgArray.MetaBind(Player,TypeId++,"Player"+TypeId.toString(), [
             ["name", MType.STR, 1],
             ["next", Player, 0],
         ]);
+        let newP = function(pid){
+            let p = new Player();
+            p.name = "n"+pid;
+            p.next = null;
+            return p;
+        }
         let p1 = new Player();
-        p1.name = "Tom";
+        p1.name = "Tom-P1";
         let p2 = new Player();
-        p2.name = "Jerry";
+        p2.name = "Jerry-P2";
         p2.next = p1;
         p1.next = p2;
         let p3 = new Player();
-        p3.name = "Sanndy";
+        p3.name = "Sanndy-P3";
         p3.next = null;
         assert.throws(function(){
             MsgArray.ToArray(p2);
@@ -76,7 +92,15 @@ describe("base", function(){
         room.desc = "test";
         room.players = [p1,p2,p3];
         room.master = p1;
-        room.map = {"p1":p1,"p2":p2};
+        room.map = {"p1":p1,"p2":p2,"p3":p3};
+        room.other = room.map;
+        room.set1 = new Set([2,3,5]);
+        room.set2 = room.set1;
+        for(let i=0;i<40;i++){
+            let ip = newP(i);
+            room.players.unshift(ip);
+            room.map[ip.name]=ip;
+        }
         assert.throws(function(){
             MsgArray.ToArray(room);
         });
@@ -84,11 +108,14 @@ describe("base", function(){
         let roomDecode = Room.FromRefArray(JsonX.Parse(JsonX.Stringify(roomArr)));
         assert.equal(roomDecode.map.p2.next.name, p1.name);
         assert.deepEqual(roomDecode.map.p2.next, p1);
-        assert.deepEqual(roomDecode.players[2], p3);
+        assert.deepEqual(roomDecode.players.find(e=>e.name==p3.name),p3);
+        assert.equal(roomDecode.players.find(e=>e.name==p3.name)===roomDecode.map.p3,true);
         assert.deepEqual(JSON.stringify(Room.ToRefArray(roomDecode)), JSON.stringify(roomArr));
 
         let roomD2 = MsgArray.CastByRefArray(Room, JsonX.Parse(JsonX.Stringify( MsgArray.ToRefArray(room) )));
         assert.deepEqual(Room.ToRefArray(roomD2), roomArr);
+        // console.warn(roomArr);
+        // console.warn(roomD2.toString());
     });
     it("Int16Array", function(){
         let Type=function(){};

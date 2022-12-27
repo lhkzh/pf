@@ -27,22 +27,28 @@
     var MsgArray = /** @class */ (function () {
         function MsgArray() {
         }
+        MsgArray.prototype.toString = function () {
+            return "[Class:".concat(this.constructor.name, "]=>").concat(JsonX.Stringify(JsonDecycle(this)));
+        };
         MsgArray.prototype.toArray = function ($deep) {
-            return this.constructor["ToArray"](this, $deep);
+            return this.constructor.ToArray(this, $deep);
         };
-        MsgArray.ToArray = function (v, $deep) {
-            if (v == null)
-                return null;
-            return v.constructor["ToArray"](v, $deep);
-        };
-        MsgArray.FromArray = function (a) {
-            return null;
+        MsgArray.prototype.toRefArray = function () {
+            return this.constructor.ToRefArray(this);
         };
         MsgArray.CastByArray = function (type, arr) {
             return type.FromArray(arr);
         };
         MsgArray.CastByRefArray = function (type, arr) {
             return type.FromRefArray(arr);
+        };
+        MsgArray.ToArray = function (v, $deep) {
+            if (v == null)
+                return null;
+            return v.constructor.ToArray(v, $deep);
+        };
+        MsgArray.FromArray = function (a) {
+            return null;
         };
         MsgArray.ToRefArray = function (v) {
             if (v == null)
@@ -216,61 +222,67 @@
                 $dict.set(a, $path);
                 var r = new Array(fields.length);
                 var _loop_2 = function () {
-                    var v = a[fields[i][0]], t = fields[i][1];
+                    var v = a[fields[i][0]], t = fields[i][1], $path_i = $path + "." + i.toString(36);
                     if (v) {
                         if (t.ToArray) {
-                            v = t.ToRefArray(v, $dict, $path + "." + i);
+                            v = t.ToRefArray(v, $dict, $path_i);
                         }
                         else if (Array.isArray(t)) {
-                            if (t[0] == "Arr") {
-                                if (t[1].ToArray) {
-                                    v = v.map(function (e, ii) { return t[1].ToRefArray(e, $dict, $path + "." + i + "." + ii); });
-                                }
-                            }
-                            else if (t[0] == "Set") {
-                                var rarr_4 = [];
-                                if (t[1].ToArray) {
-                                    v.forEach(function (e, ii) {
-                                        rarr_4.push(t[1].ToRefArray(e, $dict, $path + "." + i + "." + ii));
-                                    });
-                                }
-                                else {
-                                    v.forEach(function (e) {
-                                        rarr_4.push(e);
-                                    });
-                                }
-                                v = rarr_4;
-                            }
-                            else if (t[0] == "Obj") {
-                                var rarr_5 = [], keys = Object.keys(v);
-                                if (t[2].ToArray) {
-                                    keys.forEach(function (k, ii) {
-                                        rarr_5.push(t[1] != exports.MType.STR ? Number(k) : k, t[2].ToRefArray(v[k], $dict, $path + "." + i + "." + ii));
-                                    });
-                                }
-                                else {
-                                    keys.forEach(function (k) {
-                                        rarr_5.push(t[1] != exports.MType.STR ? Number(k) : k, v[k]);
-                                    });
-                                }
-                                v = rarr_5;
-                            }
-                            else if (t[0] == "Map") {
-                                var rarr_6 = [];
-                                if (t[2].ToArray) {
-                                    v.forEach(function (iv, ik) {
-                                        rarr_6.push(ik, t[2].ToRefArray(iv, $dict, $path + "." + i + "." + rarr_6.length));
-                                    });
-                                }
-                                else {
-                                    v.forEach(function (iv, ik) {
-                                        rarr_6.push(ik, iv);
-                                    });
-                                }
-                                v = rarr_6;
+                            if ($dict.has(v)) {
+                                v = $dict.get(v);
                             }
                             else {
-                                throw new TypeError("NOT implemented:" + t[0]);
+                                $dict.set(v, $path_i);
+                                if (t[0] == "Arr") {
+                                    if (t[1].ToArray) {
+                                        v = v.map(function (e, ii) { return t[1].ToRefArray(e, $dict, $path_i + "." + ii.toString(36)); });
+                                    }
+                                }
+                                else if (t[0] == "Set") {
+                                    var rarr_4 = [];
+                                    if (t[1].ToArray) {
+                                        v.forEach(function (e, ii) {
+                                            rarr_4.push(t[1].ToRefArray(e, $dict, $path_i + "." + ii.toString(36)));
+                                        });
+                                    }
+                                    else {
+                                        v.forEach(function (e) {
+                                            rarr_4.push(e);
+                                        });
+                                    }
+                                    v = rarr_4;
+                                }
+                                else if (t[0] == "Obj") {
+                                    var rarr_5 = [], keys = Object.keys(v);
+                                    if (t[2].ToArray) {
+                                        keys.forEach(function (ik) {
+                                            rarr_5.push(t[1] != exports.MType.STR ? Number(ik) : ik, t[2].ToRefArray(v[ik], $dict, $path_i + "." + rarr_5.length.toString(36)));
+                                        });
+                                    }
+                                    else {
+                                        keys.forEach(function (ik) {
+                                            rarr_5.push(t[1] != exports.MType.STR ? Number(ik) : ik, v[ik]);
+                                        });
+                                    }
+                                    v = rarr_5;
+                                }
+                                else if (t[0] == "Map") {
+                                    var rarr_6 = [];
+                                    if (t[2].ToArray) {
+                                        v.forEach(function (iv, ik) {
+                                            rarr_6.push(ik, t[2].ToRefArray(iv, $dict, $path_i + "." + rarr_6.length.toString(36)));
+                                        });
+                                    }
+                                    else {
+                                        v.forEach(function (iv, ik) {
+                                            rarr_6.push(ik, iv);
+                                        });
+                                    }
+                                    v = rarr_6;
+                                }
+                                else {
+                                    throw new TypeError("NOT implemented:" + t[0]);
+                                }
                             }
                         }
                     }
@@ -295,7 +307,7 @@
                 var r = new T();
                 $dict.set($path, r);
                 for (var i = 0; i < fields.length; i++) {
-                    r[fields[i][0]] = cast_field_ref(a[i], name, fields[i], $dict, $path + "." + i);
+                    r[fields[i][0]] = cast_field_ref(a[i], name, fields[i], $dict, $path + "." + i.toString(36));
                 }
                 return r;
             };
@@ -457,29 +469,34 @@
         }
         else if (Array.isArray(type)) {
             if (!Array.isArray(v)) {
+                if (typeof (v) == "string" && $dict.has(v)) {
+                    return $dict.get(v);
+                }
                 cast_fail_type(typeName, typeField);
             }
-            var a_2 = type;
+            var a_2 = type, tv = void 0;
             if (a_2[0] == "Arr") {
-                return v.map(function (e, i) { return cast_or_ref(e, a_2[1], typeName, typeField, $dict, $path + "." + i); });
+                tv = v.map(function (e, ii) { return cast_or_ref(e, a_2[1], typeName, typeField, $dict, $path + "." + ii.toString(36)); });
             }
             else if (a_2[0] == "Obj") {
                 var rObj = {};
-                for (var i = 0; i < v.length; i += 2) {
-                    rObj[cast_primitive(v[i], a_2[1], typeName, typeField)] = cast_or_ref(v[i + 1], a_2[2], typeName, typeField, $dict, $path + "." + i);
+                for (var ii = 0; ii < v.length; ii += 2) {
+                    rObj[cast_primitive(v[ii], a_2[1], typeName, typeField)] = cast_or_ref(v[ii + 1], a_2[2], typeName, typeField, $dict, $path + "." + ii.toString(36));
                 }
-                return rObj;
+                tv = rObj;
             }
             else if (a_2[0] == "Set") {
-                return new Set(v.map(function (e, i) { return cast_or_ref(e, a_2[1], typeName, typeField, $dict, $path + "." + i); }));
+                tv = new Set(v.map(function (e, ii) { return cast_or_ref(e, a_2[1], typeName, typeField, $dict, $path + "." + ii.toString(36)); }));
             }
             else if (a_2[0] == "Map") {
                 var rMap = new Map();
-                for (var i = 0; i < v.length; i += 2) {
-                    rMap.set(cast_primitive(v[i], a_2[1], typeName, typeField), cast_or_ref(v[i + 1], a_2[2], typeName, typeField, $dict, $path + "." + i));
+                for (var ii = 0; ii < v.length; ii += 2) {
+                    rMap.set(cast_primitive(v[ii], a_2[1], typeName, typeField), cast_or_ref(v[ii + 1], a_2[2], typeName, typeField, $dict, $path + "." + ii.toString(36)));
                 }
-                return rMap;
+                tv = rMap;
             }
+            $dict.set($path, tv);
+            return tv;
         }
         else if (type["BYTES_PER_ELEMENT"] > 0) { //TypeArray
             if (Array.isArray(v) || ArrayBuffer.isView(v) || v instanceof ArrayBuffer) { // normal_array, TypeArray or ArrayBuffer
@@ -617,6 +634,51 @@
             }
         }
         return value;
+    }
+    //@see https://github.com/douglascrockford/JSON-js
+    function JsonDecycle(object) {
+        var objects = new WeakMap();
+        return (function derez(value, path) {
+            var old_path;
+            var nu;
+            if (typeof value === "object"
+                && value !== null
+                && !(value instanceof Boolean)
+                && !(value instanceof Date)
+                && !(value instanceof Number)
+                && !(value instanceof RegExp)
+                && !(value instanceof String)) {
+                old_path = objects.get(value);
+                if (old_path !== undefined) {
+                    return { $ref: old_path };
+                }
+                objects.set(value, path);
+                if (value instanceof Set) {
+                    value = Array.from(value);
+                }
+                else if (value instanceof Map) {
+                    var tmp = {};
+                    value.forEach(function (iv, ik) {
+                        tmp[ik] = iv;
+                    });
+                    value = tmp;
+                }
+                if (Array.isArray(value)) {
+                    nu = [];
+                    value.forEach(function (element, i) {
+                        nu[i] = derez(element, path + "[" + i + "]");
+                    });
+                }
+                else {
+                    nu = {};
+                    Object.keys(value).forEach(function (name) {
+                        nu[name] = derez(value[name], path + "[" + JSON.stringify(name) + "]");
+                    });
+                }
+                return nu;
+            }
+            return value;
+        }(object, "$"));
     }
     var __GLOBAL = typeof (window) == "object" ? window : global;
 

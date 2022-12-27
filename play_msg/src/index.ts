@@ -40,21 +40,29 @@ let Cast_Int64: (v: any) => any = (v: any) => {
 };
 
 export abstract class MsgArray {
+    public toString() {
+        return `[Class:${this.constructor.name}]=>${JsonX.Stringify(JsonDecycle(this))}`;
+    }
     public toArray($deep?: number): any[] {
-        return (<any>this.constructor)["ToArray"](this, $deep);
+        return (<any>this.constructor).ToArray(this, $deep);
     }
-    public static ToArray<T extends MsgArray>(v: T, $deep?: number): any[] | null {
-        if (v == null) return null;
-        return (<any>v.constructor)["ToArray"](v, $deep);
+    public toRefArray(): any[] {
+        return (<any>this.constructor).ToRefArray(this);
     }
-    public static FromArray<T extends MsgArray>(a: any[]): T {
-        return <T><unknown>null;
-    }
+
     public static CastByArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T {
         return (<any>type).FromArray(arr);
     }
     public static CastByRefArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T {
         return (<any>type).FromRefArray(arr);
+    }
+
+    public static ToArray<T extends MsgArray>(v: T, $deep?: number): any[] | null {
+        if (v == null) return null;
+        return (<any>v.constructor).ToArray(v, $deep);
+    }
+    public static FromArray<T extends MsgArray>(a: any[]): T {
+        return <T><unknown>null;
     }
     public static ToRefArray<T extends MsgArray>(v: T): any[] | null {
         if (v == null) return null;
@@ -207,53 +215,58 @@ export abstract class MsgArray {
             $dict.set(a, $path);
             let r = new Array(fields.length);
             for (var i = 0; i < r.length; i++) {
-                let v = a[fields[i][0]], t: any = fields[i][1];
+                let v = a[fields[i][0]], t: any = fields[i][1], $path_i = $path + "." + i.toString(36);
                 if (v) {
                     if (t.ToArray) {
-                        v = t.ToRefArray(v, $dict, $path + "." + i);
+                        v = t.ToRefArray(v, $dict, $path_i);
                     } else if (Array.isArray(t)) {
-                        if (t[0] == "Arr") {
-                            if (t[1].ToArray) {
-                                v = v.map((e: any, ii: number) => t[1].ToRefArray(e, $dict, $path + "." + i + "." + ii));
-                            }
-                        } else if (t[0] == "Set") {
-                            let rarr: any[] = [];
-                            if (t[1].ToArray) {
-                                v.forEach((e: any, ii: number) => {
-                                    rarr.push(t[1].ToRefArray(e, $dict, $path + "." + i + "." + ii));
-                                });
-                            } else {
-                                v.forEach((e: any) => {
-                                    rarr.push(e);
-                                });
-                            }
-                            v = rarr;
-                        } else if (t[0] == "Obj") {
-                            let rarr: any[] = [], keys = Object.keys(v);
-                            if (t[2].ToArray) {
-                                keys.forEach((k, ii) => {
-                                    rarr.push(t[1] != MType.STR ? Number(k) : k, t[2].ToRefArray(v[k], $dict, $path + "." + i + "." + ii));
-                                });
-                            } else {
-                                keys.forEach(k => {
-                                    rarr.push(t[1] != MType.STR ? Number(k) : k, v[k]);
-                                });
-                            }
-                            v = rarr;
-                        } else if (t[0] == "Map") {
-                            let rarr: any[] = [];
-                            if (t[2].ToArray) {
-                                v.forEach((iv: any, ik: any) => {
-                                    rarr.push(ik, t[2].ToRefArray(iv, $dict, $path + "." + i + "." + rarr.length));
-                                });
-                            } else {
-                                v.forEach((iv: any, ik: any) => {
-                                    rarr.push(ik, iv);
-                                });
-                            }
-                            v = rarr;
+                        if ($dict.has(v)) {
+                            v = $dict.get(v);
                         } else {
-                            throw new TypeError("NOT implemented:" + t[0]);
+                            $dict.set(v, $path_i);
+                            if (t[0] == "Arr") {
+                                if (t[1].ToArray) {
+                                    v = v.map((e: any, ii: number) => t[1].ToRefArray(e, $dict, $path_i + "." + ii.toString(36)));
+                                }
+                            } else if (t[0] == "Set") {
+                                let rarr: any[] = [];
+                                if (t[1].ToArray) {
+                                    v.forEach((e: any, ii: number) => {
+                                        rarr.push(t[1].ToRefArray(e, $dict, $path_i + "." + ii.toString(36)));
+                                    });
+                                } else {
+                                    v.forEach((e: any) => {
+                                        rarr.push(e);
+                                    });
+                                }
+                                v = rarr;
+                            } else if (t[0] == "Obj") {
+                                let rarr: any[] = [], keys = Object.keys(v);
+                                if (t[2].ToArray) {
+                                    keys.forEach(ik => {
+                                        rarr.push(t[1] != MType.STR ? Number(ik) : ik, t[2].ToRefArray(v[ik], $dict, $path_i + "." + rarr.length.toString(36)));
+                                    });
+                                } else {
+                                    keys.forEach(ik => {
+                                        rarr.push(t[1] != MType.STR ? Number(ik) : ik, v[ik]);
+                                    });
+                                }
+                                v = rarr;
+                            } else if (t[0] == "Map") {
+                                let rarr: any[] = [];
+                                if (t[2].ToArray) {
+                                    v.forEach((iv: any, ik: any) => {
+                                        rarr.push(ik, t[2].ToRefArray(iv, $dict, $path_i + "." + rarr.length.toString(36)));
+                                    });
+                                } else {
+                                    v.forEach((iv: any, ik: any) => {
+                                        rarr.push(ik, iv);
+                                    });
+                                }
+                                v = rarr;
+                            } else {
+                                throw new TypeError("NOT implemented:" + t[0]);
+                            }
                         }
                     }
                 }
@@ -272,7 +285,7 @@ export abstract class MsgArray {
             let r = new T();
             $dict.set($path, r);
             for (var i = 0; i < fields.length; i++) {
-                r[fields[i][0]] = cast_field_ref(a[i], name, fields[i], $dict, $path + "." + i);
+                r[fields[i][0]] = cast_field_ref(a[i], name, fields[i], $dict, $path + "." + i.toString(36));
             }
             return r;
         };
@@ -411,26 +424,31 @@ function cast_field_ref(v: any, typeName: string, fieldInfo: MetaInfoField, $dic
         return cast_primitive(v, <MType>type, typeName, typeField);
     } else if (Array.isArray(type)) {
         if (!Array.isArray(v)) {
+            if (typeof (v) == "string" && $dict.has(v)) {
+                return $dict.get(v);
+            }
             cast_fail_type(typeName, typeField);
         }
-        let a = <any[]>type;
+        let a = <any[]>type, tv: any;
         if (a[0] == "Arr") {
-            return v.map((e: any, i: number) => cast_or_ref(e, a[1], typeName, typeField, $dict, $path + "." + i));
+            tv = v.map((e: any, ii: number) => cast_or_ref(e, a[1], typeName, typeField, $dict, $path + "." + ii.toString(36)));
         } else if (a[0] == "Obj") {
             let rObj: any = {};
-            for (let i = 0; i < v.length; i += 2) {
-                rObj[cast_primitive(v[i], a[1], typeName, typeField)] = cast_or_ref(v[i + 1], a[2], typeName, typeField, $dict, $path + "." + i);
+            for (let ii = 0; ii < v.length; ii += 2) {
+                rObj[cast_primitive(v[ii], a[1], typeName, typeField)] = cast_or_ref(v[ii + 1], a[2], typeName, typeField, $dict, $path + "." + ii.toString(36));
             }
-            return rObj;
+            tv = rObj;
         } else if (a[0] == "Set") {
-            return new Set(v.map((e: any, i: number) => cast_or_ref(e, a[1], typeName, typeField, $dict, $path + "." + i)));
+            tv = new Set(v.map((e: any, ii: number) => cast_or_ref(e, a[1], typeName, typeField, $dict, $path + "." + ii.toString(36))));
         } else if (a[0] == "Map") {
             let rMap = new Map();
-            for (let i = 0; i < v.length; i += 2) {
-                rMap.set(cast_primitive(v[i], a[1], typeName, typeField), cast_or_ref(v[i + 1], a[2], typeName, typeField, $dict, $path + "." + i));
+            for (let ii = 0; ii < v.length; ii += 2) {
+                rMap.set(cast_primitive(v[ii], a[1], typeName, typeField), cast_or_ref(v[ii + 1], a[2], typeName, typeField, $dict, $path + "." + ii.toString(36)));
             }
-            return rMap;
+            tv = rMap;
         }
+        $dict.set($path, tv);
+        return tv;
     } else if ((<any>type)["BYTES_PER_ELEMENT"] > 0) {//TypeArray
         if (Array.isArray(v) || ArrayBuffer.isView(v) || v instanceof ArrayBuffer) {// normal_array, TypeArray or ArrayBuffer
             return new (<any>type)(v);
@@ -557,4 +575,53 @@ function JsonReviverDecode(key: any, value: any) {
     }
     return value;
 }
+//@see https://github.com/douglascrockford/JSON-js
+function JsonDecycle(object: any) {
+    var objects = new WeakMap();
+    return (function derez(value, path) {
+        var old_path;
+        var nu: any;
+        if (
+            typeof value === "object"
+            && value !== null
+            && !(value instanceof Boolean)
+            && !(value instanceof Date)
+            && !(value instanceof Number)
+            && !(value instanceof RegExp)
+            && !(value instanceof String)
+        ) {
+            old_path = objects.get(value);
+            if (old_path !== undefined) {
+                return { $ref: old_path };
+            }
+            objects.set(value, path);
+            if (value instanceof Set) {
+                value = Array.from(value);
+            } else if (value instanceof Map) {
+                var tmp: any = {};
+                value.forEach((iv, ik) => {
+                    tmp[ik] = iv;
+                });
+                value = tmp;
+            }
+            if (Array.isArray(value)) {
+                nu = [];
+                value.forEach(function (element, i) {
+                    nu[i] = derez(element, path + "[" + i + "]");
+                });
+            } else {
+                nu = {};
+                Object.keys(value).forEach(function (name) {
+                    nu[name] = derez(
+                        value[name],
+                        path + "[" + JSON.stringify(name) + "]"
+                    );
+                });
+            }
+            return nu;
+        }
+        return value;
+    }(object, "$"));
+}
+
 const __GLOBAL: any = typeof (window) == "object" ? window : global;
