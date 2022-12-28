@@ -14,23 +14,27 @@ export declare type MetaInfoObj = {
     clazz: NewableAny;
 };
 
-export declare type MetaType = MType | [
-"Arr",
-MType | NewableAny
+export declare type MetaType = MtBase | [
+MtBox,
+MtBase | NewableAny
 ] | [
-"Obj",
-MType.I8 | MType.I16 | MType.I32 | MType.I53 | MType.I64 | MType.STR,
-MType | NewableAny
+MtBox,
+MtBoxKey,
+MtBase | NewableAny
 ] | [
-"Set",
-MType | NewableAny
+MtBox,
+MtBase | NewableAny
 ] | [
-"Map",
-MType.I8 | MType.I16 | MType.I32 | MType.I53 | MType.I64 | MType.STR,
-MType | NewableAny
+MtBox,
+MtBoxKey,
+MtBase | NewableAny
 ] | ArrayBufferView | NewableAny;
 
 export declare abstract class MsgArray {
+    static CHECK: {
+        OUT: boolean;
+        IN: boolean;
+    };
     toString(): string;
     toArray($deep?: number): any[];
     toRefArray(): any[];
@@ -68,10 +72,10 @@ export declare abstract class MsgArray {
      */
     static MetaBind(T: NewableAny, id: number, name: string, fields: Array<MetaInfoField>): void;
     /**
-     * 设置是否开启-TypedArray转array
+     * 设置是否开启-TypedArray转array，CSharp的版本对应需要开
      * @param flag
      */
-    static ConfigTypedArray(flag: boolean): void;
+    static OptionTypedArray(flag: boolean): void;
 }
 
 /**
@@ -91,7 +95,7 @@ export declare function MsgClass(id?: number, name?: string): ClassDecorator;
  */
 export declare function MsgField(typed: MetaType, required?: MetaInfoFieldRequired, name?: string): PropertyDecorator;
 
-export declare enum MType {
+export declare enum MtBase {
     BOOL = 0,
     I8 = 1,
     I16 = 2,
@@ -103,6 +107,15 @@ export declare enum MType {
     STR = 8,
     DATE = 9
 }
+
+export declare enum MtBox {
+    Obj = 11,
+    Arr = 12,
+    Map = 13,
+    Set = 14
+}
+
+export declare type MtBoxKey = MtBase.I8 | MtBase.I16 | MtBase.I32 | MtBase.I53 | MtBase.I64 | MtBase.STR;
 
 export declare type Newable<T> = {
     new (...params: any[]): T;

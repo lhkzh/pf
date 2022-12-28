@@ -4,7 +4,8 @@ const {describe,it} = test;
 
 const Index=require("../dist/index");
 const MsgArray=Index.MsgArray;
-const MType=Index.MType;
+const MtBase=Index.MtBase;
+const MtBox=Index.MtBox;
 const JsonX=Index.JsonX;
 let TypeId=0;
 describe("base", function(){
@@ -12,18 +13,18 @@ describe("base", function(){
     it("base", function(){
         let Type=function(){};
         MsgArray.MetaBind(Type,TypeId++,TypeId.toString(), [
-            ["online", MType.BOOL, 1],
-            ["name", MType.STR, 1],
-            ["id", MType.I53, 1],
-            ["tm", MType.DATE, 1]
+            ["online", MtBase.BOOL, 1],
+            ["name", MtBase.STR, 1],
+            ["id", MtBase.I53, 1],
+            ["tm", MtBase.DATE, 1]
         ]);
         assert.equal(JsonX.Stringify(MsgArray.CastByArray(Type, [true,"Tom",10001,new Date(2022,06,06)])), '{"online":true,"name":"Tom","id":10001,"tm":"2022-07-05T16:00:00.000Z"}');
     });
     it("required", function(){
         let Type=function(){};
         MsgArray.MetaBind(Type,TypeId++,TypeId.toString(), [
-            ["online", MType.BOOL, 0],
-            ["name", MType.STR, 1]
+            ["online", MtBase.BOOL, 0],
+            ["name", MtBase.STR, 1]
         ]);
         assert.throws(()=>{
             MsgArray.CastByArray(Type, [true]);
@@ -35,8 +36,8 @@ describe("base", function(){
     it("option", function(){
         let Type=function(){};
         MsgArray.MetaBind(Type,TypeId++,TypeId.toString(), [
-            ["online", MType.BOOL, 1],
-            ["name", MType.STR, 0]
+            ["online", MtBase.BOOL, 1],
+            ["name", MtBase.STR, 0]
         ]);
         MsgArray.CastByArray(Type, [true]);
         MsgArray.CastByArray(Type, [false, "Tom"]);
@@ -55,17 +56,17 @@ describe("base", function(){
         // }
         class Room extends MsgArray{}
         MsgArray.MetaBind(Room,TypeId++,"Room"+TypeId.toString(), [
-            ["rid", MType.I32, 1],
-            ["desc", MType.STR, 1],
-            ["players", ["Arr", Player], 1],
+            ["rid", MtBase.I32, 1],
+            ["desc", MtBase.STR, 1],
+            ["players", [MtBox.Arr, Player], 1],
             ["master", Player, 0],
-            ["map", ["Obj", MType.STR, Player], 0],
-            ["other", ["Obj", MType.STR, Player], 0],
-            ["set1", ["Set", MType.I32], 0],
-            ["set2", ["Set", MType.I32], 0],
+            ["map", [MtBox.Obj, MtBase.STR, Player], 0],
+            ["other", [MtBox.Obj, MtBase.STR, Player], 0],
+            ["set1", [MtBox.Set, MtBase.I32], 0],
+            ["set2", [MtBox.Set, MtBase.I32], 0],
         ]);
         MsgArray.MetaBind(Player,TypeId++,"Player"+TypeId.toString(), [
-            ["name", MType.STR, 1],
+            ["name", MtBase.STR, 1],
             ["next", Player, 0],
         ]);
         let newP = function(pid){
@@ -126,7 +127,7 @@ describe("base", function(){
         assert.deepEqual(tmp.tags, new Int16Array([2,3,-112,123]));
         assert.deepEqual(MsgArray.ToArray(tmp), [new Int16Array([2,3,-112,123])]);
         assert.strictEqual(MsgArray.ToArray(tmp)[0].constructor, Int16Array);
-        MsgArray.ConfigTypedArray(true);
+        MsgArray.OptionTypedArray(true);
         assert.strictEqual(MsgArray.ToArray(tmp)[0].constructor, Array);
     });
     let t_jsonx_fn = function(d){
@@ -146,17 +147,17 @@ describe("base", function(){
             assert.deepEqual(varr, darr);
         }
     };
-    it("JsonX.Base", function(){
+    it("MtBase.Base", function(){
         let d = {a:"aA.3",b:33.5,c:false,d:{nick:"lala",sex:1,age:18,f:null,tags:[2,3,5,11,null,true]}};
         let v = JsonX.Parse(JsonX.Stringify(d));
         assert.deepEqual(v,d);
     });
-    it("JsonX.Date", function(){
+    it("MtBase.Date", function(){
         let d = new Date();
         let v = JsonX.Parse(JsonX.Stringify(d));
         assert.deepEqual(v,d);
     });
-    it("JsonX.Set", function(){
+    it("MtBase.Set", function(){
         let d = new Set([2,-1,3,"22","3",true,false,[5]]);
         let v = JsonX.Parse(JsonX.Stringify(d));
         assert.strictEqual(v.constructor,d.constructor);
@@ -164,14 +165,14 @@ describe("base", function(){
         assert.strictEqual(JsonX.Stringify(d),JsonX.Stringify(v));
         t_jsonx_fn(d);
     });
-    it("JsonX.Map", function(){
+    it("MtBase.Map", function(){
         let m = new Map();
         m.set("aa",true);
         m.set(233.5,new Date());
         m.set({a:true,b:2},3);
         t_jsonx_fn(m);
     });
-    it("JsonX.TypedArray", function(){
+    it("MtBase.TypedArray", function(){
         t_jsonx_fn(new Int8Array(2,-1,-127));
         t_jsonx_fn(new Uint8Array(2,0,127));
         t_jsonx_fn(new Uint16Array(2,0,1279,31789));

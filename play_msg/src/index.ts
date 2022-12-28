@@ -3,7 +3,7 @@
 export type NewableAny = { new(...params: any[]): any }
 export type Newable<T> = { new(...params: any[]): T }
 
-export enum MType {
+export enum MtBase {
     BOOL,
     I8,
     I16,
@@ -15,13 +15,19 @@ export enum MType {
     STR,
     DATE
 }
-
+export enum MtBox {
+    Obj = 11,
+    Arr = 12,
+    Map = 13,
+    Set = 14
+}
+export type MtBoxKey = MtBase.I8 | MtBase.I16 | MtBase.I32 | MtBase.I53 | MtBase.I64 | MtBase.STR;
 // export type PrimitiveArr = Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BigInt64Array | BigUint64Array;
-export type MetaType = MType |
-["Arr", MType | NewableAny] |
-["Obj", MType.I8 | MType.I16 | MType.I32 | MType.I53 | MType.I64 | MType.STR, MType | NewableAny] |
-["Set", MType | NewableAny] |
-["Map", MType.I8 | MType.I16 | MType.I32 | MType.I53 | MType.I64 | MType.STR, MType | NewableAny]
+export type MetaType = MtBase |
+[MtBox, MtBase | NewableAny] |
+[MtBox, MtBoxKey, MtBase | NewableAny] |
+[MtBox, MtBase | NewableAny] |
+[MtBox, MtBoxKey, MtBase | NewableAny]
     | ArrayBufferView
     | NewableAny
     ;
@@ -40,6 +46,8 @@ let Cast_Int64: (v: any) => any = (v: any) => {
 };
 
 export abstract class MsgArray {
+    public static CHECK = { OUT: false, IN: true };
+
     public toString() {
         return `[Class:${this.constructor.name}]=>${JsonX.Stringify(JsonDecycle(this))}`;
     }
@@ -148,11 +156,11 @@ export abstract class MsgArray {
                     if (t.ToArray) {
                         v = t.ToArray(v, $deep - 1);
                     } else if (Array.isArray(t)) {
-                        if (t[0] == "Arr") {
+                        if (t[0] == MtBox.Arr) {
                             if (t[1].ToArray) {
                                 v = v.map((e: any) => t[1].ToArray(e, $deep - 1));
                             }
-                        } else if (t[0] == "Set") {
+                        } else if (t[0] == MtBox.Set) {
                             let rarr: any[] = [];
                             if (t[1].ToArray) {
                                 v.forEach((e: any) => {
@@ -164,19 +172,19 @@ export abstract class MsgArray {
                                 });
                             }
                             v = rarr;
-                        } else if (t[0] == "Obj") {
+                        } else if (t[0] == MtBox.Obj) {
                             let rarr: any[] = [], keys = Object.keys(v);
                             if (t[2].ToArray) {
                                 keys.forEach(k => {
-                                    rarr.push(t[1] != MType.STR ? Number(k) : k, t[2].ToArray(v[k], $deep - 1));
+                                    rarr.push(t[1] != MtBase.STR ? Number(k) : k, t[2].ToArray(v[k], $deep - 1));
                                 });
                             } else {
                                 keys.forEach(k => {
-                                    rarr.push(t[1] != MType.STR ? Number(k) : k, v[k]);
+                                    rarr.push(t[1] != MtBase.STR ? Number(k) : k, v[k]);
                                 });
                             }
                             v = rarr;
-                        } else if (t[0] == "Map") {
+                        } else if (t[0] == MtBox.Map) {
                             let rarr: any[] = [];
                             if (t[2].ToArray) {
                                 v.forEach((iv: any, ik: any) => {
@@ -192,6 +200,8 @@ export abstract class MsgArray {
                             throw new TypeError("NOT implemented:" + t[0]);
                         }
                     }
+                } else if (MsgArray.CHECK.OUT && fields[i][2] == 1) {
+                    throw new TypeError(`Decode Fail-(need require):${name}.${fields[i][0]}`);
                 }
                 r[i] = v;
             }
@@ -224,11 +234,11 @@ export abstract class MsgArray {
                             v = $dict.get(v);
                         } else {
                             $dict.set(v, $path_i);
-                            if (t[0] == "Arr") {
+                            if (t[0] == MtBox.Arr) {
                                 if (t[1].ToArray) {
                                     v = v.map((e: any, ii: number) => t[1].ToRefArray(e, $dict, $path_i + "." + ii.toString(36)));
                                 }
-                            } else if (t[0] == "Set") {
+                            } else if (t[0] == MtBox.Set) {
                                 let rarr: any[] = [];
                                 if (t[1].ToArray) {
                                     v.forEach((e: any, ii: number) => {
@@ -240,19 +250,19 @@ export abstract class MsgArray {
                                     });
                                 }
                                 v = rarr;
-                            } else if (t[0] == "Obj") {
+                            } else if (t[0] == MtBox.Obj) {
                                 let rarr: any[] = [], keys = Object.keys(v);
                                 if (t[2].ToArray) {
                                     keys.forEach(ik => {
-                                        rarr.push(t[1] != MType.STR ? Number(ik) : ik, t[2].ToRefArray(v[ik], $dict, $path_i + "." + rarr.length.toString(36)));
+                                        rarr.push(t[1] != MtBase.STR ? Number(ik) : ik, t[2].ToRefArray(v[ik], $dict, $path_i + "." + rarr.length.toString(36)));
                                     });
                                 } else {
                                     keys.forEach(ik => {
-                                        rarr.push(t[1] != MType.STR ? Number(ik) : ik, v[ik]);
+                                        rarr.push(t[1] != MtBase.STR ? Number(ik) : ik, v[ik]);
                                     });
                                 }
                                 v = rarr;
-                            } else if (t[0] == "Map") {
+                            } else if (t[0] == MtBox.Map) {
                                 let rarr: any[] = [];
                                 if (t[2].ToArray) {
                                     v.forEach((iv: any, ik: any) => {
@@ -269,6 +279,8 @@ export abstract class MsgArray {
                             }
                         }
                     }
+                } else if (MsgArray.CHECK.OUT && fields[i][2] == 1) {
+                    throw new TypeError(`Decode Fail-(need require):${name}.${fields[i][0]}`);
                 }
                 r[i] = v;
             }
@@ -292,10 +304,10 @@ export abstract class MsgArray {
     }
 
     /**
-     * 设置是否开启-TypedArray转array
+     * 设置是否开启-TypedArray转array，CSharp的版本对应需要开
      * @param flag 
      */
-    public static ConfigTypedArray(flag: boolean) {
+    public static OptionTypedArray(flag: boolean) {
         let arr: any[] = [Int8Array, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array];
         if (typeof (BigInt) != "undefined") {
             arr.push(BigInt64Array, BigUint64Array);
@@ -318,61 +330,63 @@ export abstract class MsgArray {
         }
     }
 }
-
+function get_def_val(type: MetaType) {
+    if (Number.isInteger(type)) {
+        if (type >= MtBase.I8 && type <= MtBase.F64) {
+            if (type == MtBase.I64) {
+                return Cast_Int64(0);
+            }
+            return 0;
+        } else if (type == MtBase.STR) {
+            return "";
+        }
+    } else if (Array.isArray(type)) {
+        let a = <any[]>type;
+        if (a[0] == MtBox.Arr) {
+            return [];
+        } else if (a[0] == MtBox.Obj) {
+            return {};
+        } else if (a[0] == MtBox.Set) {
+            return new Set();
+        } else if (a[0] == MtBox.Map) {
+            return new Map();
+        }
+    } else if ((<any>type).BYTES_PER_ELEMENT > 0) {//TypeArray
+        return new (<any>type)();
+    }
+    return null;
+}
 function cast_field_normal(v: any, typeName: string, fieldInfo: MetaInfoField) {
     const typeField = fieldInfo[0], type = fieldInfo[1];
-    if (v === undefined || v === null) {
-        if (fieldInfo[2] == 1)
+    if (v == null) {
+        if (MsgArray.CHECK.IN && fieldInfo[2] == 1)
             throw new TypeError(`Decode Fail-(need require):${typeName}.${typeField}`);
-        if (Number.isInteger(type)) {
-            if (type >= MType.I8 && type <= MType.F64) {
-                if (type == MType.I64) {
-                    return Cast_Int64(0);
-                }
-                return 0;
-            } else if (type == MType.STR) {
-                return "";
-            }
-        } else if (Array.isArray(type)) {
-            let a = <any[]>type;
-            if (a[0] == "Arr") {
-                return [];
-            } else if (a[0] == "Obj") {
-                return {};
-            } else if (a[0] == "Set") {
-                return new Set();
-            } else if (a[0] == "Map") {
-                return new Map();
-            }
-        } else if ((<any>type)["BYTES_PER_ELEMENT"] > 0) {//TypeArray
-            return new (<any>type)();
-        }
-        return v;
+        return get_def_val(type);
     } else if (Number.isInteger(type)) {
-        return cast_primitive(v, <MType>type, typeName, typeField);
+        return cast_primitive(v, <MtBase>type, typeName, typeField);
     } else if (Array.isArray(type)) {
         if (!Array.isArray(v)) {
             cast_fail_type(typeName, typeField);
         }
         let a = <any[]>type;
-        if (a[0] == "Arr") {
+        if (a[0] == MtBox.Arr) {
             return v.map((e: any) => cast_or_msg(e, a[1], typeName, typeField));
-        } else if (a[0] == "Obj") {
+        } else if (a[0] == MtBox.Obj) {
             let rObj: any = {};
             for (let i = 0; i < v.length; i += 2) {
                 rObj[cast_primitive(v[i], a[1], typeName, typeField)] = cast_or_msg(v[i + 1], a[2], typeName, typeField);
             }
             return rObj;
-        } else if (a[0] == "Set") {
+        } else if (a[0] == MtBox.Set) {
             return new Set(v.map((e: any) => cast_or_msg(e, a[1], typeName, typeField)));
-        } else if (a[0] == "Map") {
+        } else if (a[0] == MtBox.Map) {
             let rMap = new Map();
             for (let i = 0; i < v.length; i += 2) {
                 rMap.set(cast_primitive(v[i], a[1], typeName, typeField), cast_or_msg(v[i + 1], a[2], typeName, typeField));
             }
             return rMap;
         }
-    } else if ((<any>type)["BYTES_PER_ELEMENT"] > 0) {//TypeArray
+    } else if ((<any>type).BYTES_PER_ELEMENT > 0) {//TypeArray
         if (Array.isArray(v) || ArrayBuffer.isView(v) || v instanceof ArrayBuffer) {// normal_array, TypeArray or ArrayBuffer
             return new (<any>type)(v);
         } else if (typeof (Buffer) != "undefined" && Buffer.isBuffer(v)) {//nodejs or fibjs
@@ -384,44 +398,21 @@ function cast_field_normal(v: any, typeName: string, fieldInfo: MetaInfoField) {
         return (<any>type).FromArray(v);
     }
 }
-function cast_or_msg(v: any, type: MType | NewableAny, typeName: string, typeField: string) {
-    if (MType[<MType>type]) {
-        return cast_primitive(v, <MType>type, typeName, typeField);
+function cast_or_msg(v: any, type: MtBase | NewableAny, typeName: string, typeField: string) {
+    if (MtBase[<MtBase>type]) {
+        return cast_primitive(v, <MtBase>type, typeName, typeField);
     }
     return (<any>type).FromArray(v);
 }
 
 function cast_field_ref(v: any, typeName: string, fieldInfo: MetaInfoField, $dict: Map<string, any>, $path = "") {
     const typeField = fieldInfo[0], type = fieldInfo[1];
-    if (v === undefined || v === null) {
-        if (fieldInfo[2] == 1)
+    if (v == null) {
+        if (MsgArray.CHECK.IN && fieldInfo[2] == 1)
             throw new TypeError(`Decode Fail-(need require):${typeName}.${typeField}`);
-        if (Number.isInteger(type)) {
-            if (type >= MType.I8 && type <= MType.F64) {
-                if (type == MType.I64) {
-                    return Cast_Int64(0);
-                }
-                return 0;
-            } else if (type == MType.STR) {
-                return "";
-            }
-        } else if (Array.isArray(type)) {
-            let a = <any[]>type;
-            if (a[0] == "Arr") {
-                return [];
-            } else if (a[0] == "Obj") {
-                return {};
-            } else if (a[0] == "Set") {
-                return new Set();
-            } else if (a[0] == "Map") {
-                return new Map();
-            }
-        } else if ((<any>type)["BYTES_PER_ELEMENT"] > 0) {//TypeArray
-            return new (<any>type)();
-        }
-        return v;
+        return get_def_val(type);
     } else if (Number.isInteger(type)) {
-        return cast_primitive(v, <MType>type, typeName, typeField);
+        return cast_primitive(v, <MtBase>type, typeName, typeField);
     } else if (Array.isArray(type)) {
         if (!Array.isArray(v)) {
             if (typeof (v) == "string" && $dict.has(v)) {
@@ -430,17 +421,17 @@ function cast_field_ref(v: any, typeName: string, fieldInfo: MetaInfoField, $dic
             cast_fail_type(typeName, typeField);
         }
         let a = <any[]>type, tv: any;
-        if (a[0] == "Arr") {
+        if (a[0] == MtBox.Arr) {
             tv = v.map((e: any, ii: number) => cast_or_ref(e, a[1], typeName, typeField, $dict, $path + "." + ii.toString(36)));
-        } else if (a[0] == "Obj") {
+        } else if (a[0] == MtBox.Obj) {
             let rObj: any = {};
             for (let ii = 0; ii < v.length; ii += 2) {
                 rObj[cast_primitive(v[ii], a[1], typeName, typeField)] = cast_or_ref(v[ii + 1], a[2], typeName, typeField, $dict, $path + "." + ii.toString(36));
             }
             tv = rObj;
-        } else if (a[0] == "Set") {
+        } else if (a[0] == MtBox.Set) {
             tv = new Set(v.map((e: any, ii: number) => cast_or_ref(e, a[1], typeName, typeField, $dict, $path + "." + ii.toString(36))));
-        } else if (a[0] == "Map") {
+        } else if (a[0] == MtBox.Map) {
             let rMap = new Map();
             for (let ii = 0; ii < v.length; ii += 2) {
                 rMap.set(cast_primitive(v[ii], a[1], typeName, typeField), cast_or_ref(v[ii + 1], a[2], typeName, typeField, $dict, $path + "." + ii.toString(36)));
@@ -449,7 +440,7 @@ function cast_field_ref(v: any, typeName: string, fieldInfo: MetaInfoField, $dic
         }
         $dict.set($path, tv);
         return tv;
-    } else if ((<any>type)["BYTES_PER_ELEMENT"] > 0) {//TypeArray
+    } else if ((<any>type).BYTES_PER_ELEMENT > 0) {//TypeArray
         if (Array.isArray(v) || ArrayBuffer.isView(v) || v instanceof ArrayBuffer) {// normal_array, TypeArray or ArrayBuffer
             return new (<any>type)(v);
         } else if (typeof (Buffer) != "undefined" && Buffer.isBuffer(v)) {//nodejs or fibjs
@@ -461,28 +452,28 @@ function cast_field_ref(v: any, typeName: string, fieldInfo: MetaInfoField, $dic
         return (<any>type).FromRefArray(v, $dict, $path);
     }
 }
-function cast_or_ref(v: any, type: MType | NewableAny, typeName: string, typeField: string, $dict: Map<string, any>, $path: string) {
-    if (MType[<MType>type]) {
-        return cast_primitive(v, <MType>type, typeName, typeField);
+function cast_or_ref(v: any, type: MtBase | NewableAny, typeName: string, typeField: string, $dict: Map<string, any>, $path: string) {
+    if (MtBase[<MtBase>type]) {
+        return cast_primitive(v, <MtBase>type, typeName, typeField);
     }
     return (<any>type).FromRefArray(v, $dict, $path);
 }
 
-function cast_primitive(v: any, type: MType, typeName: string, typeField: string) {
-    if (type == MType.I64) {
+function cast_primitive(v: any, type: MtBase, typeName: string, typeField: string) {
+    if (type == MtBase.I64) {
         v = Cast_Int64(v);
-    } else if (type >= MType.I8 && type <= MType.F64) {
+    } else if (type >= MtBase.I8 && type <= MtBase.F64) {
         v = Number(v);
         if (!Number.isFinite(v)) {
             cast_fail_type(typeName, typeField);
         }
-    } else if (type == MType.BOOL) {
+    } else if (type == MtBase.BOOL) {
         v = Boolean(v);
-    } else if (type == MType.DATE) {
+    } else if (type == MtBase.DATE) {
         if (v instanceof Date == false) {
             cast_fail_type(typeName, typeField);
         }
-    } else if (type == MType.STR && typeof (v) != "string") {
+    } else if (type == MtBase.STR && typeof (v) != "string") {
         cast_fail_type(typeName, typeField);
     }
     return v;
