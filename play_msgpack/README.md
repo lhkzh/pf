@@ -64,15 +64,15 @@ console.log(jsbi_encoder.encode(JSBI.BigInt("2345678979")).bin());
 **with play_msg (schema)**  
 <pre>
 import { pack, unpack } from "play_msgpack";
-import { MsgArray, MType } from "play_msg";
+import { MsgArray, MtBase } from "play_msg";
 @MsgArray.Meta({
     fields: [
-        ["uid", MType.I53, 1],
-        ["nick", MType.STR, 1],
-        ["head", MType.STR, 0],
-        ["age", MType.I8, 0],
-        ["login", MType.DATE, 0],
-        ["tags", ["Set", MType.I16], 0]
+        ["uid", MtBase.I53, 1],
+        ["nick", MtBase.STR, 1],
+        ["head", MtBase.STR, 0],
+        ["age", MtBase.I8, 0],
+        ["login", MtBase.DATE, 0],
+        ["tags", ["Set", MtBase.I16], 0]
     ]
 })
 class User extends MsgArray {
