@@ -117,7 +117,9 @@ export class CodecExtDate implements CodecExtApi {
 }
 
 /**
- * 保留js类型的扩展（实现列表）
+ * 保留js类型的扩展（实现列表）。
+ * Date=255,BigInt=254,Buffer=253,Set=252,Map=251,
+ * Int8Array=250,Uint8Array=249,Int16Array=248,Uint16Array=247,Int32Array=246,Uint32Array=245,Float32Array=244,Float64Array=243,BigInt64Array=242,BigUint64Array=241
  * @public
  */
 export const jsNativeExtList: readonly CodecExtApi[] = (function () {
@@ -139,7 +141,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
                     udv.setUint8(0, 1);
                     udv.setBigUint64(1, v);
                 }
-                encoder.encodeExt(this.TYPE, uarr, out);
+                encoder.ext(this.TYPE, uarr, out);
             },
             decode(ins: InStream, decoder) {
                 return ins.u8() == 1 ? ins.i64() : ins.u64();
@@ -155,7 +157,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
                 return <any>Buffer;
             },
             encode(v: Buffer, out: OutStream, encoder: EncoderApi) {
-                encoder.encodeExt(this.TYPE, new Uint8Array(v), out);
+                encoder.ext(this.TYPE, new Uint8Array(v), out);
             },
             decode(ins: InStream, decoder) {
                 return Buffer.from(ins.bin(ins.less));
@@ -171,19 +173,12 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             return Set;
         },
         decode(ins: InStream, decoder: DecoderApi) {
-            let r = new Set<any>(), n = decoder.decodeArraySize(ins);
-            for (let i = 0; i < n; i++) {
-                r.add(decoder.decode(ins));
-            }
-            return r;
+            return decoder.set(ins);
         },
         encode(v: Set<any>, out: OutStream, encoder: EncoderApi) {
             let tmpO = new OutStream();
-            encoder.encodeArraySize(v.size, tmpO);
-            v.forEach(e => {
-                encoder.encode(e, tmpO)
-            });
-            encoder.encodeExt(this.TYPE, tmpO.sub(), out);
+            encoder.set(v, tmpO);
+            encoder.ext(this.TYPE, tmpO.sub(), out);
         }
     }
     const JsCodecExtMap: CodecExtApi = {
@@ -194,20 +189,12 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             return Map;
         },
         decode(ins: InStream, decoder: DecoderApi) {
-            let r = new Map<any, any>(), n = decoder.decodeMapSize(ins);
-            for (let i = 0; i < n; i++) {
-                r.set(decoder.decode(ins), decoder.decode(ins));
-            }
-            return r;
+            return decoder.map(ins);
         },
         encode(v: Map<any, any>, out: OutStream, encoder: EncoderApi) {
             let tmpO = new OutStream();
-            encoder.encodeMapSize(v.size, tmpO);
-            v.forEach((iv, ik) => {
-                encoder.encode(ik, tmpO);
-                encoder.encode(iv, tmpO);
-            });
-            encoder.encodeExt(this.TYPE, tmpO.sub(), out);
+            encoder.map(v, tmpO);
+            encoder.ext(this.TYPE, tmpO.sub(), out);
         }
     }
     arr.push(JsCodecExtSet, JsCodecExtMap);
@@ -220,7 +207,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
                 return Clazz;
             },
             encode(v, out: OutStream, encoder: EncoderApi) {
-                encoder.encodeExt(Type, new Uint8Array(v.buffer), out);
+                encoder.ext(Type, new Uint8Array(v.buffer), out);
             },
             decode(ins: InStream, decoder) {
                 let T: any = Clazz;

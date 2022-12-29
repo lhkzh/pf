@@ -39,24 +39,17 @@ export class Encoder {
         }
         if (!this.extends.has(Map)) {
             this.extends.set(Map, vFactory(Map, (v: Map<any, any>, out: OutStream, encoder: Encoder) => {
-                encoder.encodeMapSize(v.size, out);
-                v.forEach((iv, ik) => {
-                    encoder.encode(ik, out);
-                    encoder.encode(iv, out);
-                });
+                encoder.map(v, out);
             }));
         }
         if (!this.extends.has(Set)) {
             this.extends.set(Set, vFactory(Set, (v: Set<any>, out: OutStream, encoder: Encoder) => {
-                encoder.encodeArraySize(v.size, out);
-                v.forEach(iv => {
-                    encoder.encode(iv, out);
-                });
+                encoder.set(v, out);
             }));
         }
         if (typeof (Buffer) != "undefined" && !this.extends.has(<any>Buffer)) {
             this.extends.set(<any>Buffer, vFactory(<any>Buffer, (v: Buffer, out: OutStream, encoder: Encoder) => {
-                encoder.encodeBin(new Uint8Array(v), out);
+                encoder.bin(new Uint8Array(v), out);
             }));
         }
     }
@@ -69,38 +62,13 @@ export class Encoder {
         if (ctor == Boolean) {
             out.u8(v ? 0xc3 : 0xc2);
         } else if (ctor == Number) {
-            this.encodeNumber(<number>v, out);
+            this.number(v, out);
         } else if (ctor == String) {
-            this.encodeStr(<string>v, out);
+            this.str(<string>v, out);
         } else if (ctor == Array) {
-            this.encodeArraySize(v.length, out);
-            for (let i = 0; i < v.length; i++) {
-                this.encode(v[i], out);
-            }
+            this.arr(v, out);
         } else if (ctor == Object) {
-            let keys = Object.keys(v);
-            if (!this.mapKeepNilVal) {
-                keys = keys.filter(k => v[k] != null);
-            }
-            this.encodeMapSize(keys.length, out);
-            if (this.mapCheckIntKey) {
-                for (let k: string, i = 0; i < keys.length; i++) {
-                    k = keys[i];
-                    let ik = Number.parseInt(k);
-                    if (Number.isSafeInteger(ik) && ik.toString() == k) {
-                        this.encodeIntNumber(ik, out);
-                    } else {
-                        this.encodeStr(k, out);
-                    }
-                    this.encode(v[k], out);
-                }
-            } else {
-                for (let k: string, i = 0; i < keys.length; i++) {
-                    k = keys[i];
-                    this.encodeStr(k, out);
-                    this.encode(v[k], out);
-                }
-            }
+            this.obj(v, out);
         } else {
             let ext = this.extends.get(ctor);
             if (ext) {
@@ -109,10 +77,10 @@ export class Encoder {
                 this.long.encode(v, out);
             } else if (ArrayBuffer.isView(v)) {
                 if (ctor == Uint8Array) {
-                    this.encodeBin(<Uint8Array>v, out);
-                } else {
+                    this.bin(<Uint8Array>v, out);
+                } else {//TypedArray(except Uint8Array)
                     let iarr: Array<number | bigint> = <any>v;
-                    this.encodeArraySize(iarr.length, out);
+                    this.arrSize(iarr.length, out);
                     if (ctor == Float32Array) {
                         for (let i = 0; i < iarr.length; i++) {
                             out.u8(0xca).float(<number>iarr[i]);
@@ -127,7 +95,7 @@ export class Encoder {
                         }
                     } else {
                         for (let i = 0; i < iarr.length; i++) {
-                            this.encodeIntNumber(<number>iarr[i], out);
+                            this.int(<number>iarr[i], out);
                         }
                     }
                 }
@@ -135,22 +103,19 @@ export class Encoder {
                 if (this.throwIfUnknow) {
                     throw new Error(`Msgpack encode not imp:${ctor.name}-${ext}`);
                 } else {
-                    let keys = Object.keys(v);
-                    this.encodeMapSize(keys.length, out);
-                    for (let k: string, i = 0; i < keys.length; i++) {
-                        k = keys[i];
-                        this.encodeStr(k, out);
-                        this.encode(v[k], out);
-                    }
+                    this.objFast(v, out);
                 }
             }
         }
         return out;
     }
-    public encodeNil(out: OutStream) {
+    public nil(out: OutStream) {
         out.u8(0xc0);
     }
-    public encodeArraySize(length: number, out: OutStream) {
+    public bool(v: boolean, out: OutStream) {
+        out.u8(v ? 0xc3 : 0xc2);
+    }
+    public arrSize(length: number, out: OutStream) {
         if (length < 16) {
             out.u8(0x90 | length);
         } else if (length <= 0xffff) {
@@ -159,7 +124,7 @@ export class Encoder {
             out.u8(0xdd).u32(length);
         }
     }
-    public encodeMapSize(length: number, out: OutStream) {
+    public mapSize(length: number, out: OutStream) {
         if (length < 16) {
             out.u8(0x80 | length);
         } else if (length <= 0xffff) {
@@ -168,7 +133,63 @@ export class Encoder {
             out.u8(0xdf).u32(length);
         }
     }
-    public encodeStr(v: string, out: OutStream) {
+    public arr(v: any[], out: OutStream) {
+        this.arrSize(v.length, out);
+        for (let i = 0; i < v.length; i++) {
+            this.encode(v[i], out);
+        }
+    }
+    public obj(v: any, out: OutStream) {
+        let keys = Object.keys(v);
+        if (!this.mapKeepNilVal) {
+            keys = keys.filter(k => v[k] != null);
+        }
+        this.mapSize(keys.length, out);
+        if (this.mapCheckIntKey) {
+            for (let k: string, i = 0; i < keys.length; i++) {
+                k = keys[i];
+                let ik = Number.parseInt(k);
+                if (Number.isSafeInteger(ik) && ik.toString() == k) {
+                    this.int(ik, out);
+                } else {
+                    this.str(k, out);
+                }
+                this.encode(v[k], out);
+            }
+        } else {
+            for (let k: string, i = 0; i < keys.length; i++) {
+                k = keys[i];
+                this.str(k, out);
+                this.encode(v[k], out);
+            }
+        }
+    }
+    public objFast(v: any, out: OutStream) {
+        let keys = Object.keys(v);
+        this.mapSize(keys.length, out);
+        for (let k: string, i = 0; i < keys.length; i++) {
+            k = keys[i];
+            this.str(k, out);
+            this.encode(v[k], out);
+        }
+    }
+    public map(v: Map<any, any>, out: OutStream) {
+        this.mapSize(v.size, out);
+        v.forEach((iv, ik) => {
+            this.encode(ik, out);
+            this.encode(iv, out);
+        });
+    }
+    public set(v: Set<any>, out: OutStream) {
+        this.arrSize(v.size, out);
+        v.forEach(iv => {
+            this.encode(iv, out);
+        });
+    }
+    public date(v: Date, out: OutStream) {
+        this.extends.get(Date)?.encode(v, out, this);
+    }
+    public str(v: string, out: OutStream) {
         let b = Str.encode(v), n = b.length;
         if (n < 32) {
             out.u8(0xa0 | n);
@@ -181,16 +202,16 @@ export class Encoder {
         }
         out.blob(b);
     }
-    public encodeNumber(v: number, out: OutStream) {
+    public number(v: number, out: OutStream) {
         if (Number.isInteger(v)) {
-            this.encodeIntNumber(v, out);
+            this.int(v, out);
         } else if (this.floatAs32) {
             out.u8(0xca).float(v);
         } else {
             out.u8(0xcb).double(v);
         }
     }
-    public encodeIntNumber(v: number, out: OutStream) {
+    public int(v: number, out: OutStream) {
         if (v < 0) {
             if (v >= -0x20) {
                 out.u8(0x100 + v)
@@ -217,7 +238,7 @@ export class Encoder {
             }
         }
     }
-    public encodeBin(v: Uint8Array, out: OutStream) {
+    public bin(v: Uint8Array, out: OutStream) {
         if (v.length < 256) {
             out.u8(0xc4).u8(v.length).blob(v);
         } else if (v.length <= 0xffff) {
@@ -226,12 +247,12 @@ export class Encoder {
             out.u8(0xc6).u32(v.length).blob(v);
         }
     }
-    public encodeExt(type: number, bin: Uint8Array, out: OutStream) {
-        this.encodeExtHeader(type, bin.length, out).blob(bin);
+    public ext(type: number, bin: Uint8Array, out: OutStream) {
+        this.extHeader(type, bin.length, out).blob(bin);
     }
     private ExtLens: number[] = [0, 0xd4, 0xd5, 0, 0xd6, 0, 0, 0, 0xd7];//{1:0xd4,2:0xd5,4:0xd6,8:0xd7};
     //写扩展的类型type和长度length
-    public encodeExtHeader(type: number, length: number, out: OutStream) {
+    public extHeader(type: number, length: number, out: OutStream) {
         if (length <= 0xff) {
             let c = this.ExtLens[length];
             if (c > 0) {

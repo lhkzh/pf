@@ -49,11 +49,15 @@ describe("base", function(){
             assert.deepEqual(Index.unpack(Index.pack(n)), n);
         };
         t_fn([]);
-        var arr = [-1,23391,"balala",true,null,[-1024]];
+        var arr = [-1,23391,"balala",true,null,[-1024],{uid:-1001,age:98,flag:false,pi:0.315}];
         t_fn(arr);
-        for(var i=0;i<10000;i++){
-            arr.push(i);
-        }
+        var tmp = new Array(5000);
+        tmp.fill(-91,0,1000);
+        tmp.fill(91,1000,2000);
+        tmp.fill("heh哈",2000,3000);
+        tmp.fill(new Date(),3000,4000);
+        tmp.fill(false,4000,5000);
+        arr = tmp.concat(arr);
         t_fn(arr);
     });
     it("obj", function(){
@@ -108,6 +112,50 @@ describe("base", function(){
         t_fn(new Int8Array(arr));
         t_fn(new Int8Array([...arr,...arr,...arr]));
     });
+    it("vInt16Array", function(){
+        let t_fn = (n)=>{
+            let v = Index.unpack(Index.pack(n));
+            assert.strictEqual(v.constructor, Array);
+            for(let i=0;i<n.length;i++) assert.strictEqual(v[i], n[i]);
+        };
+        t_fn(new Int16Array([]));
+        let arr=[];for(let i=-2560;i<2560;i+=10) arr.push(i);
+        t_fn(new Int16Array(arr));
+        t_fn(new Int16Array([...arr,...arr,...arr]));
+    });
+    it("vUint16Array", function(){
+        let t_fn = (n)=>{
+            let v = Index.unpack(Index.pack(n));
+            assert.strictEqual(v.constructor, Array);
+            for(let i=0;i<n.length;i++) assert.strictEqual(v[i], n[i]);
+        };
+        t_fn(new Uint16Array([]));
+        let arr=[];for(let i=0;i<2560;i+=10) arr.push(i);
+        t_fn(new Uint16Array(arr));
+        t_fn(new Uint16Array([...arr,...arr,...arr]));
+    });
+    it("vInt32Array", function(){
+        let t_fn = (n)=>{
+            let v = Index.unpack(Index.pack(n));
+            assert.strictEqual(v.constructor, Array);
+            for(let i=0;i<n.length;i++) assert.strictEqual(v[i], n[i]);
+        };
+        t_fn(new Int32Array([]));
+        let arr=[-2147483646,2147483646];for(let i=-2560;i<2560;i+=10) arr.push(i);
+        t_fn(new Int32Array(arr));
+        t_fn(new Int32Array([...arr,...arr,...arr]));
+    });
+    it("vUint32Array", function(){
+        let t_fn = (n)=>{
+            let v = Index.unpack(Index.pack(n));
+            assert.strictEqual(v.constructor, Array);
+            for(let i=0;i<n.length;i++) assert.strictEqual(v[i], n[i]);
+        };
+        t_fn(new Uint32Array([]));
+        let arr=[2147483646];for(let i=0;i<2560;i+=10) arr.push(i);
+        t_fn(new Uint32Array(arr));
+        t_fn(new Uint32Array([...arr,...arr,...arr]));
+    });
     it("vFloatArray", function(){
         let t_fn = (n)=>{
             let v = Index.unpack(Index.pack(n));
@@ -115,9 +163,9 @@ describe("base", function(){
             for(let i=0;i<n.length;i++) assert.strictEqual(v[i], n[i]);
         };
         t_fn(new Float32Array([]));
-        let arr=[];for(let i=0;i<128;i++) arr.push(i+0.5,0.5-i);
+        let arr=[];for(let i=0;i<1280;i++) arr.push(i+0.5,0.5-i);
         t_fn(new Float32Array(arr));
-        t_fn(new Float32Array([...arr,...arr,...arr]));
+        t_fn(new Float64Array([...arr,...arr,...arr]));
     });
     it('BigInt64Array/BigUint64Array', () => {
         let t_fn = (n)=>{
@@ -133,7 +181,6 @@ describe("base", function(){
     });
     it("unknow", function(){
         let MyMsgpack_throw = new Index.MsgPacker({throwIfUnknow:true});
-        let MyMsgpack_try = new Index.MsgPacker({throwIfUnknow:false});
         let MyTmpObj = function(){};
         let tmpVo = new MyTmpObj();
         tmpVo.uid = 323;
@@ -142,6 +189,8 @@ describe("base", function(){
         assert.throws(function(){
             MyMsgpack_throw.pack(tmpVo);
         });
+        
+        let MyMsgpack_try = new Index.MsgPacker({throwIfUnknow:false});
         assert.deepEqual(MyMsgpack_try.unpack(MyMsgpack_try.pack(tmpVo)), tmpVo);
     });
 });

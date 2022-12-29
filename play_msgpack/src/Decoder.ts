@@ -31,10 +31,10 @@ export class Decoder {
             return k - 0x100;
         }
         if ((k & 0xf0) == 0x90) {//fixedArray
-            return this.decodeArray(b, k & 0x0F);
+            return this.arrBy(b, k & 0x0F);
         }
         if ((k & 0xe0) == 0x80) {//fixedMap
-            return this.decodeMap(b, k & 0x0F);
+            return this.objBy(b, k & 0x0F);
         }
         if ((k & 0xe0) == 0xa0) {//fixedString
             return b.str(k & 0x1F)
@@ -67,13 +67,13 @@ export class Decoder {
             case 0xcf:
                 return this.long.toAuto(this.long.decodePositive(b));
             case 0xdc:
-                return this.decodeArray(b, b.u16());
+                return this.arrBy(b, b.u16());
             case 0xdd:
-                return this.decodeArray(b, b.u32());
+                return this.arrBy(b, b.u32());
             case 0xde:
-                return this.decodeMap(b, b.u16());
+                return this.objBy(b, b.u16());
             case 0xdf:
-                return this.decodeMap(b, b.u32());
+                return this.objBy(b, b.u32());
             case 0xd9:
                 return b.str(b.u8());
             case 0xda:
@@ -87,29 +87,32 @@ export class Decoder {
             case 0xc6:
                 return b.sub(b.u32());
             case 0xd4:
-                return this.decodeExt(b, 1, b.u8());
+                return this.ext(b, 1, b.u8());
             case 0xd5:
-                return this.decodeExt(b, 2, b.u8());
+                return this.ext(b, 2, b.u8());
             case 0xd6:
-                return this.decodeExt(b, 4, b.u8());
+                return this.ext(b, 4, b.u8());
             case 0xd7:
-                return this.decodeExt(b, 8, b.u8());
+                return this.ext(b, 8, b.u8());
             case 0xd8:
-                return this.decodeExt(b, 16, b.u8());
+                return this.ext(b, 16, b.u8());
             case 0xc7:
-                return this.decodeExt(b, b.u8(), b.u8());
+                return this.ext(b, b.u8(), b.u8());
             case 0xc8:
-                return this.decodeExt(b, b.u16(), b.u8());
+                return this.ext(b, b.u16(), b.u8());
             case 0xc9:
-                return this.decodeExt(b, b.u32(), b.u8());
+                return this.ext(b, b.u32(), b.u8());
             default:
                 throw new Error("bad format:" + k);
         }
     }
-    public isNextNil(b: InStream) {
+    /**
+     * 查看输入流b的下一个msgpack码是否为null标记
+     */
+    public isNil(b: InStream) {
         return b.see() == 0xc0;
     }
-    public decodeArraySize(b: InStream): number {
+    public arrSize(b: InStream): number {
         let k = b.u8();
         if ((k & 0xf0) == 0x90) {//fixedArray
             return k & 0x0F;
@@ -120,7 +123,7 @@ export class Decoder {
         }
         throw new Error("bad arr header:" + k);
     }
-    public decodeMapSize(b: InStream): number {
+    public mapSize(b: InStream): number {
         let k = b.u8();
         if ((k & 0xe0) == 0x80) {//fixedMap
             return k & 0x0F;
@@ -131,15 +134,15 @@ export class Decoder {
         }
         throw new Error("bad map header:" + k);
     }
-    public decodeArray(b: InStream, count: number): any[] {
+    public arrBy(b: InStream, count: number): any[] {
         let a = [];
         for (let i = 0; i < count; i++) {
             a[i] = this.decode(b);
         }
         return a;
     }
-    public decodeMap(b: InStream, count: number): any {
-        if (this.mapAsReal) {
+    public objBy(b: InStream, count: number, asRealMap: boolean = this.mapAsReal): { [index: string]: any } | { [index: number]: any } | Map<any, any> {
+        if (asRealMap) {
             let m = new Map();
             for (let i = 0; i < count; i++) {
                 m.set(this.decode(b), this.decode(b));
@@ -153,7 +156,23 @@ export class Decoder {
             return m;
         }
     }
-    public decodeExt(b: InStream, len: number, type: number) {
+    public obj(b: InStream): { [index: string]: any } | { [index: number]: any } {
+        return this.objBy(b, this.mapSize(b), false);
+    }
+    public map(b: InStream): Map<any, any> {
+        return <Map<any, any>>this.objBy(b, this.mapSize(b), true);
+    }
+    public arr(b: InStream): any[] {
+        return this.arrBy(b, this.arrSize(b));
+    }
+    public set(b: InStream): Set<any> {
+        let n = this.arrSize(b), s: Set<any> = new Set();
+        for (let i = 0; i < n; i++) {
+            s.add(this.decode(b));
+        }
+        return s;
+    }
+    public ext(b: InStream, len: number, type: number): any {
         let ebs = b.child(len);//new InStream(b.bin(len));
         let ext = this.extends.get(type);
         if (ext) {
@@ -163,6 +182,64 @@ export class Decoder {
             throw new Error(`Msgpack decode not support ext:${type}`);
         }
         return { msg: "unknow", type: type, data: ebs.src() };
+    }
+    public number(b: InStream): number | bigint {
+        let k = b.u8();
+        if (k <= 0x7f) { //fixInt
+            return k;
+        } else if (k >= 0xe0) {//fixInt
+            return k - 0x100;
+        }
+        switch (k) {
+            case 0xca:
+                return b.float();
+            case 0xcb:
+                return b.double();
+            case 0xd0:
+                return b.i8();
+            case 0xd1:
+                return b.i16();
+            case 0xd2:
+                return b.i32();
+            case 0xcc:
+                return b.u8();
+            case 0xcd:
+                return b.u16();
+            case 0xce:
+                return b.u32();
+            case 0xd3:
+                return this.long.toAuto(this.long.decodeNegative(b));
+            case 0xcf:
+                return this.long.toAuto(this.long.decodePositive(b));
+        }
+        throw new Error("bad number header:" + k);
+    }
+    public str(b: InStream): string {
+        let k = b.u8();
+        if ((k & 0xe0) == 0xa0) {//fixedString
+            return b.str(k & 0x1F)
+        }
+        switch (k) {
+            case 0xd9:
+                return b.str(b.u8());
+            case 0xda:
+                return b.str(b.u16());
+            case 0xdb:
+                return b.str(b.u32());
+        }
+        throw new Error("bad str header:" + k);
+    }
+    public bin(b: InStream): Uint8Array {
+        let k = b.u8();
+        switch (k) {
+            case 0xc4:
+                return b.sub(b.u8());
+            case 0xc5:
+                return b.sub(b.u16());
+            case 0xc6:
+                return b.sub(b.u32());
+        }
+        throw new Error("bad bytes header:" + k);
     }
 }
 

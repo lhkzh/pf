@@ -26,13 +26,16 @@ export interface CodecLongApi {
 
 export interface EncoderApi {
     encode(v: any, out: OutStream): OutStream;
-    encodeArraySize(length: number, out: OutStream): void;
-    encodeMapSize(length: number, out: OutStream): void;
-    encodeExt(type: number, bin: Uint8Array, out: OutStream): void;
+
+    map(v: Map<any, any>, out: OutStream): void;
+    set(v: Set<any>, out: OutStream): void;
+
+    ext(type: number, bin: Uint8Array, out: OutStream): void;
 }
 
 export interface DecoderApi {
-    decode(b: InStream): any
-    decodeMapSize(b: InStream): number
-    decodeArraySize(b: InStream): number
+    decode(b: InStream): any;
+
+    map(b: InStream): Map<any, any>;
+    set(b: InStream): Set<any>;
 }
