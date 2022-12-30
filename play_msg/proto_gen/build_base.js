@@ -39,16 +39,16 @@ function parseSrc(src){
             }else{
                 let name = tmp[0];
                 let type = tmp[1];
-                let option = 1;
+                let require = 1;
                 if(type.indexOf("?")>0){
-                    option = 0;
+                    require = 0;
                     type = type.replace("?", "");
                 }
                 type=type.replace(/"/g,"");
                 in_desc.fields.push({
                     name:name,
                     type:type,
-                    option:option,
+                    require:require,
                     note:in_note||""
                 });
             }

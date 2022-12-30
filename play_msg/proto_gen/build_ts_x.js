@@ -41,7 +41,7 @@ let fields = info.fields.map(e=>{
     }else{
         type = e.type;
     }
-    return `["${e.name}", ${type}, ${e.option}]`;
+    return `["${e.name}", ${type}, ${e.require}]`;
 });
 return`@MsgArray.Meta({
     id: ${info.id},
@@ -83,9 +83,9 @@ function build_ts_class(info, longTo="bigint"){
                 t1 = basesTypes[bases.indexOf(t1.toUpperCase())];
                 if(bases.indexOf(t2.toUpperCase())>-1){
                     t2 = basesTypes[bases.indexOf(t2.toUpperCase())];
-                    type = `{[index:${t1}]: ${t2}}`;
+                    type = `{ [index:${t1}]: ${t2} }`;
                 }else{
-                    type = `{[index:${t1}]: ${t2}}`;
+                    type = `{ [index:${t1}]: ${t2} }`;
                 }
             }else if(t0=="map"){
                 t1 = basesTypes[bases.indexOf(t1.toUpperCase())];

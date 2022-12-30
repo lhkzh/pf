@@ -74,7 +74,7 @@ export class Encoder {
             if (ext) {
                 ext.encode(v, out, this);
             } else if (this.long.isImp(v)) {
-                this.long.encode(v, out);
+                this.int64(v, out);
             } else if (ArrayBuffer.isView(v)) {
                 if (ctor == Uint8Array) {
                     this.bin(<Uint8Array>v, out);
@@ -91,7 +91,7 @@ export class Encoder {
                         }
                     } else if (ctor.name.substr(0, 3) == 'Big') {
                         for (let i = 0; i < iarr.length; i++) {
-                            this.long.encode(iarr[i], out);
+                            this.int64(iarr[i], out);
                         }
                     } else {
                         for (let i = 0; i < iarr.length; i++) {
@@ -133,7 +133,7 @@ export class Encoder {
             out.u8(0xdf).u32(length);
         }
     }
-    public arr(v: any[], out: OutStream) {
+    public arr(v: ArrayLike<any>, out: OutStream) {
         this.arrSize(v.length, out);
         for (let i = 0; i < v.length; i++) {
             this.encode(v[i], out);
@@ -203,9 +203,10 @@ export class Encoder {
         out.blob(b);
     }
     public number(v: number, out: OutStream) {
-        if (Number.isInteger(v)) {
-            this.int(v, out);
-        } else if (this.floatAs32) {
+        Number.isInteger(v) ? this.int(v, out) : this.float(v, out);
+    }
+    public float(v: number, out: OutStream) {
+        if (this.floatAs32) {
             out.u8(0xca).float(v);
         } else {
             out.u8(0xcb).double(v);
@@ -236,6 +237,14 @@ export class Encoder {
             } else {
                 this.long.encode(v, out);
             }
+        }
+    }
+    public int64(v: number | bigint | any, out: OutStream) {
+        let v1: number = this.long.toAuto(v);
+        if (Number.isSafeInteger(v1)) {
+            this.int(v1, out);
+        } else {
+            this.long.encode(v, out);
         }
     }
     public bin(v: Uint8Array, out: OutStream) {

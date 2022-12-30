@@ -40,7 +40,7 @@ function build_field_meta(e){
     }else{
         type = e.type;
     }
-    return `@MsgField(${type}, ${e.option})`;
+    return `@MsgField(${type}, ${e.require})`;
 }
 function build_ts_class(info, longTo="bigint"){
     let cstNote = s=>{
@@ -74,9 +74,9 @@ function build_ts_class(info, longTo="bigint"){
                 t1 = basesTypes[bases.indexOf(t1.toUpperCase())];
                 if(bases.indexOf(t2.toUpperCase())>-1){
                     t2 = basesTypes[bases.indexOf(t2.toUpperCase())];
-                    type = `{[index:${t1}]: ${t2}}`;
+                    type = `{ [index:${t1}]: ${t2} }`;
                 }else{
-                    type = `{[index:${t1}]: ${t2}}`;
+                    type = `{ [index:${t1}]: ${t2} }`;
                 }
             }else if(t0=="map"){
                 t1 = basesTypes[bases.indexOf(t1.toUpperCase())];

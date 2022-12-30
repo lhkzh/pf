@@ -66,18 +66,40 @@ describe("base", function(){
         };
         t_fn({});
         t_fn({"a":123.5,b:false});
+        var tmp = {uid:321,score:88.5,name:"Tom",flag:true,tags:[22,33,55,false,1.2,"us"]};
+        for(var i=0;i<512;i++){
+            tmp[i]=i;
+            tmp["pauhgphaphgpahpgAH7TR0YQ0YT07QY0T7YHPZHPZHPZHJGPHAPGNP[AIJGPJtmpshfpuahpghpahgpahpghpauhgpahpguhpahgphapghpauhgphaphgpahpgAH7TR0YQ0YT07QY0T7YHPZHPZHPZHJGPHAPGNP[AIJGPJAPGIJ"+i]=i;
+        }
+        t_fn(tmp);
     });
     it("vmap", function(){
         let t_fn = (n,v)=>{
             assert.deepEqual(Index.unpack(Index.pack(n)),v);
         };
         t_fn(new Map([[23,"233"],["abc",456]]), {23:"233", abc:456});
+        var tmp = {},tm2=new Map();
+        for(var i=9000;i<10000;i++){
+            tmp[i] = i;
+            tm2.set(i,i);
+            tmp[i.toString(36)]=i;
+            tm2.set(i.toString(36),i);
+        }
+        t_fn(tm2,tmp);
     });
     it("vset", function(){
         let t_fn = (n,v)=>{
             assert.deepEqual(Index.unpack(Index.pack(n)),v);
         };
         t_fn(new Set([2,3,5]), [2,3,5]);
+        var tarr = [],tset=new Set();
+        for(var i=9000;i<10000;i++){
+            tarr.push(i);
+            tset.add(i);
+            tarr.push(i.toString(36));
+            tset.add(i.toString(36));
+        }
+        t_fn(tset,tarr);
     });
     it("vBuffer", function(){
         let t_fn = (n)=>{
