@@ -1,6 +1,8 @@
 
 let StrCoder: { encode: (str: string) => Uint8Array, decode: (buf: Uint8Array) => string };
-if (typeof (Buffer) != "undefined") {
+const __GLOBAL: any = typeof (window) == "object" ? window : global;
+const __IS_FIBJS = __GLOBAL.process && __GLOBAL.process.versions && __GLOBAL.process.versions.fibjs;
+if (!__IS_FIBJS && typeof (Buffer) != "undefined") {
     StrCoder = {
         encode: function (str: string) {
             return new Uint8Array(Buffer.from(str, "utf8"));
@@ -9,7 +11,7 @@ if (typeof (Buffer) != "undefined") {
             return Buffer.from(buf).toString("utf8");
         }
     }
-} else if (typeof (TextEncoder) != "undefined") {
+} else if (!__IS_FIBJS && typeof (TextEncoder) != "undefined") {
     const tE = new TextEncoder();
     const tD = new TextDecoder("utf-8");
     StrCoder = {

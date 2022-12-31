@@ -1,42 +1,44 @@
 {
     "name": "play_msgpack",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "msgpack",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "browser": "./dist/index.umd.js",
     "exports": {
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+        "require": "./dist/index.js",
+        "import": "./dist/index.mjs"
     },
     "typings": "./dist/index.d.ts",
     "directories": {
-      "doc": "docs"
-    },
-    "dependencies": {
+        "doc": "docs"
     },
     "devDependencies": {
-      "@microsoft/api-extractor": "latest",
-      "@types/node": "latest",
-      "nyc": "^15.1.0",
-      "rollup": "latest",
-      "rollup-plugin-typescript2": "latest",
-      "@chiogen/rollup-plugin-terser": "latest"
+        "@chiogen/rollup-plugin-terser": "latest",
+        "@microsoft/api-extractor": "latest",
+        "@types/node": "latest",
+        "nyc": "^15.1.0",
+        "rollup": "latest",
+        "rollup-plugin-typescript2": "latest"
     },
     "scripts": {
-      "build": "npm run build:clear && npm run build:js && npm run build:dts",
-      "build:js": "npx rollup -c",
-      "build:dts": "npx tsc && npx api-extractor run --local --verbose && node removePrivate.js",
-      "build:clear": "node removeOut.js",
-      "test":"node test/index.js",
-      "test_fibjs":"fibjs test/index.js"
+        "build": "npm run build:clear && npm run build:js && npm run build:dts",
+        "build:js": "npx rollup -c",
+        "build:dts": "npx tsc && npx api-extractor run --local --verbose && node removePrivate.js",
+        "build:clear": "node removeOut.js",
+        "test": "node test/index.js",
+        "test_fibjs": "fibjs test/index.js"
     },
     "files": [
-      "package.json",
-      "dist/"
+        "package.json",
+        "dist/"
     ],
     "author": "",
     "license": "MIT",
     "homepage": "https://github.com/lhkzh/pf/tree/master/play_msgpack",
-    "keywords": ["msgpack","ts","typescript"]
-  }
+    "keywords": [
+        "msgpack",
+        "ts",
+        "typescript"
+    ]
+}
