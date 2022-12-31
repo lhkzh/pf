@@ -13,13 +13,15 @@ export class Encoder {
     private extends: Map<NewableType, CodecExtApi>;
     private mapCheckIntKey: boolean;
     public mapKeepNilVal: boolean;
+    private typedArrayToBytes: boolean;
 
-    constructor(public config?: { mapCheckIntKey?: boolean, mapKeepNilVal?: boolean, floatAs32?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi>, throwIfUnknow?: boolean }) {
+    constructor(public config?: { typedArrayToBytes?: boolean, mapCheckIntKey?: boolean, mapKeepNilVal?: boolean, floatAs32?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi>, throwIfUnknow?: boolean }) {
         this.long = config && config.long || CodecLongImp;
         this.floatAs32 = config && config.floatAs32 || false;
         this.mapCheckIntKey = config && config.mapCheckIntKey || false;
         this.mapKeepNilVal = config && config.mapKeepNilVal || false;
         this.throwIfUnknow = config && config.throwIfUnknow || false;
+        this.typedArrayToBytes = config && config.typedArrayToBytes || false;
         this.extends = new Map();
         this.extends.set(CodecExtDate.INSTANCE.CLASS, CodecExtDate.INSTANCE);
         if (config && config.extends && config.extends.length) {
@@ -78,7 +80,9 @@ export class Encoder {
             } else if (ArrayBuffer.isView(v)) {
                 if (ctor == Uint8Array) {
                     this.bin(<Uint8Array>v, out);
-                } else {//TypedArray(except Uint8Array)
+                } else if (this.typedArrayToBytes) {//fast to binary
+                    this.bin(new Uint8Array(v.buffer), out);
+                } else {//TypedArray(except Uint8Array) cast to normal_array
                     let iarr: Array<number | bigint> = <any>v;
                     this.arrSize(iarr.length, out);
                     if (ctor == Float32Array) {
