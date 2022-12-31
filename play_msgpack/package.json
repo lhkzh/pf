@@ -1,6 +1,6 @@
 {
     "name": "play_msgpack",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "description": "msgpack",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
@@ -38,5 +38,5 @@
     "author": "",
     "license": "MIT",
     "homepage": "https://github.com/lhkzh/pf/tree/master/play_msgpack",
-    "keywords": ["msgpack","ts"]
+    "keywords": ["msgpack","ts","typescript"]
   }

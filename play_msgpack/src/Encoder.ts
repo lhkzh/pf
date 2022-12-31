@@ -240,9 +240,9 @@ export class Encoder {
         }
     }
     public int64(v: number | bigint | any, out: OutStream) {
-        let v1: number = this.long.toAuto(v);
-        if (Number.isSafeInteger(v1)) {
-            this.int(v1, out);
+        let n: number = this.long.toNumber(v);
+        if (n >= -0x80000000 && n <= 0xffffffff) {
+            this.int(n, out);
         } else {
             this.long.encode(v, out);
         }

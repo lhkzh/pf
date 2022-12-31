@@ -34,6 +34,9 @@ const jsbi_ext: CodecLongApi = {
     isImp(v: any): boolean {
         return v instanceof JSBI;
     },
+    toNumber(v: any): number{
+        return JSBI.toNumber(JSBI.BigInt(v));
+    },
     toAuto(v: any): any {
         let x = JSBI.BigInt(v);
         let n = JSBI.toNumber(x);

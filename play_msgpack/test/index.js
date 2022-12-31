@@ -198,8 +198,8 @@ describe("base", function(){
                 assert.strictEqual(v[i]==n[i], true);
             }
         };
-        t_fn(new BigInt64Array([2306n,123n,0n,-25515621n,2305843009213694039n,-2305843009213694039n]));
-        t_fn(new BigUint64Array([2306n,123n,0n,25515621n,2305843009213694039n,2905843009213694039n]));
+        t_fn(new BigInt64Array([2306n,123n,0n,-25515621n,9007199254740991n,-9007199254740991n,2305843009213694039n,-2305843009213694039n]));
+        t_fn(new BigUint64Array([2306n,123n,0n,25515621n,9007199254740991n,-9007199254740991n,2305843009213694039n,2905843009213694039n]));
     });
     it("unknow", function(){
         let MyMsgpack_throw = new Index.MsgPacker({throwIfUnknow:true});
@@ -215,6 +215,58 @@ describe("base", function(){
         let MyMsgpack_try = new Index.MsgPacker({throwIfUnknow:false});
         assert.deepEqual(MyMsgpack_try.unpack(MyMsgpack_try.pack(tmpVo)), tmpVo);
     });
+
+    if(process.versions.fibjs){
+        let xfn = (d)=>{
+            assert.deepEqual(require("msgpack").encode(d), Buffer.from(Index.pack(d)));
+        };
+        it("x-number", function(){
+            [0,8,-8,16,-16,32,-32,2**15-1,2**15,-(2**15),0xffff,-0xffff,
+                2**31,-(2**31),
+                9007199254740991n,-9007199254740991n,
+                2**60,-(2**60)
+            ].forEach(n=>xfn(n));
+        });
+        it("x-bool", function(){
+            xfn(true);
+            xfn(false);
+        });
+        it("x-str", function(){
+            xfn("");
+            xfn(new Array(16).fill("1").join(""));
+            xfn(new Array(0xff).fill("1").join(""));
+            xfn(new Array(0xffff).fill("1").join(""));
+            xfn(new Array(0xfffff).fill("1").join(""));
+        });
+        it("x-date", function(){
+            xfn(new Date());
+            xfn(new Date(2020,1,1));
+        });
+        it("x-obj", function(){
+            let newObj = (n)=>{
+                var r={};
+                for(var i=0;i<n;i++){
+                    r["t"+i]=i;
+                }
+                return r;
+            };
+            xfn(newObj(8));
+            xfn(newObj(16));
+            xfn(newObj(0xfff));
+            xfn(newObj(0xffff));
+            xfn(newObj(0xfffff));
+        });
+        it("x-arr", function(){
+            let newArr = (n)=>{
+                return new Array(n).fill(n);
+            };
+            xfn(newArr(8));
+            xfn(newArr(16));
+            xfn(newArr(0xfff));
+            xfn(newArr(0xffff));
+            xfn(newArr(0xfffff));
+        });
+    }
 });
 
 describe('jsNative', () => {
@@ -275,6 +327,8 @@ describe('jsNative', () => {
         t_fn(BigInt(-1));
         t_fn(BigInt(1));
         t_fn(BigInt(2**60));
+        t_fn(2305843009213694039n);
+        t_fn(-2305843009213694039n);
     });
 });
 if(process.versions.fibjs){//fibjs

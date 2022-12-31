@@ -7,6 +7,9 @@ export const CodecLongImp: CodecLongApi = typeof (BigInt) != undefined ? {
     isImp(v: any) {
         return typeof (v) == "bigint";
     },
+    toNumber(v: any) {
+        return Number(v);
+    },
     toAuto(v: any) {
         let n = Number(v);
         if (Number.isSafeInteger(n)) {
@@ -31,6 +34,9 @@ export const CodecLongImp: CodecLongApi = typeof (BigInt) != undefined ? {
 } : {
     isImp(v: any) {
         return Number.isInteger(v) && Number.isSafeInteger(v);
+    },
+    toNumber(v: any) {
+        return Number(v);
     },
     toAuto(v: any) {
         return Number(v);

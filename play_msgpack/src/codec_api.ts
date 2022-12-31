@@ -18,6 +18,7 @@ export interface CodecExtApi {
 export interface CodecLongApi {
     isImp(v: any): boolean;
     toAuto(v: any): any;
+    toNumber(v: any): number;
 
     encode(v: any, out: OutStream): void;
     decodeNegative(b: InStream): any;
