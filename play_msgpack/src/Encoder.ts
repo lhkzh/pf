@@ -1,4 +1,4 @@
-import { CodecExtApi, CodecLongApi, NewableType } from "./codec_api";
+import { CodecExtApi, CodecLongApi, EncoderApiConfig, NewableType } from "./codec_api";
 import { CodecExtDate, CodecLongImp } from "./codec_imp";
 import { OutStream } from "./OutStream";
 import { Str } from "./utf8";
@@ -7,19 +7,19 @@ import { Str } from "./utf8";
  * @public
  */
 export class Encoder {
-    private long: CodecLongApi;
-    private floatAs32: boolean;
-    private throwIfUnknow: boolean;
     private extends: Map<NewableType, CodecExtApi>;
-    private mapCheckIntKey: boolean;
-    public mapKeepNilVal: boolean;
-    private typedArrayToBytes: boolean;
+    private throwIfUnknow: boolean;
+    private long: CodecLongApi;
+    public floatAs32: boolean;
+    public objCheckIntKey: boolean;
+    public objKeepNilVal: boolean;
+    public typedArrayToBytes: boolean;
 
-    constructor(public config?: { typedArrayToBytes?: boolean, mapCheckIntKey?: boolean, mapKeepNilVal?: boolean, floatAs32?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi>, throwIfUnknow?: boolean }) {
+    constructor(public config?: EncoderApiConfig) {
         this.long = config && config.long || CodecLongImp;
         this.floatAs32 = config && config.floatAs32 || false;
-        this.mapCheckIntKey = config && config.mapCheckIntKey || false;
-        this.mapKeepNilVal = config && config.mapKeepNilVal || false;
+        this.objCheckIntKey = config && config.objCheckIntKey || false;
+        this.objKeepNilVal = config && config.objKeepNilVal || false;
         this.throwIfUnknow = config && config.throwIfUnknow || false;
         this.typedArrayToBytes = config && config.typedArrayToBytes || false;
         this.extends = new Map();
@@ -145,11 +145,11 @@ export class Encoder {
     }
     public obj(v: any, out: OutStream) {
         let keys = Object.keys(v);
-        if (!this.mapKeepNilVal) {
+        if (!this.objKeepNilVal) {
             keys = keys.filter(k => v[k] != null);
         }
         this.mapSize(keys.length, out);
-        if (this.mapCheckIntKey) {
+        if (this.objCheckIntKey) {
             for (let k: string, i = 0; i < keys.length; i++) {
                 k = keys[i];
                 let ik = Number.parseInt(k);

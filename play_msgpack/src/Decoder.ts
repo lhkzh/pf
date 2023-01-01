@@ -1,16 +1,16 @@
-import { CodecExtApi, CodecLongApi } from "./codec_api";
+import { CodecExtApi, CodecLongApi, DecoderApiConfig } from "./codec_api";
 import { CodecExtDate, CodecLongImp } from "./codec_imp";
 import { InStream } from "./InStream";
 /**
  * @public
  */
 export class Decoder {
+    private extends: Map<number, CodecExtApi>;
+    private throwIfUnknow: boolean;
     private mapAsReal: boolean;
     private long: CodecLongApi;
-    private throwIfUnknow: boolean;
-    private extends: Map<number, CodecExtApi>;
 
-    constructor(public config?: { mapAsReal?: boolean, long?: CodecLongApi, extends?: Array<CodecExtApi>, throwIfUnknow?: boolean }) {
+    constructor(public config?: DecoderApiConfig) {
         this.long = config && config.long || CodecLongImp;
         this.mapAsReal = config && config.mapAsReal || false;
         this.throwIfUnknow = config && config.throwIfUnknow || false;

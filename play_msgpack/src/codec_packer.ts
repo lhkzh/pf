@@ -1,4 +1,4 @@
-import { CodecExtApi, CodecLongApi } from "./codec_api";
+import { MsgpackerApiConfig } from "./codec_api";
 import { jsNativeExtList } from "./codec_imp";
 import { Decoder } from "./Decoder";
 import { Encoder } from "./Encoder";
@@ -10,7 +10,7 @@ import { OutStream } from "./OutStream";
 export class MsgPacker {
     private _encoder: Encoder;
     private _decoder: Decoder;
-    constructor(config?: { long?: CodecLongApi, extends?: Array<CodecExtApi>, floatAs32?: boolean, mapAsReal?: boolean, mapCheckIntKey?: boolean, mapKeepNilVal?: boolean, typedArrayToBytes?: boolean, throwIfUnknow?: boolean }) {
+    constructor(config?: MsgpackerApiConfig) {
         this._encoder = new Encoder(config);
         this._decoder = new Decoder(config);
     }

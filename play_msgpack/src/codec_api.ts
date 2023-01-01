@@ -40,3 +40,31 @@ export interface DecoderApi {
     map(b: InStream): Map<any, any>;
     set(b: InStream): Set<any>;
 }
+
+export interface EncoderApiConfig {
+    //if true typeArrayToRaw , if false toNomalArray(except Unit8Array) 
+    typedArrayToBytes?: boolean,
+    //the object check {[index:Number]:any}
+    objCheckIntKey?: boolean,
+    //the object skip null_value
+    objKeepNilVal?: boolean,
+    //true:encode float_number to float32, false to float64
+    floatAs32?: boolean,
+    long?: CodecLongApi,
+    extends?: Array<CodecExtApi>,
+    //if extends unsupport throw err,false=try as object(map)
+    throwIfUnknow?: boolean
+}
+
+export interface DecoderApiConfig {
+    //true= decode map to Map, false = decode map to Object
+    mapAsReal?: boolean,
+    long?: CodecLongApi,
+    extends?: Array<CodecExtApi>,
+    //if extends unsupport throw err,false=extends_binary
+    throwIfUnknow?: boolean
+}
+
+export interface MsgpackerApiConfig extends EncoderApiConfig, DecoderApiConfig {
+
+}

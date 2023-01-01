@@ -207,7 +207,7 @@ describe("base", function(){
         let tmpVo = new MyTmpObj();
         tmpVo.uid = 323;
         tmpVo.flag = true;
-        tmpVo.desc = "balihp";
+        tmpVo.desc = "balihp😇大家好 🦸‍♂️";
         assert.throws(function(){
             MyMsgpack_throw.pack(tmpVo);
         });
@@ -236,7 +236,7 @@ describe("base", function(){
             xfn(new Array(16).fill("1").join(""));
             xfn(new Array(0xff).fill("1").join(""));
             xfn(new Array(0xffff).fill("1").join(""));
-            xfn(new Array(0xfffff).fill("1").join(""));
+            xfn(new Array(0xfffff).fill("大😇👽 🦸‍♂️").join(""));
         });
         it("x-date", function(){
             xfn(new Date());
