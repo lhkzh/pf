@@ -61,5 +61,31 @@ export default [
             terser()
         ],
         external: ['tslib']
+    },
+    {
+        input: './src/index.ts',
+        output: [{
+            name:pkg.name,
+            format: 'umd',
+            file: pkg.browser.replace(".js","_es5.js")
+        }],
+        plugins: [
+            typescript({
+                tsconfigOverride: {
+                    compilerOptions: {
+                        declaration: false,
+                        declarationMap: false,
+                        module: "esnext",
+                        target:"ES5",
+                        lib:[
+                            "ES5",
+                            "dom"
+                        ]
+                    }
+                }
+            }), 
+            terser()
+        ],
+        external: ['tslib']
     }
 ]
