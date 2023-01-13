@@ -21,9 +21,9 @@ js:Uint8Array -> msgpack_raw
 js:TypedArray -> msgpack_array  
 js:Set -> msgpack_array  
 js:Map -> msgpack_map  
-msgpack_map -> js:Object(kv)  
+msgpack_map -> js:Object(kv)   
 msgpack_array -> js:array  
-
+msgpack_int -> js:number/bigint   
 
 if you use "jsbi" for bigint  
 <pre>

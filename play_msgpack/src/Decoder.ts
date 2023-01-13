@@ -1,10 +1,10 @@
-import { CodecExtApi, CodecLongApi, DecoderApiConfig } from "./codec_api";
+import { DecoderApi, CodecExtApi, CodecLongApi, DecoderApiConfig } from "./codec_api";
 import { CodecExtDate, CodecLongImp } from "./codec_imp";
 import { InStream } from "./InStream";
 /**
  * @public
  */
-export class Decoder {
+export class Decoder implements DecoderApi {
     private extends: Map<number, CodecExtApi>;
     private throwIfUnknow: boolean;
     private mapAsReal: boolean;
@@ -112,6 +112,73 @@ export class Decoder {
     public isNil(b: InStream) {
         return b.see() == 0xc0;
     }
+    public bool(b: InStream): boolean {
+        let k = b.u8();
+        if (k == 0xc2) return false;
+        if (k == 0xc3) return true;
+        throw new Error("bad bool header:" + k);
+    }
+    public number(b: InStream): number | bigint {
+        let k = b.u8();
+        if (k <= 0x7f) { //fixInt
+            return k;
+        } else if (k >= 0xe0) {//fixInt
+            return k - 0x100;
+        }
+        switch (k) {
+            case 0xca:
+                return b.float();
+            case 0xcb:
+                return b.double();
+            case 0xd0:
+                return b.i8();
+            case 0xd1:
+                return b.i16();
+            case 0xd2:
+                return b.i32();
+            case 0xcc:
+                return b.u8();
+            case 0xcd:
+                return b.u16();
+            case 0xce:
+                return b.u32();
+            case 0xd3:
+                return this.long.toAuto(this.long.decodeNegative(b));
+            case 0xcf:
+                return this.long.toAuto(this.long.decodePositive(b));
+        }
+        throw new Error("bad number header:" + k);
+    }
+    public int64(b: InStream): bigint {
+        return this.long.toImp(this.number(b));
+    }
+    public str(b: InStream): string {
+        let k = b.u8();
+        if ((k & 0xe0) == 0xa0) {//fixedString
+            return b.str(k & 0x1F)
+        }
+        switch (k) {
+            case 0xd9:
+                return b.str(b.u8());
+            case 0xda:
+                return b.str(b.u16());
+            case 0xdb:
+                return b.str(b.u32());
+        }
+        throw new Error("bad str header:" + k);
+    }
+    public bin(b: InStream): Uint8Array {
+        let k = b.u8();
+        switch (k) {
+            case 0xc4:
+                return b.sub(b.u8());
+            case 0xc5:
+                return b.sub(b.u16());
+            case 0xc6:
+                return b.sub(b.u32());
+        }
+        throw new Error("bad bytes header:" + k);
+    }
     public arrSize(b: InStream): number {
         let k = b.u8();
         if ((k & 0xf0) == 0x90) {//fixedArray
@@ -172,6 +239,35 @@ export class Decoder {
         }
         return s;
     }
+    public date(b: InStream): Date {
+        let h = this.extHeader(b);
+        if (h.type != 255) {
+            throw new Error("bad date header:" + h.type);
+        }
+        return this.ext(b, h.size, h.type) as Date;
+    }
+    public extHeader(b: InStream) {
+        let k = b.u8();
+        switch (k) {
+            case 0xd4:
+                return { size: 1, type: b.u8() };
+            case 0xd5:
+                return { size: 2, type: b.u8() };
+            case 0xd6:
+                return { size: 4, type: b.u8() };
+            case 0xd7:
+                return { size: 8, type: b.u8() };
+            case 0xd8:
+                return { size: 16, type: b.u8() };
+            case 0xc7:
+                return { size: b.u8(), type: b.u8() };
+            case 0xc8:
+                return { size: b.u16(), type: b.u8() };
+            case 0xc9:
+                return { size: b.u32(), type: b.u8() };
+        }
+        throw new Error("bad ext header:" + k);
+    }
     public ext(b: InStream, len: number, type: number): any {
         let ebs = b.child(len);//new InStream(b.bin(len));
         let ext = this.extends.get(type);
@@ -183,79 +279,4 @@ export class Decoder {
         }
         return { msg: "unknow", type: type, data: ebs.src() };
     }
-    public number(b: InStream): number | bigint {
-        let k = b.u8();
-        if (k <= 0x7f) { //fixInt
-            return k;
-        } else if (k >= 0xe0) {//fixInt
-            return k - 0x100;
-        }
-        switch (k) {
-            case 0xca:
-                return b.float();
-            case 0xcb:
-                return b.double();
-            case 0xd0:
-                return b.i8();
-            case 0xd1:
-                return b.i16();
-            case 0xd2:
-                return b.i32();
-            case 0xcc:
-                return b.u8();
-            case 0xcd:
-                return b.u16();
-            case 0xce:
-                return b.u32();
-            case 0xd3:
-                return this.long.toAuto(this.long.decodeNegative(b));
-            case 0xcf:
-                return this.long.toAuto(this.long.decodePositive(b));
-        }
-        throw new Error("bad number header:" + k);
-    }
-    public str(b: InStream): string {
-        let k = b.u8();
-        if ((k & 0xe0) == 0xa0) {//fixedString
-            return b.str(k & 0x1F)
-        }
-        switch (k) {
-            case 0xd9:
-                return b.str(b.u8());
-            case 0xda:
-                return b.str(b.u16());
-            case 0xdb:
-                return b.str(b.u32());
-        }
-        throw new Error("bad str header:" + k);
-    }
-    public bin(b: InStream): Uint8Array {
-        let k = b.u8();
-        switch (k) {
-            case 0xc4:
-                return b.sub(b.u8());
-            case 0xc5:
-                return b.sub(b.u16());
-            case 0xc6:
-                return b.sub(b.u32());
-        }
-        throw new Error("bad bytes header:" + k);
-    }
-}
-
-export function unpackStr(b: InStream) {
-    var k: any = b.u8();
-    if (k == 0xc0) {
-        return null;
-    }
-    if ((k & 0xe0) == 0xa0) {//fixedString
-        return b.str(k & 0x1F);
-    } else if (k == 0xd9) {
-        return b.str(b.u8());
-    } else if (k == 0xda) {
-        return b.str(b.u16());
-    } else if (k == 0xdb) {
-        return b.str(b.u32());
-    }
-    return undefined;
 }

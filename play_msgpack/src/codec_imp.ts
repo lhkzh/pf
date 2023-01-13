@@ -4,6 +4,9 @@ import { OutStream } from "./OutStream";
 
 //bigint(or not safe Integer)
 export const CodecLongImp: CodecLongApi = typeof (BigInt) != undefined ? {
+    toImp(v: any) {
+        return BigInt(v);
+    },
     isImp(v: any) {
         return typeof (v) == "bigint";
     },
@@ -32,6 +35,9 @@ export const CodecLongImp: CodecLongApi = typeof (BigInt) != undefined ? {
         return ins.u64();
     },
 } : {
+    toImp(v: any) {
+        return Number(v);
+    },
     isImp(v: any) {
         return Number.isInteger(v) && Number.isSafeInteger(v);
     },

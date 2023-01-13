@@ -1,4 +1,4 @@
-import { CodecExtApi, CodecLongApi, EncoderApiConfig, NewableType } from "./codec_api";
+import { EncoderApi, CodecExtApi, CodecLongApi, EncoderApiConfig, NewableType } from "./codec_api";
 import { CodecExtDate, CodecLongImp } from "./codec_imp";
 import { OutStream } from "./OutStream";
 import { Str } from "./utf8";
@@ -6,7 +6,7 @@ import { Str } from "./utf8";
 /**
  * @public
  */
-export class Encoder {
+export class Encoder implements EncoderApi {
     private extends: Map<NewableType, CodecExtApi>;
     private throwIfUnknow: boolean;
     private long: CodecLongApi;
@@ -119,6 +119,76 @@ export class Encoder {
     public bool(v: boolean, out: OutStream) {
         out.u8(v ? 0xc3 : 0xc2);
     }
+    public date(v: Date, out: OutStream) {
+        this.extends.get(Date)?.encode(v, out, this);
+    }
+    public str(v: string, out: OutStream) {
+        let b = Str.encode(v), n = b.length;
+        if (n < 32) {
+            out.u8(0xa0 | n);
+        } else if (n <= 0xff) {
+            out.u8(0xd9).u8(n);
+        } else if (n <= 0xffff) {
+            out.u8(0xda).u16(n);
+        } else {
+            out.u8(0xdb).u32(n);
+        }
+        out.blob(b);
+    }
+    public number(v: number, out: OutStream) {
+        Number.isInteger(v) ? this.int(v, out) : this.float(v, out);
+    }
+    public float(v: number, out: OutStream) {
+        if (this.floatAs32) {
+            out.u8(0xca).float(v);
+        } else {
+            out.u8(0xcb).double(v);
+        }
+    }
+    public int(v: number, out: OutStream) {
+        if (v < 0) {
+            if (v >= -0x20) {
+                out.u8(0x100 + v)
+            } else if (v >= -128) {
+                out.u8(0xd0).i8(v);
+            } else if (v >= -0x8000) {
+                out.u8(0xd1).i16(v);
+            } else if (v >= -0x80000000) {
+                out.u8(0xd2).i32(v);
+            } else {
+                this.long.encode(v, out);
+            }
+        } else {
+            if (v < 128) {
+                out.u8(v);
+            } else if (v < 0x100) {
+                out.bu(0xcc, v);
+            } else if (v < 0x10000) {
+                out.u8(0xcd).u16(v);
+            } else if (v <= 0xffffffff) {
+                out.u8(0xce).u32(v);
+            } else {
+                this.long.encode(v, out);
+            }
+        }
+    }
+    public int64(v: number | bigint | any, out: OutStream) {
+        let n: number = this.long.toNumber(v);
+        if (n >= -0x80000000 && n <= 0xffffffff) {
+            this.int(n, out);
+        } else {
+            this.long.encode(v, out);
+        }
+    }
+    public bin(v: Uint8Array, out: OutStream) {
+        if (v.length < 256) {
+            out.u8(0xc4).u8(v.length).blob(v);
+        } else if (v.length <= 0xffff) {
+            out.u8(0xc5).u16(v.length).blob(v);
+        } else {
+            out.u8(0xc6).u32(v.length).blob(v);
+        }
+    }
     public arrSize(length: number, out: OutStream) {
         if (length < 16) {
             out.u8(0x90 | length);
@@ -189,76 +259,6 @@ export class Encoder {
         v.forEach(iv => {
             this.encode(iv, out);
         });
-    }
-    public date(v: Date, out: OutStream) {
-        this.extends.get(Date)?.encode(v, out, this);
-    }
-    public str(v: string, out: OutStream) {
-        let b = Str.encode(v), n = b.length;
-        if (n < 32) {
-            out.u8(0xa0 | n);
-        } else if (n <= 0xff) {
-            out.u8(0xd9).u8(n);
-        } else if (n <= 0xffff) {
-            out.u8(0xda).u16(n);
-        } else {
-            out.u8(0xdb).u32(n);
-        }
-        out.blob(b);
-    }
-    public number(v: number, out: OutStream) {
-        Number.isInteger(v) ? this.int(v, out) : this.float(v, out);
-    }
-    public float(v: number, out: OutStream) {
-        if (this.floatAs32) {
-            out.u8(0xca).float(v);
-        } else {
-            out.u8(0xcb).double(v);
-        }
-    }
-    public int(v: number, out: OutStream) {
-        if (v < 0) {
-            if (v >= -0x20) {
-                out.u8(0x100 + v)
-            } else if (v >= -128) {
-                out.u8(0xd0).i8(v);
-            } else if (v >= -0x8000) {
-                out.u8(0xd1).i16(v);
-            } else if (v >= -0x80000000) {
-                out.u8(0xd2).i32(v);
-            } else {
-                this.long.encode(v, out);
-            }
-        } else {
-            if (v < 128) {
-                out.u8(v);
-            } else if (v < 0x100) {
-                out.bu(0xcc, v);
-            } else if (v < 0x10000) {
-                out.u8(0xcd).u16(v);
-            } else if (v <= 0xffffffff) {
-                out.u8(0xce).u32(v);
-            } else {
-                this.long.encode(v, out);
-            }
-        }
-    }
-    public int64(v: number | bigint | any, out: OutStream) {
-        let n: number = this.long.toNumber(v);
-        if (n >= -0x80000000 && n <= 0xffffffff) {
-            this.int(n, out);
-        } else {
-            this.long.encode(v, out);
-        }
-    }
-    public bin(v: Uint8Array, out: OutStream) {
-        if (v.length < 256) {
-            out.u8(0xc4).u8(v.length).blob(v);
-        } else if (v.length <= 0xffff) {
-            out.u8(0xc5).u16(v.length).blob(v);
-        } else {
-            out.u8(0xc6).u32(v.length).blob(v);
-        }
     }
     public ext(type: number, bin: Uint8Array, out: OutStream) {
         this.extHeader(type, bin.length, out).blob(bin);
