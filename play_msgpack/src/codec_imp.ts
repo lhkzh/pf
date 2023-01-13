@@ -155,7 +155,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
                 }
                 encoder.ext(this.TYPE, uarr, out);
             },
-            decode(ins: InStream, decoder) {
+            decode(ins: InStream, decoder: DecoderApi) {
                 return ins.u8() == 1 ? ins.i64() : ins.u64();
             }
         });
@@ -171,7 +171,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             encode(v: Buffer, out: OutStream, encoder: EncoderApi) {
                 encoder.ext(this.TYPE, new Uint8Array(v), out);
             },
-            decode(ins: InStream, decoder) {
+            decode(ins: InStream, decoder: DecoderApi) {
                 return Buffer.from(ins.bin(ins.less));
             }
         });
@@ -221,7 +221,7 @@ export const jsNativeExtList: readonly CodecExtApi[] = (function () {
             encode(v, out: OutStream, encoder: EncoderApi) {
                 encoder.ext(Type, new Uint8Array(v.buffer), out);
             },
-            decode(ins: InStream, decoder) {
+            decode(ins: InStream, decoder: DecoderApi) {
                 let T: any = Clazz;
                 return new T(ins.bin(ins.less).buffer);
             }

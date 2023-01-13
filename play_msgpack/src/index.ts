@@ -2,7 +2,7 @@ import { Encoder } from "./Encoder";
 import { Decoder } from "./Decoder";
 import { InStream } from "./InStream";
 import { OutStream } from "./OutStream";
-import { CodecExtApi, CodecLongApi } from "./codec_api";
+import { CodecExtApi, CodecLongApi, EncoderApi, DecoderApi } from "./codec_api";
 import { jsNativeExtList } from "./codec_imp";
 import { MsgPacker, pack, unpack, packJs, unpackJs } from "./codec_packer";
 
@@ -18,6 +18,8 @@ export {
 
     CodecExtApi,
     CodecLongApi,
+    EncoderApi,
+    DecoderApi,
 
     pack,
     unpack,

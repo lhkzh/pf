@@ -1,6 +1,6 @@
 {
     "name": "play_msgpack",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "description": "msgpack",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",

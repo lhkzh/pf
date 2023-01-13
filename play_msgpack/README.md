@@ -25,11 +25,41 @@ msgpack_map -> js:Object(kv)
 msgpack_array -> js:array  
 msgpack_int -> js:number/bigint   
 
+for extends msg  
+<pre>
+import { MsgPacker, OutStream, InStream, CodecExtApi, DecoderApi, EncoderApi } from "play_msgpack";
+class UserInfo {
+    public constructor(public uid: number = 0, public nick: string = "") { }
+}
+class UserInfoPacker implements CodecExtApi {
+    public get TYPE(): number { return 1; }
+    public get CLASS() { return UserInfo; }
+
+    public decode(ins: InStream, decoder: DecoderApi): UserInfo {
+        if (decoder.isNil(ins)) {
+            ins.skip();
+            return null;
+        }
+        let r = new UserInfo();
+        r.uid = Number(decoder.number(ins));
+        r.nick = decoder.str(ins);
+        return r;
+    }
+    encode(v: UserInfo, out: OutStream, encoder: EncoderApi): void {
+        let tmp = new OutStream();
+        encoder.number(v.uid, tmp);
+        encoder.str(v.nick, tmp);
+        encoder.ext(this.TYPE, tmp.bin(), out);
+    }
+}
+let myPacker = new MsgPacker({ extends: [new UserInfoPacker()] });
+console.log(myPacker.unpack(myPacker.pack(new UserInfo(323, "tom"))));
+</pre>
+
 if you use "jsbi" for bigint  
 <pre>
-import { Encoder, CodecLongApi, OutStream, InStream, MsgArray } from "play_msgpack";
+import { MsgPacker, CodecLongApi, OutStream, InStream } from "play_msgpack";
 const JSBI = require("jsbi");
-MsgArray.SetCastInt64((v:any)=>{ return JSBI.BigInt(v); });
 const jsbi_ext: CodecLongApi = {
     isImp(v: any): boolean {
         return v instanceof JSBI;
@@ -60,6 +90,6 @@ const jsbi_ext: CodecLongApi = {
         return JSBI.DataViewGetBigUint64(b.process(8), 0);
     }
 };
-let jsbi_encoder = new Encoder({ long: jsbi_ext });
-console.log(jsbi_encoder.encode(JSBI.BigInt("2345678979")).bin());
+let myPacker = new MsgPacker({ long: jsbi_ext });
+console.log( myPacker.pack(JSBI.BigInt("234567897910")) );
 </pre>
