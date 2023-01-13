@@ -9,8 +9,8 @@ export interface CodecExtApi {
     get TYPE(): number;
     get CLASS(): { new(): any };
 
-    decode(ins: InStream, decoder: any): any;
-    encode(v: any, out: OutStream, encoder: any): void
+    decode(ins: InStream, decoder: DecoderApi): any;
+    encode(v: any, out: OutStream, encoder: EncoderApi): void
 }
 /**
  * @public
