@@ -97,7 +97,7 @@ console.log( myPacker.pack(JSBI.BigInt("234567897910")) );
 if you in ie11??
 <pre>
 <script>
-<script src="https://unpkg.com/play_msgpack@latest/dist/index.umd_es5.js"></script>
+<script src="https://unpkg.com/play_msgpack@latest/dist/index.umd.js"></script>
 if (!Uint8Array.prototype.slice) {
     Uint8Array.prototype.slice = function () {
         return new Uint8Array(this).subarray(this.arguments);
