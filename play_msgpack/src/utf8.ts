@@ -4,10 +4,10 @@ const __GLOBAL: any = typeof (window) == "object" ? window : global;
 const __IS_FIBJS = __GLOBAL.process && __GLOBAL.process.versions && __GLOBAL.process.versions.fibjs;
 if (!__IS_FIBJS && typeof (Buffer) != "undefined") {
     StrCoder = {
-        encode: function (str: string) {
+        encode(str: string) {
             return new Uint8Array(Buffer.from(str, "utf8"));
         },
-        decode: function (buf: Uint8Array) {
+        decode(buf: Uint8Array) {
             return Buffer.from(buf).toString("utf8");
         }
     }
@@ -15,16 +15,16 @@ if (!__IS_FIBJS && typeof (Buffer) != "undefined") {
     const tE = new TextEncoder();
     const tD = new TextDecoder("utf-8");
     StrCoder = {
-        encode: function (str: string) {
+        encode(str: string) {
             return tE.encode(str);
         },
-        decode: function (buf: Uint8Array) {
+        decode(buf: Uint8Array) {
             return tD.decode(buf);
         }
     }
 } else {
     StrCoder = {
-        encode: function (str: string) {
+        encode(str: string) {
             let buf = new Uint8Array(str.length * 4), pos = 0,
                 c1, // character 1
                 c2; // character 2
@@ -50,7 +50,7 @@ if (!__IS_FIBJS && typeof (Buffer) != "undefined") {
             }
             return buf.subarray(0, pos);
         },
-        decode: function (buf: Uint8Array) {
+        decode(buf: Uint8Array) {
             let arr: number[] = [];
             for (let i = 0, j = 0; i < buf.length;) {
                 let t = buf[i++];
