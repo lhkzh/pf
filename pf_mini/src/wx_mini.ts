@@ -82,8 +82,8 @@ export class auth {
                 throw new Error(`access_token:${this.appid}:${body.errcode}_${body.errmsg}`);
             }
             let access_token = body.access_token;
-            //这里缓存时间设置为 最大3分钟，用于外网内网都能用【一个新token产生后旧的还5分钟有效期】
-            let expires_in = Math.max(180, Math.ceil(body.expires_in * 0.95));
+            //这里缓存时间设置为 最大5分钟，用于外网内网都能用【一个新token产生后旧的还5分钟有效期】
+            let expires_in = Math.min(300, Math.ceil(body.expires_in * 0.95));
             try {
                 cache_obj.set(cache_key, access_token, expires_in);
             } catch (e) {
@@ -452,7 +452,7 @@ export class storage {
 /**
  * URL Scheme
  */
-export class urlscheme {
+export class urlScheme {
     constructor(private access_token: string) {
     }
 
@@ -462,9 +462,56 @@ export class urlscheme {
      * @see https://developers.weixin.qq.com/minigame/dev/api-backend/open-api/url-scheme/urlscheme.generate.html
      */
     public generateScheme(params: { jump_wxa?: { path?: string, query?: string }, is_expire?: boolean, expire_type?: number, expire_time?: number, expire_interval?: number }): {
-        errcode: number, errmsg: string, openlink?: string
+        errcode?: number, errmsg?: string, openlink?: string
     } {
         let url = `https://api.weixin.qq.com/wxa/generatescheme?access_token=${this.access_token}`;
+        return http_post_json(url, params);
+    }
+
+    /**
+     * 获取用于 NFC 的小程序 scheme 码，适用于 NFC 拉起小程序的业务场景。
+     * @param params 
+     * @see https://developers.weixin.qq.com/minigame/dev/api-backend/open-api/url-scheme/urlscheme.generateNFC.html 
+     */
+    public generateNFC(params: { model_id: string, sn?: string, jump_wxa?: { path?: string, query?: string, env_version?: string } }): { errcode?: number, errmsg?: string, openlink?: string } {
+        let url = `https://api.weixin.qq.com/wxa/generatenfcscheme?access_token=${this.access_token}`;
+        return http_post_json(url, params);
+    }
+
+    /**
+     * 查询小程序 scheme 码
+     * @param params 
+     * @see https://developers.weixin.qq.com/minigame/dev/api-backend/open-api/url-scheme/urlscheme.query.html 
+     */
+    public query(params: { scheme: string }): { errcode: number, errmsg: string, scheme_info: { appid: string, path: string, query: string, create_time: number, expire_time: number, env_version: string }, visit_openid: string } {
+        let url = `https://api.weixin.qq.com/wxa/queryscheme?access_token=${this.access_token}`;
+        return http_post_json(url, params);
+    }
+}
+
+/**
+ * URL Link
+ */
+export class urlLink {
+    constructor(private access_token: string) {
+    }
+
+    /**
+     * 获取小程序 URL Link，适用于短信、邮件、网页、微信内等拉起小程序的业务场景。
+     * @see https://developers.weixin.qq.com/minigame/dev/api-backend/open-api/url-link/urllink.generate.html
+     */
+    public generate(params: { path?: string, query?: string, env_version?: string, expire_type: number, expire_time?: number, expire_interval?: number, cloud_base?: { env: string, domain?: string, path?: string, query?: string, resource_appid?: string } }): {
+        errcode?: number, errmsg?: string, url_link?: string
+    } {
+        let url = `https://api.weixin.qq.com/wxa/generate_urllink?access_token=${this.access_token}`;
+        return http_post_json(url, params);
+    }
+    /**
+     * 查询小程序 url_link 配置
+     * @see https://developers.weixin.qq.com/minigame/dev/api-backend/open-api/url-link/urllink.query.html
+     */
+    public query(params: { url_link: string }): { errcode: number, errmsg: string, url_link_info: { appid: string, path: string, query: string, create_time: number, expire_time: number, env_version: string, cloud_base: { env: string, domain: string, path: string, query: string, resource_appid: string } }, visit_openid: string } {
+        let url = `https://api.weixin.qq.com/wxa/query_urllink?access_token=${this.access_token}`;
         return http_post_json(url, params);
     }
 }
