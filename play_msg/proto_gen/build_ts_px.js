@@ -154,6 +154,7 @@ ${_rtpl}
     }`
 }
 
+
 function build_ts_meta(info){
 let fields = info.fields.map(e=>{
     let type = e.type.toUpperCase();
@@ -275,5 +276,5 @@ ${build_ts_encode(info)}
     return str;
 }
 const src = fs.readFileSync(__dirname+"/t_proto.js",{encoding:"utf-8"});
-let typeSrc = `import {  MsgArray, MtBase, MtBox } from "play_msg";\n\n`+parseSrc(src).map(e=>build_ts_class(e)).join("\n");
+let typeSrc = `import {  MsgArray, MtBase, MtBox } from "play_msg";\nimport {  Encoder, Decoder, InStream,OutStream } from "play_msgpack";\n\n`+parseSrc(src).map(e=>build_ts_class(e)).join("\n");
 fs.writeFileSync(__dirname+"/t_proto.ts",typeSrc,{encoding:"utf-8"});
