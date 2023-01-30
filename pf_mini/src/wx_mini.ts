@@ -1,9 +1,9 @@
 import * as http from "http";
 import * as hash from "hash";
 import * as coroutine from "coroutine";
-import {AES, CBC, Cipher, NOPADDING} from "crypto";
-import {Multipart} from "fibjs-multipart";
-import {getCacheHandler} from "./_util";
+import { AES, CBC, Cipher, NOPADDING } from "crypto";
+import { Multipart } from "fibjs-multipart";
+import { getCacheHandler } from "./_util";
 
 /**
  * 微信小游戏相关接口
@@ -32,7 +32,7 @@ export class auth {
         let res = http.get(url);
         if (res.statusCode == 200) {
             let body = res.data;
-            if(Buffer.isBuffer(body)){
+            if (Buffer.isBuffer(body)) {
                 body = JSON.parse(body.toString());
             }
             if (body.openid) {
@@ -118,7 +118,7 @@ export class security {
         if (res.statusCode == 200) {
             return res.json();
         }
-        return {errcode: -2, errmsg: "io_err_" + res.statusCode};
+        return { errcode: -2, errmsg: "io_err_" + res.statusCode };
     }
 
     /**
@@ -128,7 +128,7 @@ export class security {
      */
     public text_check_v1(content: string): wx_base_api_res {
         let url = `https://api.weixin.qq.com/wxa/msg_sec_check?access_token=${this.access_token}`;
-        return http_post_json(url, {content: content});
+        return http_post_json(url, { content: content });
     }
 
     /**
@@ -141,7 +141,7 @@ export class security {
         scene: 2
     }): security_text_sec_res {
         let url = `https://api.weixin.qq.com/wxa/msg_sec_check?access_token=${this.access_token}`;
-        let body = {...ctx, openid: openid, content: content};
+        let body = { ...ctx, openid: openid, content: content };
         return http_post_json(url, body);
     }
 
@@ -152,7 +152,7 @@ export class security {
      */
     public media_check_v1(media_url: string, media_type: number): { errcode: number, errmsg: string, trace_id?: string } {
         let url = `https://api.weixin.qq.com/wxa/media_check_async?access_token=${this.access_token}`;
-        return http_post_json(url, {media_url: media_url, media_type: media_type});
+        return http_post_json(url, { media_url: media_url, media_type: media_type });
     }
 
     /**
@@ -165,7 +165,7 @@ export class security {
         scene: 2
     }): { errcode: number, errmsg: string, trace_id?: string } {
         let url = `https://api.weixin.qq.com/wxa/media_check_async?access_token=${this.access_token}`;
-        return http_post_json(url, {...ctx, media_url: media_url, media_type: media_type});
+        return http_post_json(url, { ...ctx, media_url: media_url, media_type: media_type });
     }
 }
 
@@ -268,7 +268,7 @@ export class virtualPay {
      */
     public getPayForOrder(order_no: string, out_trade_no: string): wx_base_api_res | (wx_base_api_res & { payfororder: { out_trade_no: string, order_no: string, openid: string, create_time: number, amount: number, status: number, zone_id: number, env: number, pay_time: number } }) {
         let url = `https://api.weixin.qq.com/wxa/business/getpayfororder?access_token=${this.access_token}`;
-        let body = {order_no: order_no, out_trade_no: out_trade_no, appid: this.cfg.appid};
+        let body = { order_no: order_no, out_trade_no: out_trade_no, appid: this.cfg.appid };
         return http_post_json(url, body);
     }
 
@@ -414,7 +414,7 @@ export class storage {
      * @see https://developers.weixin.qq.com/minigame/dev/api-backend/open-api/data/storage.removeUserStorage.html
      */
     public removeUserStorage(openid: string, session_key: string, keys: Array<string>): wx_base_api_res {
-        let params = {key: keys};
+        let params = { key: keys };
         let signature = crypto_util.hmac_sha256(session_key, JSON.stringify(params));
         let url = `https://api.weixin.qq.com/wxa/remove_user_storage?access_token=${this.access_token}&signature=${signature}&openid=${openid}&sig_method=hmac_sha256`;
         return http_post_json(url, params, 1);
@@ -428,7 +428,7 @@ export class storage {
      * @see https://developers.weixin.qq.com/minigame/dev/api-backend/open-api/data/storage.setUserStorage.html
      */
     public setUserStorage(openid: string, session_key: string, kv_list: Array<{ key: string, value: string }>) {
-        let params = {kv_list: kv_list};
+        let params = { kv_list: kv_list };
         let signature = crypto_util.hmac_sha256(session_key, JSON.stringify(params));
         let url = `https://api.weixin.qq.com/wxa/set_user_storage?access_token=${this.access_token}&signature=${signature}&openid=${openid}&sig_method=hmac_sha256`;
         return http_post_json(url, params, 1);
@@ -442,7 +442,7 @@ export class storage {
      * @see https://developers.weixin.qq.com/minigame/dev/api-backend/open-api/data/storage.setUserInteractiveData.html
      */
     public setUserInteractiveData(openid: string, session_key: string, kv_list: Array<{ key: string, value: number }>) {
-        let params = {kv_list: kv_list};
+        let params = { kv_list: kv_list };
         let signature = crypto_util.hmac_sha256(session_key, JSON.stringify(params));
         let url = `https://api.weixin.qq.com/wxa/setuserinteractivedata?access_token=${this.access_token}&signature=${signature}&openid=${openid}&sig_method=hmac_sha256`;
         return http_post_json(url, params, 1);
@@ -490,15 +490,47 @@ export class riskControl {
     }
 }
 
+export class openApi {
+    constructor(private access_token: string, private appid: string) {
+    }
+    /**
+     * 清空api的调用quota
+     * @see https://developers.weixin.qq.com/doc/offiaccount/openApi/clear_quota.html
+     */
+    public quota_clear() {
+        let url = `https://api.weixin.qq.com/cgi-bin/clear_quota?access_token=${this.access_token}`;
+        return http_post_json(url, { appid: this.appid });
+    }
+    /**
+     * 查询api的quota
+     * @param cgi_path 
+     * @see https://developers.weixin.qq.com/doc/offiaccount/openApi/get_api_quota.html
+     */
+    public clear_get(cgi_path: string) {
+        let url = `https://api.weixin.qq.com/cgi-bin/openapi/quota/get?access_token=${this.access_token}`;
+        return http_post_json(url, { cgi_path: cgi_path });
+    }
+
+    /**
+     * 查询 rid 请求信息
+     * @param rid 
+     * @see https://developers.weixin.qq.com/doc/offiaccount/openApi/get_rid_info.html 
+     */
+    public rid_get(rid: string) {
+        let url = `https://api.weixin.qq.com/cgi-bin/openapi/rid/get?access_token=${this.access_token}`;
+        return http_post_json(url, { rid: rid });
+    }
+}
+
 function http_post_json(url: string, jsonParams: any, retry: number = 0) {
     let res: Class_HttpResponse;
     try {
-        res = http.post(url, {json: jsonParams});
+        res = http.post(url, { json: jsonParams });
     } catch (e) {
-        return {errcode: -500, errmsg: "io_err"};
+        return { errcode: -500, errmsg: "io_err" };
     }
     if (res.statusCode != 200) {
-        return {errcode: -500, errmsg: "io_err_" + res.statusCode};
+        return { errcode: -500, errmsg: "io_err_" + res.statusCode };
     }
     let json = res.json();
     if (json.errcode == -1 && retry > 0) {
