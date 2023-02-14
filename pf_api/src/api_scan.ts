@@ -96,7 +96,7 @@ function do_regist(requireFnWrap: Function, opts?: regist_opts) {
                         filePatter = `*.(${staticOpt.suffix.replace(/\W/g, '|')})$`;
                     }
                 } else {
-                    filePatter = `*.([a-z]{2,8})$`;
+                    filePatter = `*.([a-zA-Z0-9]{2,8})$`;
                 }
                 fileFn = function (req) {
                     req.value = req.params.join(".");
@@ -105,7 +105,7 @@ function do_regist(requireFnWrap: Function, opts?: regist_opts) {
             } else if (util.isString(opts.static)) {
                 if (fs.exists(<string>opts.static) && fs.stat(<string>opts.static).isDirectory()) {
                     let staticFileFn = http.fileHandler(<string>opts.static);
-                    filePatter = `*.([a-z]{2,8})$`;
+                    filePatter = `*.([a-zA-Z0-9]{2,8})$`;
                     fileFn = function (req) {
                         req.value = req.params.join(".");
                         staticFileFn.invoke(req);
