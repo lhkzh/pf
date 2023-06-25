@@ -67,7 +67,9 @@ export class Facade {
     //耗时统计函数
     public static _hookTj: (apiPath: string, costMsTime: number) => void;
     //debug钩子函数
-    public static _hookDebug: (ctx: AbsHttpCtx, data: any) => void
+    public static _hookDebug: (ctx: AbsHttpCtx, data: any) => void;
+    //404钩子函数（如果返回true表示处理了响应，不会在用默认处理）
+    public static _hook404: (req: Class_HttpRequest) => boolean;
     //加工或解密http.request.body
     public static _decodePayload: (ctx: ApiHttpCtx, data: any) => any;
     //加工或加密输出body

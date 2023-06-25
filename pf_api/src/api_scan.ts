@@ -9,7 +9,7 @@
 import * as mq from "mq";
 import * as util from "util";
 import * as http from "http";
-import {api_requireBy, api_requireByDir, api_requireByFileList, Facade} from "./api_facade";
+import { api_requireBy, api_requireByDir, api_requireByFileList, Facade } from "./api_facade";
 import * as fs from "fs";
 
 export interface regist_static_file {
@@ -27,7 +27,7 @@ export interface regist_opts {
     //静态文件夹处理
     static?: regist_static_file | string | Function | Class_Handler,
     //在api扫描后，可以追加路由
-    inject?:(q:Class_Routing)=>Class_Routing
+    inject?: (q: Class_Routing) => Class_Routing
 }
 
 /**
@@ -78,7 +78,7 @@ function do_regist(requireFnWrap: Function, opts?: regist_opts) {
         routing = last_api_routing;
     }
     if (pf_reg_scan_suc) {
-        if(opts && opts.inject != null){
+        if (opts && opts.inject != null) {
             routing = opts.inject(routing) || routing;
         }
         let filePatter: string;
@@ -118,9 +118,12 @@ function do_regist(requireFnWrap: Function, opts?: regist_opts) {
         }
 
         let res404 = new Facade.defaultRes().stat(404, "not found");
-        let res404Headers = {"Content-Type": res404.contentType()};
+        let res404Headers = { "Content-Type": res404.contentType() };
         let res404Data = res404.encode();
         let res404Fn = <any>((req) => {
+            if (Facade._hook404 && Facade._hook404(req)) {
+                return;
+            }
             req.response.statusCode = 404;
             req.response.statusMessage = "not found";
             req.response.setHeader(res404Headers);
