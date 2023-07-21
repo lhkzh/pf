@@ -332,12 +332,13 @@ export abstract class MsgArray {
 }
 function get_def_val(type: MetaType) {
     if (Number.isInteger(type)) {
-        if (type >= MtBase.I8 && type <= MtBase.F64) {
-            if (type == MtBase.I64) {
+        let tn: number = <any>type;
+        if (tn >= MtBase.I8 && tn <= MtBase.F64) {
+            if (tn == MtBase.I64) {
                 return Cast_Int64(0);
             }
             return 0;
-        } else if (type == MtBase.STR) {
+        } else if (tn == MtBase.STR) {
             return "";
         }
     } else if (Array.isArray(type)) {
