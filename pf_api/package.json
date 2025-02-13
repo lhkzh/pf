@@ -1,6 +1,6 @@
 {
   "name": "pf_api",
-  "version": "0.0.34",
+  "version": "0.0.35",
   "description": "fast dev fibjs api",
   "main": "./dist/index.js",
   "types": "./@types/index.d.ts",

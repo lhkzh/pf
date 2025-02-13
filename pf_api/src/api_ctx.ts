@@ -17,16 +17,18 @@ const ContentType_html = "text/html; charset=utf8";
 const ContentType_xml = "text/xml; charset=utf8";
 const ContentType_json = "application/json; charset=utf8";
 const ContentType_msgpack = "application/msgpack; charset=utf8";
-
+const EMPTY_BUFFER = Buffer.from("");
 //基础定义writer
 export class AbsRes {
     //主要相应码（如果错误则为不为0和200)
-    public code: number = 0;
+    public code: number;
     //响应描述，例如错误信息
     public msg: string;
     //返回数据，一般成功时返回的数据
     public data: any;
-
+    constructor() {
+        this.code = 0
+    }
     //响应类型
     public contentType(): string {
         return ContentType_html;
@@ -440,7 +442,7 @@ export class ApiHttpCtx extends AbsHttpCtx {
         if (Facade._encodePayload) {
             data = Facade._encodePayload(this, data);
         }
-        this.res.write(<Class_Buffer>data);
+        this.res.write(data == null ? EMPTY_BUFFER : <Class_Buffer>data);
         this.req.end();
         this.debug(src);
     }
