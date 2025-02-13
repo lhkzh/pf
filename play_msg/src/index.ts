@@ -34,7 +34,7 @@ export type MetaType = MtBase |
 
 
 export type MetaInfoFieldRequired = 0 | 1;
-export type MetaInfoField = [string, MetaType, MetaInfoFieldRequired];// | [string, MsgType, Required];
+export type MetaInfoField = [string, MetaType, MetaInfoFieldRequired] | [string, MetaType, MetaInfoFieldRequired, any];// | [string, MsgType, Required];
 export type MetaInfoObj = { id: number, name: string, fields: Array<MetaInfoField>, clazz: NewableAny };
 const _nameS: Map<string, MetaInfoObj> = new Map();
 const _idS: Map<number, MetaInfoObj> = new Map();
@@ -332,13 +332,12 @@ export abstract class MsgArray {
 }
 function get_def_val(type: MetaType) {
     if (Number.isInteger(type)) {
-        let tn: number = <any>type;
-        if (tn >= MtBase.I8 && tn <= MtBase.F64) {
-            if (tn == MtBase.I64) {
+        if (<number>type >= MtBase.I8 && <number>type <= MtBase.F64) {
+            if (type == MtBase.I64) {
                 return Cast_Int64(0);
             }
             return 0;
-        } else if (tn == MtBase.STR) {
+        } else if (type == MtBase.STR) {
             return "";
         }
     } else if (Array.isArray(type)) {
@@ -362,6 +361,9 @@ function cast_field_normal(v: any, typeName: string, fieldInfo: MetaInfoField) {
     if (v == null) {
         if (MsgArray.CHECK.IN && fieldInfo[2] == 1)
             throw new TypeError(`Decode Fail-(need require):${typeName}.${typeField}`);
+        if (fieldInfo.length > 3) {
+            return (<any[]>fieldInfo)[4];
+        }
         return get_def_val(type);
     } else if (Number.isInteger(type)) {
         return cast_primitive(v, <MtBase>type, typeName, typeField);
