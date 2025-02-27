@@ -36,6 +36,7 @@ cast_type_map.set(Boolean, v => {
     return Boolean(v);//v!="false"&&v!="0"&&v!="no";
 });
 cast_type_map.set(String, v => {
+    if (v == null) return null;
     return String(v);
 });
 cast_type_map.set(Number, v => {
