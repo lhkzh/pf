@@ -21,12 +21,14 @@ const EMPTY_BUFFER = Buffer.from("");
 //基础定义writer
 export class AbsRes {
     //主要相应码（如果错误则为不为0和200)
-    public code: number = 0;
+    public code: number;
     //响应描述，例如错误信息
     public msg: string;
     //返回数据，一般成功时返回的数据
     public data: any;
-
+    constructor() {
+        this.code = 0
+    }
     //响应类型
     public contentType(): string {
         return ContentType_html;
