@@ -1,9 +1,12 @@
+/**
+ * @public
+ */
 export declare class JsonX {
     static Stringify(val: any, space?: number | string): string;
     static Parse(jsonStr: string): any;
 }
 
-export declare type MetaInfoField = [string, MetaType, MetaInfoFieldRequired];
+export declare type MetaInfoField = [string, MetaType, MetaInfoFieldRequired] | [string, MetaType, MetaInfoFieldRequired, any];
 
 export declare type MetaInfoFieldRequired = 0 | 1;
 
@@ -14,22 +17,12 @@ export declare type MetaInfoObj = {
     clazz: NewableAny;
 };
 
-export declare type MetaType = MtBase | [
-MtBox,
-MtBase | NewableAny
-] | [
-MtBox,
-MtBoxKey,
-MtBase | NewableAny
-] | [
-MtBox,
-MtBase | NewableAny
-] | [
-MtBox,
-MtBoxKey,
-MtBase | NewableAny
-] | ArrayBufferView | NewableAny;
+export declare type MetaType = MtBase | [MtBox, MtBase | NewableAny] | [MtBox, MtKey, MtBase | NewableAny] | [MtBox, MtBase | NewableAny] | [MtBox, MtKey, MtBase | NewableAny] | ArrayBufferView | NewableAny;
 
+/**
+ * 消息数组基类
+ * @public
+ */
 export declare abstract class MsgArray {
     static CHECK: {
         OUT: boolean;
@@ -55,8 +48,6 @@ export declare abstract class MsgArray {
     static get CastInt64(): (v: any) => any;
     /**
      * 注解类属性信息的方法
-     * @param info
-     * @returns
      */
     static Meta(info: {
         id?: number;
@@ -65,15 +56,10 @@ export declare abstract class MsgArray {
     }): ClassDecorator;
     /**
      * 绑定类与属性关系
-     * @param T
-     * @param id
-     * @param name
-     * @param fields
      */
     static MetaBind(T: NewableAny, id: number, name: string, fields: Array<MetaInfoField>): void;
     /**
      * 设置是否开启-TypedArray转array，CSharp的版本对应需要开
-     * @param flag
      */
     static OptionTypedArray(flag: boolean): void;
 }
@@ -83,6 +69,7 @@ export declare abstract class MsgArray {
  * @param id 类消息ID
  * @param name 类消息NAME（在某些编译情况时有用）
  * @returns
+ * @public
  */
 export declare function MsgClass(id?: number, name?: string): ClassDecorator;
 
@@ -90,32 +77,38 @@ export declare function MsgClass(id?: number, name?: string): ClassDecorator;
  * 注解-数据类成员属性的方法
  * @param typed 成员的数据类型
  * @param required 成员是否必须要有数据（在解析时会检测）
- * @param name 成员的NAME（在某些编译情况时有用）
+ * @param name 成员的NAME（如果编译时擦除变量名或者需要混淆则非常有用）
  * @returns
+ * @public
  */
 export declare function MsgField(typed: MetaType, required?: MetaInfoFieldRequired, name?: string): PropertyDecorator;
 
-export declare enum MtBase {
+/**
+ * 类型定义
+ * @public
+ */
+export declare enum MT {
     BOOL = 0,
-    I8 = 1,
-    I16 = 2,
-    I32 = 3,
-    I64 = 4,
+    BYTE = 1,
+    SHORT = 2,
+    INT = 3,
+    LONG = 4,
     I53 = 5,
-    F32 = 6,
-    F64 = 7,
+    FLOAT = 6,
+    DOUBLE = 7,
     STR = 8,
-    DATE = 9
+    DATE = 9,
+    OBJ = 10,
+    ARR = 11,
+    MAP = 12,
+    SET = 13
 }
 
-export declare enum MtBox {
-    Obj = 11,
-    Arr = 12,
-    Map = 13,
-    Set = 14
-}
+export declare type MtBase = MT.BOOL | MT.BYTE | MT.SHORT | MT.INT | MT.LONG | MT.I53 | MT.FLOAT | MT.DOUBLE | MT.STR | MT.DATE;
 
-export declare type MtBoxKey = MtBase.I8 | MtBase.I16 | MtBase.I32 | MtBase.I53 | MtBase.I64 | MtBase.STR;
+export declare type MtBox = MT.OBJ | MT.ARR | MT.MAP | MT.SET;
+
+export declare type MtKey = MT.BYTE | MT.SHORT | MT.INT | MT.I53 | MT.LONG | MT.STR;
 
 export declare type Newable<T> = {
     new (...params: any[]): T;

@@ -3,18 +3,18 @@ npm install play_msg
 </pre>
 
 <pre>
-import { MsgArray, MtBase, MtBox, JsonX } from "play_msg";
+import { MsgArray, Type, JsonX } from "play_msg";
 import { pack, unpack } from "play_msgpack";
 //import { pack, unpack } from "msgpackr";
 
 @MsgArray.Meta({
     fields: [
-        ["uid", MtBase.I53, 1],
-        ["nick", MtBase.STR, 1],
-        ["head", MtBase.STR, 0],
-        ["age", MtBase.I8, 0],
-        ["login", MtBase.DATE, 0],
-        ["tags", [MtBox.Set, MtBase.I16], 0]
+        ["uid", Type.I53, 1],
+        ["nick", Type.STR, 1],
+        ["head", Type.STR, 0],
+        ["age", Type.Byte, 0],
+        ["login", Type.DATE, 0],
+        ["tags", [Type.Set, Type.Short], 0]
     ]
 })
 class User extends MsgArray {
@@ -43,8 +43,8 @@ console.log(MsgArray.CastByArray(User,<any[]>unpack(pack(arr))));
 
 @MsgArray.Meta({
     fields: [
-        ["id", MtBase.I53, 1],
-        ["userList", [MtBox.Arr, User], 0],
+        ["id", Type.I53, 1],
+        ["userList", [Type.Arr, User], 0],
         ["master", User, 0],
         ["master", Room, 0]
     ]

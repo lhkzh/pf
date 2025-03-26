@@ -4,13 +4,13 @@ import { MsgArray, MType } from "play_msgpack";
 class MsgArrayToCsharp {
     private static SimpleDict = {
         [MType.BOOL]: { type: "bool", default: "false" },
-        [MType.I8]: { type: "byte", default: "0" },
-        [MType.I16]: { type: "short", default: "0" },
-        [MType.I32]: { type: "int", default: "0" },
+        [MType.BYTE]: { type: "byte", default: "0" },
+        [MType.SHORT]: { type: "short", default: "0" },
+        [MType.INT]: { type: "int", default: "0" },
         [MType.I53]: { type: "long", default: "0" },
-        [MType.I64]: { type: "long", default: "0" },
-        [MType.F32]: { type: "float", default: "0f" },
-        [MType.F64]: { type: "double", default: "0d" },
+        [MType.LONG]: { type: "long", default: "0" },
+        [MType.FLOAT]: { type: "float", default: "0f" },
+        [MType.DOUBLE]: { type: "double", default: "0d" },
         [MType.STR]: { type: "string", default: "\"\"" },
         [MType.DATE]: { type: "DateTime" },
     }

@@ -1,44 +1,46 @@
 {
-    "name": "play_msg",
-    "version": "0.1.1",
-    "description": "class schema to Array, use for msgpack",
-    "main": "./dist/index.js",
-    "module": "./dist/index.mjs",
-    "browser": "./dist/index.umd.js",
-    "exports": {
-        "require": "./dist/index.js",
-        "import": "./dist/index.mjs"
-    },
-    "typings": "./dist/index.d.ts",
-    "directories": {
-        "doc": "docs"
-    },
-    "devDependencies": {
-        "@microsoft/api-extractor": "latest",
-        "@types/node": "latest",
-        "nyc": "^15.1.0",
-        "rollup": "latest",
-        "rollup-plugin-typescript2": "latest",
-        "@chiogen/rollup-plugin-terser": "latest"
-    },
-    "scripts": {
-        "build": "npm run build:clear && npm run build:js && npm run build:dts",
-        "build:js": "npx rollup -c",
-        "build:dts": "npx tsc && npx api-extractor run --local --verbose && node removePrivate.js",
-        "build:clear": "node removeOut.js",
-        "test":"node test/index.js",
-        "test_fibjs":"fibjs test/index.js"
-    },
-    "files": [
-        "package.json",
-        "dist/"
-    ],
-    "author": "",
-    "license": "MIT",
-    "homepage": "https://github.com/lhkzh/pf/tree/master/play_msg",
-    "keywords": [
-        "msgpack",
-        "ts",
-        "schema"
-    ]
+  "name": "play_msg",
+  "version": "0.1.2",
+  "description": "class schema to Array, use for msgpack",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "browser": "./dist/index.umd.js",
+  "exports": {
+    "require": "./dist/index.js",
+    "import": "./dist/index.mjs"
+  },
+  "typings": "./dist/index.d.ts",
+  "directories": {
+    "doc": "docs"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "nyc": "^15.1.0",
+    "rollup": "latest",
+    "@microsoft/api-extractor": "latest",
+    "@rollup/plugin-typescript": "latest",
+    "@rollup/plugin-node-resolve": "latest",
+    "@rollup/plugin-commonjs": "latest",
+    "@rollup/plugin-terser": "latest"
+  },
+  "scripts": {
+    "build": "npm run build:clear && npm run build:js && npm run build:dts",
+    "build:js": "npx rollup -c",
+    "build:dts": "npx tsc && npx api-extractor run --local --verbose && node removePrivate.js",
+    "build:clear": "node removeOut.js",
+    "test": "node test/index.js",
+    "test_fibjs": "fibjs test/index.js"
+  },
+  "files": [
+    "package.json",
+    "dist/"
+  ],
+  "author": "",
+  "license": "MIT",
+  "homepage": "https://github.com/lhkzh/pf/tree/master/play_msg",
+  "keywords": [
+    "msgpack",
+    "ts",
+    "schema"
+  ]
 }
