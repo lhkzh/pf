@@ -22,7 +22,10 @@ export var MT;
 const _nameS = new Map();
 const _idS = new Map();
 const _typeS = new Map();
-let Meta_ID = 1;
+let Meta_ID = 0;
+let Next_Id = (name) => {
+    return --Meta_ID;
+};
 let Cast_Int64 = (v) => {
     return BigInt(v);
 };
@@ -100,12 +103,16 @@ export class MsgArray {
     static get CastInt64() {
         return Cast_Int64;
     }
+    static set NextId(fn) {
+        Next_Id = fn || Next_Id;
+    }
     /**
      * 注解类属性信息的方法
      */
     static Meta(info) {
         return function (T) {
-            MsgArray.MetaBind(T, info.id || Meta_ID++, info.name || T.name, info.fields);
+            let cname = info.name || T.name;
+            MsgArray.MetaBind(T, info.id || Next_Id(cname), cname, info.fields);
         };
     }
     /**
@@ -536,7 +543,8 @@ const __MSG_FIELDS_PROPERTY_KEY = "__$FIELDS$__";
  */
 export function MsgClass(id, name) {
     return function (T) {
-        MsgArray.MetaBind(T, id || Meta_ID++, name || T.name, T.prototype[__MSG_FIELDS_PROPERTY_KEY] || []);
+        let cname = name || T.name;
+        MsgArray.MetaBind(T, id || Next_Id(cname), cname, T.prototype[__MSG_FIELDS_PROPERTY_KEY] || []);
         delete T.prototype[__MSG_FIELDS_PROPERTY_KEY];
     };
 }

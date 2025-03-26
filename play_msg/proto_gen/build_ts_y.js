@@ -124,7 +124,7 @@ function build_ts_class(info, longTo = "bigint") {
   });
   let str =
     header +
-    `export class ${info.name} extends MsgArray {
+    `export class ${info.name} {
     static ToArray: (val: ${info.name}, deep?: number) => any[];
     static FromArray: (arr: any[]) => ${info.name};
     static ToRefArray: (val: ${info.name}) => any[];

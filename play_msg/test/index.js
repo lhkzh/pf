@@ -59,14 +59,14 @@ describe("base", function () {
     // }
     class Room extends MsgArray {}
     MsgArray.MetaBind(Room, TypeId++, "Room" + TypeId.toString(), [
-      ["rid", MT.I32, 1],
+      ["rid", MT.INT, 1],
       ["desc", MT.STR, 1],
       ["players", [MT.ARR, Player], 1],
       ["master", Player, 0],
       ["map", [MT.OBJ, MT.STR, Player], 0],
       ["other", [MT.OBJ, MT.STR, Player], 0],
-      ["set1", [MT.SET, MT.I32], 0],
-      ["set2", [MT.SET, MT.I32], 0],
+      ["set1", [MT.SET, MT.INT], 0],
+      ["set2", [MT.SET, MT.INT], 0],
     ]);
     MsgArray.MetaBind(Player, TypeId++, "Player" + TypeId.toString(), [
       ["name", MT.STR, 1],

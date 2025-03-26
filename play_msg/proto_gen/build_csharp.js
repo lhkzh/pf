@@ -100,13 +100,13 @@ function build_cs_idmap(list) {
       return `        Regist(${e.name},${e.id});`;
     })
     .join("\n");
-  return `public class _ID_Map
+  return `public class CMD_IDS
 {
     public static Dictionary<System.Type, int> Type2Id = new Dictionary<System.Type, int>();
     public static Dictionary<int, System.Type> Id2Type = new Dictionary<int, System.Type>();
     private static void Regist(System.Type type, int id){
-        _ID_Map.Type2Id[type] = id;
-        _ID_Map.Id2Type[id] = type;
+        Type2Id[type] = id;
+        Id2Type[id] = type;
     }
     public static void Init()
     {

@@ -59,7 +59,10 @@ const _nameS: Map<string, MetaInfoObj> = new Map();
 const _idS: Map<number, MetaInfoObj> = new Map();
 const _typeS: Map<NewableAny, MetaInfoObj> = new Map();
 
-let Meta_ID = 1;
+let Meta_ID = 0;
+let Next_Id: (name: string) => number = (name: string) => {
+  return --Meta_ID;
+};
 let Cast_Int64: (v: any) => any = (v: any) => {
   return BigInt(v);
 };
@@ -83,34 +86,25 @@ export abstract class MsgArray {
     return (<any>this.constructor).ToRefArray(this);
   }
 
-  public static CastByArray<T extends MsgArray>(
-    type: Newable<T>,
-    arr: any[]
-  ): T {
+  public static CastByArray<T>(type: Newable<T>, arr: any[]): T {
     return (<any>type).FromArray(arr);
   }
-  public static CastByRefArray<T extends MsgArray>(
-    type: Newable<T>,
-    arr: any[]
-  ): T {
+  public static CastByRefArray<T>(type: Newable<T>, arr: any[]): T {
     return (<any>type).FromRefArray(arr);
   }
 
-  public static ToArray<T extends MsgArray>(
-    v: T,
-    $deep?: number
-  ): any[] | null {
+  public static ToArray<T>(v: T, $deep?: number): any[] | null {
     if (v == null) return null;
     return (<any>v.constructor).ToArray(v, $deep);
   }
-  public static FromArray<T extends MsgArray>(a: any[]): T {
+  public static FromArray<T>(a: any[]): T {
     return <T>(<unknown>null);
   }
-  public static ToRefArray<T extends MsgArray>(v: T): any[] | null {
+  public static ToRefArray<T>(v: T): any[] | null {
     if (v == null) return null;
     return (<any>v.constructor).ToRefArray(v);
   }
-  public static FromRefArray<T extends MsgArray>(a: any[]): T {
+  public static FromRefArray<T>(a: any[]): T {
     return <T>(<unknown>null);
   }
 
@@ -151,6 +145,9 @@ export abstract class MsgArray {
   public static get CastInt64(): (v: any) => any {
     return Cast_Int64;
   }
+  public static set NextId(fn: (name: string) => number) {
+    Next_Id = fn || Next_Id;
+  }
 
   /**
    * 注解类属性信息的方法
@@ -161,12 +158,8 @@ export abstract class MsgArray {
     fields: Array<MetaInfoField>;
   }): ClassDecorator {
     return function (T: any) {
-      MsgArray.MetaBind(
-        T,
-        info.id || Meta_ID++,
-        info.name || T.name,
-        info.fields
-      );
+      let cname = info.name || T.name;
+      MsgArray.MetaBind(T, info.id || Next_Id(cname), cname, info.fields);
     };
   }
   /**
@@ -675,10 +668,11 @@ const __MSG_FIELDS_PROPERTY_KEY = "__$FIELDS$__";
  */
 export function MsgClass(id?: number, name?: string): ClassDecorator {
   return function (T: any) {
+    let cname = name || T.name;
     MsgArray.MetaBind(
       T,
-      id || Meta_ID++,
-      name || T.name,
+      id || Next_Id(cname),
+      cname,
       T.prototype[__MSG_FIELDS_PROPERTY_KEY] || []
     );
     delete T.prototype[__MSG_FIELDS_PROPERTY_KEY];

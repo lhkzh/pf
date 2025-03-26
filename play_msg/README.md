@@ -16,7 +16,7 @@ import { pack, unpack } from "msgpackr";
     ["tags", [MT.SET, MT.SHORT], 0],
   ],
 })
-class User extends MsgArray {
+class User {
   uid: number;
   nick: string;
   head: string;
@@ -45,7 +45,7 @@ console.log(MsgArray.CastByArray(User, <any[]>unpack(pack(arr))));
     ["id", MT.I53, 1],
     ["userList", [MT.ARR, User], 0],
     ["master", User, 0],
-    ["master", Room, 0],
+    ["link", Room, 0],
   ],
 })
 class Room extends MsgArray {

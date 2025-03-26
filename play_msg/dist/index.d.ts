@@ -31,12 +31,12 @@ export declare abstract class MsgArray {
     toString(): string;
     toArray($deep?: number): any[];
     toRefArray(): any[];
-    static CastByArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T;
-    static CastByRefArray<T extends MsgArray>(type: Newable<T>, arr: any[]): T;
-    static ToArray<T extends MsgArray>(v: T, $deep?: number): any[] | null;
-    static FromArray<T extends MsgArray>(a: any[]): T;
-    static ToRefArray<T extends MsgArray>(v: T): any[] | null;
-    static FromRefArray<T extends MsgArray>(a: any[]): T;
+    static CastByArray<T>(type: Newable<T>, arr: any[]): T;
+    static CastByRefArray<T>(type: Newable<T>, arr: any[]): T;
+    static ToArray<T>(v: T, $deep?: number): any[] | null;
+    static FromArray<T>(a: any[]): T;
+    static ToRefArray<T>(v: T): any[] | null;
+    static FromRefArray<T>(a: any[]): T;
     static ClassByName(name: string): NewableAny | undefined;
     static ClassById(id: number): NewableAny | undefined;
     static MetaByName(name: string): MetaInfoObj | undefined;
@@ -46,6 +46,7 @@ export declare abstract class MsgArray {
     static MetaNameList(): string[];
     static set CastInt64(fn: (v: any) => any);
     static get CastInt64(): (v: any) => any;
+    static set NextId(fn: (name: string) => number);
     /**
      * 注解类属性信息的方法
      */
