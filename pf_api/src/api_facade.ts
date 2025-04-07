@@ -533,14 +533,18 @@ export function WEBSOCKET(path: string = "websocket", opts: { [index: string]: a
  * @param apiPath 此API路由的路由路径
  */
 function api_run_wrap(constructor, res: any, key: string, filter: ApiFilterHandler, apiPath: string): any {
-    let fn = function (request: any/** Class_HttpRequest */, pathArg: string/** 路由匹配后提取的路径座位参数部分 */, markFlag?: number/**模拟请求类型标记-websocket模拟分类用*/, overrideResWriter?: any/**覆盖Res*/, processCtx?: (ctx: AbsHttpCtx) => AbsHttpCtx) {
+    let fn = function (request: any/** Class_HttpRequest */, pathArgs: string[]/** 路由匹配后提取的路径座位参数部分 */, markFlag?: number/**模拟请求类型标记-websocket模拟分类用*/, overrideResWriter?: any/**覆盖Res*/, processCtx?: (ctx: AbsHttpCtx) => AbsHttpCtx) {
         let start_ms = Facade._hookTj != null ? Date.now() : 0;//API耗时统计-起始值
         let fiber = coroutine.current(), ctx: AbsHttpCtx;
         try {
             if (request.response) {
-                ctx = new ApiHttpCtx(request, pathArg, new res());
+				pathArgs = [];
+				if(arguments.length>1){
+					pathArgs = [...arguments].slice(1);
+				}
+                ctx = new ApiHttpCtx(request, pathArgs, new res());
             } else {
-                ctx = new WsApiHttpCtx(request, <any>pathArg/** call by run @run_by_ws*/);
+                ctx = new WsApiHttpCtx(request, <any>pathArgs/** call by run @run_by_ws*/);
                 if (markFlag != 8) {//非系统内对websocket绑定的调用，需要发送数据给客户端（客户端主动请求、服务端定时主动调用模拟请求后发回）
                     ctx.writer = new (overrideResWriter || res)();
                     if (markFlag == 9) {//websocket服务端发送到客户端的通知类型（例如 服务端定时主动调用模拟请求后发回，添加path让客户端区分通知消息具体是哪个）
@@ -633,7 +637,7 @@ function no_error_hook(ctx: AbsHttpCtx, err: Error) {
  */
 function websocket_run_wrap(constructor, opts, filter: ApiFilterHandler): any {
     return function (req: Class_HttpRequest, regPartPath: string = "") {
-        const ctx = new ApiHttpCtx(req, regPartPath);
+        const ctx = new ApiHttpCtx(req, [regPartPath]);
         coroutine.current()[VAR_API_CTX] = ctx;
         let suc = true;
         if (filter) {

@@ -144,6 +144,7 @@ function _decode_msgpack(data) {
 }
 //基础上下文
 export abstract class AbsHttpCtx {
+    pathArgs: string[];
     pathArg: string;
     writer: AbsRes & { path?: string };
     _attrs: { [index: string]: any };
@@ -241,11 +242,12 @@ export class ApiHttpCtx extends AbsHttpCtx {
     public res: Class_HttpResponse;
     private b: any;
 
-    constructor(req: Class_HttpRequest, pathArg?: string, writer?: AbsRes) {
+    constructor(req: Class_HttpRequest, pathArgs?: string[], writer?: AbsRes) {
         super();
         this.req = req;
         this.res = req.response;
-        this.pathArg = pathArg;
+        this.pathArgs = pathArgs;
+        this.pathArg = pathArgs[0];
         this.writer = writer;
     }
 
@@ -541,7 +543,8 @@ export class WsApiHttpCtx extends AbsHttpCtx {
         this._path = <string>msg[1];
         this.paramArg = msg[2];
         this.headerArg = msg[3];
-        this.pathArg = msg[4];
+        this.pathArgs = msg[4];
+        this.pathArg = this.pathArgs[0]||"";
     }
 
     public hasFile(k: string): boolean {
