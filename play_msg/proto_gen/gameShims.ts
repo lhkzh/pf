@@ -7,11 +7,11 @@ import { MsgArray, MT } from "play_msg";
     ["y", MT.FLOAT, 0],
   ],
 })
-export class Vector2 extends MsgArray<Vector2> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class Vector2 {
+  static ToArray: (v: Vector2, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => Vector2;
+  static ToRefArray: (val: Vector2) => any[];
+  static FromRefArray: (arr: any[]) => Vector2;
 
   public x: number;
   public y: number;
@@ -25,11 +25,11 @@ export class Vector2 extends MsgArray<Vector2> {
     ["z", MT.FLOAT, 0],
   ],
 })
-export class Vector3 extends MsgArray<Vector3> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class Vector3 {
+  static ToArray: (v: Vector3, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => Vector3;
+  static ToRefArray: (val: Vector3) => any[];
+  static FromRefArray: (arr: any[]) => Vector3;
 
   public x: number;
   public y: number;
@@ -44,11 +44,11 @@ export class Vector3 extends MsgArray<Vector3> {
     ["z", MT.FLOAT, 0],
   ],
 })
-export class Vector4 extends MsgArray<Vector4> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class Vector4 {
+  static ToArray: (v: Vector4, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => Vector4;
+  static ToRefArray: (val: Vector4) => any[];
+  static FromRefArray: (arr: any[]) => Vector4;
 
   public x: number;
   public y: number;
@@ -64,11 +64,11 @@ export class Vector4 extends MsgArray<Vector4> {
     ["z", MT.FLOAT, 0],
   ],
 })
-export class Quaternion extends MsgArray<Quaternion> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class Quaternion {
+  static ToArray: (v: Quaternion, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => Quaternion;
+  static ToRefArray: (val: Quaternion) => any[];
+  static FromRefArray: (arr: any[]) => Quaternion;
 
   public x: number;
   public y: number;
@@ -84,16 +84,16 @@ export class Quaternion extends MsgArray<Quaternion> {
     ["a", MT.FLOAT, 0],
   ],
 })
-export class Color extends MsgArray<Color> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class Color {
+  static ToArray: (v: Color, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => Color;
+  static ToRefArray: (val: Color) => any[];
+  static FromRefArray: (arr: any[]) => Color;
 
   public r: number;
   public g: number;
   public b: number;
-  public a: number = 1;
+  public a: number;
 }
 @MsgArray.Meta({
   name: "Rect",
@@ -104,11 +104,11 @@ export class Color extends MsgArray<Color> {
     ["height", MT.FLOAT, 0],
   ],
 })
-export class Rect extends MsgArray<Rect> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class Rect {
+  static ToArray: (v: Rect, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => Rect;
+  static ToRefArray: (val: Rect) => any[];
+  static FromRefArray: (arr: any[]) => Rect;
 
   public x: number;
   public y: number;
@@ -122,11 +122,11 @@ export class Rect extends MsgArray<Rect> {
     ["size", Vector3, 0],
   ],
 })
-export class Bounds extends MsgArray<Bounds> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class Bounds {
+  static ToArray: (v: Bounds, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => Bounds;
+  static ToRefArray: (val: Bounds) => any[];
+  static FromRefArray: (arr: any[]) => Bounds;
 
   public center: Vector3;
   public size: Vector3;
@@ -141,16 +141,16 @@ export class Bounds extends MsgArray<Bounds> {
     ["a", MT.SHORT, 0],
   ],
 })
-export class Color32 extends MsgArray<Color32> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class Color32 {
+  static ToArray: (v: Color32, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => Color32;
+  static ToRefArray: (val: Color32) => any[];
+  static FromRefArray: (arr: any[]) => Color32;
 
   public r: number;
   public g: number;
   public b: number;
-  public a: number = 1;
+  public a: number;
 }
 
 @MsgArray.Meta({
@@ -160,11 +160,11 @@ export class Color32 extends MsgArray<Color32> {
     ["y", MT.INT, 0],
   ],
 })
-export class Vector2Int extends MsgArray<Vector2Int> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class Vector2Int {
+  static ToArray: (v: Vector2Int, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => Vector2Int;
+  static ToRefArray: (val: Vector2Int) => any[];
+  static FromRefArray: (arr: any[]) => Vector2Int;
 
   public x: number;
   public y: number;
@@ -177,11 +177,11 @@ export class Vector2Int extends MsgArray<Vector2Int> {
     ["z", MT.INT, 0],
   ],
 })
-export class Vector3Int extends MsgArray<Vector3Int> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class Vector3Int {
+  static ToArray: (v: Vector3Int, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => Vector3Int;
+  static ToRefArray: (val: Vector3Int) => any[];
+  static FromRefArray: (arr: any[]) => Vector3Int;
 
   public x: number;
   public y: number;
@@ -196,11 +196,11 @@ export class Vector3Int extends MsgArray<Vector3Int> {
     ["height", MT.INT, 0],
   ],
 })
-export class RectInt extends MsgArray<RectInt> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class RectInt {
+  static ToArray: (v: RectInt, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => RectInt;
+  static ToRefArray: (val: RectInt) => any[];
+  static FromRefArray: (arr: any[]) => RectInt;
 
   public x: number;
   public y: number;
@@ -214,11 +214,11 @@ export class RectInt extends MsgArray<RectInt> {
     ["size", Vector3Int, 0],
   ],
 })
-export class BoundsInt extends MsgArray<BoundsInt> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class BoundsInt {
+  static ToArray: (v: BoundsInt, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => BoundsInt;
+  static ToRefArray: (val: BoundsInt) => any[];
+  static FromRefArray: (arr: any[]) => BoundsInt;
 
   public center: Vector3Int;
   public size: Vector3Int;
@@ -230,11 +230,11 @@ export class BoundsInt extends MsgArray<BoundsInt> {
     ["length", MT.INT, 0],
   ],
 })
-export class RangeInt extends MsgArray<RangeInt> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class RangeInt {
+  static ToArray: (v: RangeInt, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => RangeInt;
+  static ToRefArray: (val: RangeInt) => any[];
+  static FromRefArray: (arr: any[]) => RangeInt;
 
   public start: number;
   public length: number;
@@ -248,11 +248,11 @@ export class RangeInt extends MsgArray<RangeInt> {
     ["bottom", MT.INT, 0],
   ],
 })
-export class RectOffset extends MsgArray<RectOffset> {
-  static ToArray: <T>(v: T, $deep?: number) => any[] | null;
-  static FromArray: <T>(arr: any[]) => T;
-  static ToRefArray: <T>(val: T) => any[];
-  static FromRefArray: <T>(arr: any[]) => T;
+export class RectOffset {
+  static ToArray: (v: RectOffset, $deep?: number) => any[] | null;
+  static FromArray: (arr: any[]) => RectOffset;
+  static ToRefArray: (val: RectOffset) => any[];
+  static FromRefArray: (arr: any[]) => RectOffset;
 
   public left: number;
   public right: number;
