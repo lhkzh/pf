@@ -71,7 +71,7 @@ let Cast_Int64: (v: any) => any = (v: any) => {
  * 消息数组基类
  * @public
  */
-export abstract class MsgArray {
+export abstract class MsgArray<T> {
   public static CHECK = { OUT: false, IN: true };
 
   public toString() {

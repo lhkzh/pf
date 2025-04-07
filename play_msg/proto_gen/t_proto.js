@@ -43,7 +43,7 @@ const Room = {
   map1: "obj>int>UserInfo?",
   map2: "map>int>UserInfo?",
   log: "Uint8Array?",
-  // posArr: "arr>Vector3?",
+  posArr: "arr>Vector3?",
 };
 //位置数据
 const MoveAction = {
