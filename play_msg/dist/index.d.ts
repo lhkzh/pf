@@ -1,46 +1,29 @@
-export type NewableAny = {
-    new (...params: any[]): any;
-};
-export type Newable<T> = {
-    new (...params: any[]): T;
-};
 /**
- * 类型定义
  * @public
  */
-export declare enum MT {
-    BOOL = 0,
-    BYTE = 1,
-    SHORT = 2,
-    INT = 3,
-    LONG = 4,
-    I53 = 5,
-    FLOAT = 6,
-    DOUBLE = 7,
-    STR = 8,
-    DATE = 9,
-    OBJ = 10,
-    ARR = 11,
-    MAP = 12,
-    SET = 13
+export declare class JsonX {
+    static Stringify(val: any, space?: number | string): string;
+    static Parse(jsonStr: string): any;
 }
-export type MtBase = MT.BOOL | MT.BYTE | MT.SHORT | MT.INT | MT.LONG | MT.I53 | MT.FLOAT | MT.DOUBLE | MT.STR | MT.DATE;
-export type MtBox = MT.OBJ | MT.ARR | MT.MAP | MT.SET;
-export type MtKey = MT.BYTE | MT.SHORT | MT.INT | MT.I53 | MT.LONG | MT.STR;
-export type MetaType = MtBase | [MtBox, MtBase | NewableAny] | [MtBox, MtKey, MtBase | NewableAny] | [MtBox, MtBase | NewableAny] | [MtBox, MtKey, MtBase | NewableAny] | ArrayBufferView | NewableAny;
-export type MetaInfoFieldRequired = 0 | 1;
-export type MetaInfoField = [string, MetaType, MetaInfoFieldRequired] | [string, MetaType, MetaInfoFieldRequired, any];
-export type MetaInfoObj = {
+
+export declare type MetaInfoField = [string, MetaType, MetaInfoFieldRequired] | [string, MetaType, MetaInfoFieldRequired, any];
+
+export declare type MetaInfoFieldRequired = 0 | 1;
+
+export declare type MetaInfoObj = {
     id: number;
     name: string;
     fields: Array<MetaInfoField>;
     clazz: NewableAny;
 };
+
+export declare type MetaType = MtBase | [MtBox, MtBase | NewableAny] | [MtBox, MtKey, MtBase | NewableAny] | [MtBox, MtBase | NewableAny] | [MtBox, MtKey, MtBase | NewableAny] | ArrayBufferView | NewableAny;
+
 /**
  * 消息数组基类
  * @public
  */
-export declare abstract class MsgArray<T> {
+export declare abstract class MsgArray {
     static CHECK: {
         OUT: boolean;
         IN: boolean;
@@ -81,6 +64,7 @@ export declare abstract class MsgArray<T> {
      */
     static OptionTypedArray(flag: boolean): void;
 }
+
 /**
  * 注解-数据类的方法
  * @param id 类消息ID
@@ -89,6 +73,7 @@ export declare abstract class MsgArray<T> {
  * @public
  */
 export declare function MsgClass(id?: number, name?: string): ClassDecorator;
+
 /**
  * 注解-数据类成员属性的方法
  * @param typed 成员的数据类型
@@ -98,11 +83,40 @@ export declare function MsgClass(id?: number, name?: string): ClassDecorator;
  * @public
  */
 export declare function MsgField(typed: MetaType, required?: MetaInfoFieldRequired, name?: string): PropertyDecorator;
+
 /**
+ * 类型定义
  * @public
  */
-export declare class JsonX {
-    static Stringify(val: any, space?: number | string): string;
-    static Parse(jsonStr: string): any;
+export declare enum MT {
+    BOOL = 0,
+    BYTE = 1,
+    SHORT = 2,
+    INT = 3,
+    LONG = 4,
+    I53 = 5,
+    FLOAT = 6,
+    DOUBLE = 7,
+    STR = 8,
+    DATE = 9,
+    OBJ = 10,
+    ARR = 11,
+    MAP = 12,
+    SET = 13
 }
-//# sourceMappingURL=index.d.ts.map
+
+export declare type MtBase = MT.BOOL | MT.BYTE | MT.SHORT | MT.INT | MT.LONG | MT.I53 | MT.FLOAT | MT.DOUBLE | MT.STR | MT.DATE;
+
+export declare type MtBox = MT.OBJ | MT.ARR | MT.MAP | MT.SET;
+
+export declare type MtKey = MT.BYTE | MT.SHORT | MT.INT | MT.I53 | MT.LONG | MT.STR;
+
+export declare type Newable<T> = {
+    new (...params: any[]): T;
+};
+
+export declare type NewableAny = {
+    new (...params: any[]): any;
+};
+
+export { }
