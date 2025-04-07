@@ -178,7 +178,77 @@ export abstract class MsgArray {
     _idS.set(id, obj);
     _nameS.set(name, obj);
     _typeS.set(T, obj);
-
+    (<any>T)["ToJSON"] = function (a: any, $deep: number = 8): any {
+      if (a == null) return <any>(<unknown>null);
+      if ($deep < 0) {
+        throw new Error("max stack limit: check circle reference");
+      }
+      let r: any = {};
+      for (var i = 0; i < fields.length; i++) {
+        let f = fields[i];
+        let v = a[f[0]],
+          t: any = f[1];
+        if (v) {
+          if (t.ToJSON) {
+            v = t.ToJSON(v, $deep - 1);
+          }
+        } else if (Array.isArray(t)) {
+          if (t[0] == MT.ARR) {
+            if (t[1].ToJSON) {
+              v = v.map((e: any) => t[1].ToJSON(e, $deep - 1));
+            }
+          } else if (t[0] == MT.SET) {
+            let rarr: any[] = [];
+            if (t[1].ToJSON) {
+              v.forEach((e: any) => {
+                rarr.push(t[1].ToJSON(e, $deep - 1));
+              });
+            } else {
+              v.forEach((e: any) => {
+                rarr.push(e);
+              });
+            }
+            v = rarr;
+          } else if (t[0] == MT.OBJ) {
+            let rarr: any[] = [],
+              keys = Object.keys(v);
+            if (t[2].ToJSON) {
+              keys.forEach((k) => {
+                rarr.push(
+                  t[1] != MT.STR ? Number(k) : k,
+                  t[2].ToJSON(v[k], $deep - 1)
+                );
+              });
+            } else {
+              keys.forEach((k) => {
+                rarr.push(t[1] != MT.STR ? Number(k) : k, v[k]);
+              });
+            }
+            v = rarr;
+          } else if (t[0] == MT.MAP) {
+            let rarr: any[] = [];
+            if (t[2].ToJSON) {
+              v.forEach((iv: any, ik: any) => {
+                rarr.push(ik, t[2].ToJSON(iv, $deep - 1));
+              });
+            } else {
+              v.forEach((iv: any, ik: any) => {
+                rarr.push(ik, iv);
+              });
+            }
+            v = rarr;
+          } else {
+            throw new TypeError("NOT implemented:" + t[0]);
+          }
+        } else if (MsgArray.CHECK.OUT && fields[i][2] == 1) {
+          throw new TypeError(
+            `Decode Fail-(need require):${name}.${fields[i][0]}`
+          );
+        }
+        r[f[0]] = v;
+      }
+      return r;
+    };
     (<any>T)["ToArray"] = function (a: any, $deep: number = 8): any[] {
       if (a == null) return <any[]>(<unknown>null);
       if ($deep < 0) {
@@ -658,7 +728,7 @@ function cast_fail_type(typeName: string, typeField: string) {
   throw new TypeError(`Decode Fail-2:${typeName}.${typeField}`);
 }
 
-const __MSG_FIELDS_PROPERTY_KEY = "__$FIELDS$__";
+const FIELDS_PROPERTY_KEY = Symbol("__$FIELDS$__");
 /**
  * 注解-数据类的方法
  * @param id 类消息ID
@@ -673,9 +743,9 @@ export function MsgClass(id?: number, name?: string): ClassDecorator {
       T,
       id || Next_Id(cname),
       cname,
-      T.prototype[__MSG_FIELDS_PROPERTY_KEY] || []
+      T.prototype[FIELDS_PROPERTY_KEY] || []
     );
-    delete T.prototype[__MSG_FIELDS_PROPERTY_KEY];
+    delete T.prototype[FIELDS_PROPERTY_KEY];
   };
 }
 /**
@@ -692,10 +762,10 @@ export function MsgField(
   name?: string
 ): PropertyDecorator {
   return function (target: any, propKey: string | symbol) {
-    if (!target[__MSG_FIELDS_PROPERTY_KEY]) {
-      target[__MSG_FIELDS_PROPERTY_KEY] = [];
+    if (!target[FIELDS_PROPERTY_KEY]) {
+      target[FIELDS_PROPERTY_KEY] = [];
     }
-    target[__MSG_FIELDS_PROPERTY_KEY].push([
+    target[FIELDS_PROPERTY_KEY].push([
       name ? name : propKey.toString(),
       typed,
       required,

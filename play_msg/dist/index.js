@@ -1,8 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.JsonX = exports.MsgArray = exports.MT = void 0;
+exports.MsgClass = MsgClass;
+exports.MsgField = MsgField;
 /**
  * 类型定义
  * @public
  */
-export var MT;
+var MT;
 (function (MT) {
     MT[MT["BOOL"] = 0] = "BOOL";
     MT[MT["BYTE"] = 1] = "BYTE";
@@ -18,7 +23,7 @@ export var MT;
     MT[MT["ARR"] = 11] = "ARR";
     MT[MT["MAP"] = 12] = "MAP";
     MT[MT["SET"] = 13] = "SET";
-})(MT || (MT = {}));
+})(MT || (exports.MT = MT = {}));
 const _nameS = new Map();
 const _idS = new Map();
 const _typeS = new Map();
@@ -33,7 +38,7 @@ let Cast_Int64 = (v) => {
  * 消息数组基类
  * @public
  */
-export class MsgArray {
+class MsgArray {
     static CHECK = { OUT: false, IN: true };
     toString() {
         return `[Class:${this.constructor.name}]=>${JsonX.Stringify(JsonDecycle(this))}`;
@@ -126,6 +131,80 @@ export class MsgArray {
         _idS.set(id, obj);
         _nameS.set(name, obj);
         _typeS.set(T, obj);
+        T["ToJSON"] = function (a, $deep = 8) {
+            if (a == null)
+                return null;
+            if ($deep < 0) {
+                throw new Error("max stack limit: check circle reference");
+            }
+            let r = {};
+            for (var i = 0; i < fields.length; i++) {
+                let f = fields[i];
+                let v = a[f[0]], t = f[1];
+                if (v) {
+                    if (t.ToJSON) {
+                        v = t.ToJSON(v, $deep - 1);
+                    }
+                }
+                else if (Array.isArray(t)) {
+                    if (t[0] == MT.ARR) {
+                        if (t[1].ToJSON) {
+                            v = v.map((e) => t[1].ToJSON(e, $deep - 1));
+                        }
+                    }
+                    else if (t[0] == MT.SET) {
+                        let rarr = [];
+                        if (t[1].ToJSON) {
+                            v.forEach((e) => {
+                                rarr.push(t[1].ToJSON(e, $deep - 1));
+                            });
+                        }
+                        else {
+                            v.forEach((e) => {
+                                rarr.push(e);
+                            });
+                        }
+                        v = rarr;
+                    }
+                    else if (t[0] == MT.OBJ) {
+                        let rarr = [], keys = Object.keys(v);
+                        if (t[2].ToJSON) {
+                            keys.forEach((k) => {
+                                rarr.push(t[1] != MT.STR ? Number(k) : k, t[2].ToJSON(v[k], $deep - 1));
+                            });
+                        }
+                        else {
+                            keys.forEach((k) => {
+                                rarr.push(t[1] != MT.STR ? Number(k) : k, v[k]);
+                            });
+                        }
+                        v = rarr;
+                    }
+                    else if (t[0] == MT.MAP) {
+                        let rarr = [];
+                        if (t[2].ToJSON) {
+                            v.forEach((iv, ik) => {
+                                rarr.push(ik, t[2].ToJSON(iv, $deep - 1));
+                            });
+                        }
+                        else {
+                            v.forEach((iv, ik) => {
+                                rarr.push(ik, iv);
+                            });
+                        }
+                        v = rarr;
+                    }
+                    else {
+                        throw new TypeError("NOT implemented:" + t[0]);
+                    }
+                }
+                else if (MsgArray.CHECK.OUT && fields[i][2] == 1) {
+                    throw new TypeError(`Decode Fail-(need require):${name}.${fields[i][0]}`);
+                }
+                r[f[0]] = v;
+            }
+            return r;
+        };
         T["ToArray"] = function (a, $deep = 8) {
             if (a == null)
                 return null;
@@ -342,6 +421,7 @@ export class MsgArray {
         }
     }
 }
+exports.MsgArray = MsgArray;
 //获取类型的默认值
 function get_def_val(type) {
     if (Number.isInteger(type)) {
@@ -533,7 +613,7 @@ function cast_primitive(v, type, typeName, typeField) {
 function cast_fail_type(typeName, typeField) {
     throw new TypeError(`Decode Fail-2:${typeName}.${typeField}`);
 }
-const __MSG_FIELDS_PROPERTY_KEY = "__$FIELDS$__";
+const FIELDS_PROPERTY_KEY = Symbol("__$FIELDS$__");
 /**
  * 注解-数据类的方法
  * @param id 类消息ID
@@ -541,11 +621,11 @@ const __MSG_FIELDS_PROPERTY_KEY = "__$FIELDS$__";
  * @returns
  * @public
  */
-export function MsgClass(id, name) {
+function MsgClass(id, name) {
     return function (T) {
         let cname = name || T.name;
-        MsgArray.MetaBind(T, id || Next_Id(cname), cname, T.prototype[__MSG_FIELDS_PROPERTY_KEY] || []);
-        delete T.prototype[__MSG_FIELDS_PROPERTY_KEY];
+        MsgArray.MetaBind(T, id || Next_Id(cname), cname, T.prototype[FIELDS_PROPERTY_KEY] || []);
+        delete T.prototype[FIELDS_PROPERTY_KEY];
     };
 }
 /**
@@ -556,12 +636,12 @@ export function MsgClass(id, name) {
  * @returns
  * @public
  */
-export function MsgField(typed, required = 0, name) {
+function MsgField(typed, required = 0, name) {
     return function (target, propKey) {
-        if (!target[__MSG_FIELDS_PROPERTY_KEY]) {
-            target[__MSG_FIELDS_PROPERTY_KEY] = [];
+        if (!target[FIELDS_PROPERTY_KEY]) {
+            target[FIELDS_PROPERTY_KEY] = [];
         }
-        target[__MSG_FIELDS_PROPERTY_KEY].push([
+        target[FIELDS_PROPERTY_KEY].push([
             name ? name : propKey.toString(),
             typed,
             required,
@@ -571,7 +651,7 @@ export function MsgField(typed, required = 0, name) {
 /**
  * @public
  */
-export class JsonX {
+class JsonX {
     static Stringify(val, space) {
         return JSON.stringify(val, JsonReviverEncode, space);
     }
@@ -579,6 +659,7 @@ export class JsonX {
         return JSON.parse(jsonStr, JsonReviverDecode);
     }
 }
+exports.JsonX = JsonX;
 function JsonReviverEncode(key, value) {
     if (typeof value == "bigint") {
         return {
