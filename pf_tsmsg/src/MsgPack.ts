@@ -566,14 +566,22 @@ export module MsgPack {
         }
 
         public i64(v: bigint) {
-            let T = this;
-            T.s.setBigInt64(T.i, v);
-            T.i += 8;
+			if(v>-0x8000000000000000 && v<0x8000000000000000){
+			    let T = this;
+                T.s.setBigInt64(T.i, v);
+                T.i += 8;	
+			}else{
+				throw new Error("too large bigint");
+			}
         }
         public u64(v: bigint) {
-            let T = this;
-            T.s.setBigUint64(T.i, v);
-            T.i += 8;
+			if(v<0x10000000000000000){
+			    let T = this;
+                T.s.setBigUint64(T.i, v);
+                T.i += 8;	
+			}else{
+				throw new Error("too large bigint");
+			}
         }
 
         public process(n: number, f: (dataView: DataView, offset: number) => number) {

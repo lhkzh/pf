@@ -14,14 +14,14 @@
     "doc": "docs"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "latest",
+    "@rollup/plugin-commonjs": "latest",
+    "@rollup/plugin-node-resolve": "latest",
+    "@rollup/plugin-terser": "latest",
+    "@rollup/plugin-typescript": "latest",
     "@types/node": "latest",
     "nyc": "^15.1.0",
-    "rollup": "latest",
-    "@microsoft/api-extractor": "latest",
-    "@rollup/plugin-typescript": "latest",
-    "@rollup/plugin-node-resolve": "latest",
-    "@rollup/plugin-commonjs": "latest",
-    "@rollup/plugin-terser": "latest"
+    "rollup": "latest"
   },
   "scripts": {
     "build": "npm run build:clear && npm run build:js && npm run build:dts",
